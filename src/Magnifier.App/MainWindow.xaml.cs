@@ -20,11 +20,13 @@ namespace Magnifier.App;
 public partial class MainWindow : Window
 {
     private readonly IScreenCapture _screenCapture = new WindowsScreenCapture();
+    private readonly IPointerInput _pointerInput = new WindowsPointerInput();
     private readonly SemaphoreSlim _captureGate = new(1, 1);
     private readonly DispatcherTimer _livePreviewTimer;
     private SelectionPreviewWindow? _previewWindow;
     private ScreenRegion? _activePreviewRegion;
     private bool _captureInProgress;
+    private bool _isInputEnabled;
     private int _livePreviewSession;
 
     public MainWindow()
@@ -35,12 +37,18 @@ public partial class MainWindow : Window
             Interval = TimeSpan.FromMilliseconds(100)
         };
         _livePreviewTimer.Tick += LivePreviewTimer_OnTick;
-        Closed += (_, _) => StopLivePreview();
+        Closed += (_, _) =>
+        {
+            _previewWindow?.CancelInputSession();
+            StopLivePreview();
+        };
     }
 
     private async void SelectRegionButton_OnClick(object sender, RoutedEventArgs e)
     {
         StopLivePreview();
+        _previewWindow?.CancelInputSession();
+        DisableInputGate();
         _previewWindow?.Hide();
 
         var overlay = new SelectionOverlayWindow
@@ -57,6 +65,29 @@ public partial class MainWindow : Window
         }
 
         await StartLivePreviewAsync(selectionRegion);
+    }
+
+    private void InputEnabledCheckBox_OnChanged(object sender, RoutedEventArgs e)
+    {
+        var isInputEnabled = InputEnabledCheckBox.IsChecked == true;
+        if (isInputEnabled && _previewWindow is null)
+        {
+            SelectionStatusText.Text = "먼저 영역을 선택한 뒤 입력 전달을 켤 수 있습니다";
+            InputEnabledCheckBox.IsChecked = false;
+            return;
+        }
+
+        if (_previewWindow is not null && !_previewWindow.SetInputEnabled(isInputEnabled))
+        {
+            _isInputEnabled = false;
+            InputEnabledCheckBox.IsChecked = false;
+            return;
+        }
+
+        _isInputEnabled = isInputEnabled;
+        SelectionStatusText.Text = isInputEnabled
+            ? "실제 포인터 입력이 켜졌습니다. 미리보기 창을 원본 영역 밖으로 옮긴 뒤 짧은 드래그만 사용하세요"
+            : "실제 포인터 입력이 꺼져 있습니다";
     }
 
     private async Task StartLivePreviewAsync(ScreenRegion selectionRegion)
@@ -115,10 +146,10 @@ public partial class MainWindow : Window
 
             ShowPreview();
             _previewWindow!.UpdateCapture(frame, isLivePreview: true);
-            SelectionStatusText.Text = $"실시간 미리보기: {selectionRegion.Width} × {selectionRegion.Height}";
 
             if (startTimerOnSuccess)
             {
+                SelectionStatusText.Text = $"실시간 미리보기: {selectionRegion.Width} × {selectionRegion.Height}";
                 _livePreviewTimer.Start();
             }
         }
@@ -130,6 +161,7 @@ public partial class MainWindow : Window
             }
 
             StopLivePreview();
+            _previewWindow?.CancelInputSession();
             ShowPreview();
             _previewWindow!.ShowCaptureFailure(selectionRegion, exception.Message);
             SelectionStatusText.Text = "실시간 화면 캡처에 실패했습니다";
@@ -153,23 +185,48 @@ public partial class MainWindow : Window
         _livePreviewSession++;
     }
 
+    private void DisableInputGate()
+    {
+        _isInputEnabled = false;
+        _previewWindow?.SetInputEnabled(false);
+
+        if (InputEnabledCheckBox.IsChecked == true)
+        {
+            InputEnabledCheckBox.IsChecked = false;
+        }
+    }
+
+    private void PreviewWindow_OnInputStatusChanged(string status)
+    {
+        SelectionStatusText.Text = status;
+
+        if (_previewWindow?.IsInputEnabled == false && InputEnabledCheckBox.IsChecked == true)
+        {
+            InputEnabledCheckBox.IsChecked = false;
+        }
+    }
+
     private void ShowPreview()
     {
         if (_previewWindow is null)
         {
-            var previewWindow = new SelectionPreviewWindow
+            var previewWindow = new SelectionPreviewWindow(_pointerInput)
             {
                 Owner = this
             };
+            previewWindow.InputStatusChanged += PreviewWindow_OnInputStatusChanged;
             previewWindow.Closed += (_, _) =>
             {
                 if (ReferenceEquals(_previewWindow, previewWindow))
                 {
                     _previewWindow = null;
+                    _isInputEnabled = false;
+                    InputEnabledCheckBox.IsChecked = false;
                     StopLivePreview();
                 }
             };
             _previewWindow = previewWindow;
+            _previewWindow.SetInputEnabled(_isInputEnabled);
             _previewWindow.Show();
         }
 

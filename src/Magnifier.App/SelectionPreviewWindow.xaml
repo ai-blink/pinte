@@ -8,7 +8,8 @@
         MinHeight="320"
         ResizeMode="CanResizeWithGrip"
         Topmost="True"
-        WindowStyle="ToolWindow">
+        WindowStyle="ToolWindow"
+        PreviewKeyDown="SelectionPreviewWindow_OnPreviewKeyDown">
     <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -26,6 +27,11 @@
                        FontSize="16"
                        Foreground="#40516A"
                        Text="영역을 선택하는 중입니다" />
+            <TextBlock x:Name="InputStatusText"
+                       Margin="0,6,0,0"
+                       FontSize="14"
+                       Foreground="#8A4B00"
+                       Text="실제 포인터 입력: 꺼짐" />
         </StackPanel>
 
         <Border Grid.Row="1"
@@ -42,7 +48,12 @@
                 </Grid.RowDefinitions>
                 <Image x:Name="CapturedImage"
                        Margin="6"
-                       Stretch="Uniform" />
+                       Stretch="Uniform"
+                       Cursor="Cross"
+                       MouseLeftButtonDown="CapturedImage_OnMouseLeftButtonDown"
+                       MouseMove="CapturedImage_OnMouseMove"
+                       MouseLeftButtonUp="CapturedImage_OnMouseLeftButtonUp"
+                       LostMouseCapture="CapturedImage_OnLostMouseCapture" />
                 <Border Grid.Row="1"
                         Margin="0,16,0,0"
                         Padding="10,7"
@@ -60,6 +71,6 @@
         <TextBlock Grid.Row="2"
                    FontSize="14"
                    Foreground="#5A6B84"
-                   Text="창 제목 표시줄로 이동하고, 창 모서리 또는 오른쪽 아래 그립으로 크기를 조절할 수 있습니다." />
+                   Text="창 제목 표시줄로 이동하고, 창 모서리 또는 오른쪽 아래 그립으로 크기를 조절할 수 있습니다. Esc는 진행 중인 입력을 취소합니다." />
     </Grid>
 </Window>

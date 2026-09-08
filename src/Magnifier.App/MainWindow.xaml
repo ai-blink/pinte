@@ -55,8 +55,21 @@
                         Click="SelectRegionButton_OnClick"
                         Content="영역 선택"
                         FontSize="24"
-                        FontWeight="SemiBold"
-                        Foreground="White" />
+                       FontWeight="SemiBold"
+                       Foreground="White" />
+                <CheckBox x:Name="InputEnabledCheckBox"
+                          Margin="0,22,0,0"
+                          Checked="InputEnabledCheckBox_OnChanged"
+                          Unchecked="InputEnabledCheckBox_OnChanged"
+                          Content="실제 포인터 입력 전달 활성화"
+                          FontSize="18"
+                          FontWeight="SemiBold"
+                          Foreground="#182235" />
+                <TextBlock Margin="0,8,0,0"
+                           FontSize="14"
+                           Foreground="#5A6B84"
+                           TextWrapping="Wrap"
+                           Text="기본값은 꺼짐입니다. 켜면 미리보기에서의 짧은 드래그가 원본 화면에 전달될 수 있습니다." />
             </StackPanel>
         </Border>
 
@@ -69,7 +82,7 @@
             <TextBlock Margin="0,8,0,0"
                        FontSize="14"
                        Foreground="#5A6B84"
-                       Text="실제 화면 캡처와 대상 앱 입력은 아직 연결하지 않았습니다." />
+                       Text="화면 캡처는 연결됨 · 실제 포인터 입력은 기본적으로 꺼짐" />
         </StackPanel>
     </Grid>
 </Window>

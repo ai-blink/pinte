@@ -12,6 +12,7 @@
 ## Executor policy
 
 - D-003: 실제 입력은 기본 비활성이며 Down·Move·Up은 단일 세션과 release 경로로 처리한다.
+- D-008: M3의 `SendInput` P/Invoke는 Infrastructure만 소유한다. App gate는 기본 해제이고, Core 세션은 취소·capture 손실·gate 해제·오류에서 `LeftUp`을 시도한다. UIPI 거부 원인은 API 결과만으로 확정하지 않는다.
 
 ## Security and safety
 
