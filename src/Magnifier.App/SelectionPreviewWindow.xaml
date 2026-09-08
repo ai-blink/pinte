@@ -62,8 +62,47 @@
                        MouseLeftButtonDown="CapturedImage_OnMouseLeftButtonDown"
                        MouseMove="CapturedImage_OnMouseMove"
                        MouseLeftButtonUp="CapturedImage_OnMouseLeftButtonUp"
-                       LostMouseCapture="CapturedImage_OnLostMouseCapture" />
+                       LostMouseCapture="CapturedImage_OnLostMouseCapture"
+                       SizeChanged="CapturedImage_OnSizeChanged" />
+                <Canvas x:Name="PointMarkerLayer"
+                        Panel.ZIndex="1"
+                        IsHitTestVisible="False">
+                    <Line x:Name="StraightStrokePreview"
+                          Stroke="#FDE047"
+                          StrokeThickness="3"
+                          StrokeDashArray="5,3"
+                          Visibility="Collapsed" />
+                    <Border x:Name="PointAMarker"
+                            Width="28"
+                            Height="28"
+                            Background="#D91D4ED8"
+                            BorderBrush="#F8FAFC"
+                            BorderThickness="2"
+                            CornerRadius="14"
+                            Visibility="Collapsed">
+                        <TextBlock HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontWeight="Bold"
+                                   Foreground="White"
+                                   Text="A" />
+                    </Border>
+                    <Border x:Name="PointBMarker"
+                            Width="28"
+                            Height="28"
+                            Background="#D904749C"
+                            BorderBrush="#F8FAFC"
+                            BorderThickness="2"
+                            CornerRadius="14"
+                            Visibility="Collapsed">
+                        <TextBlock HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontWeight="Bold"
+                                   Foreground="White"
+                                   Text="B" />
+                    </Border>
+                </Canvas>
                 <Border Margin="12"
+                        Panel.ZIndex="2"
                         Padding="9,5"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Bottom"
@@ -155,15 +194,15 @@
                         FontWeight="SemiBold"
                         AutomationProperties.Name="B 지점 지정" />
                 <Button x:Name="RunStraightStrokeButton"
-                        MinWidth="100"
+                        MinWidth="120"
                         MinHeight="34"
                         Margin="6,0,0,0"
                         Padding="9,4"
                         Click="RunStraightStroke_OnClick"
-                        Content="A → B 실행"
+                        Content="실제 A → B 실행"
                         FontSize="13"
                         FontWeight="SemiBold"
-                        AutomationProperties.Name="A에서 B로 직선 획 실행" />
+                        AutomationProperties.Name="실제 A에서 B로 직선 획 실행" />
             </StackPanel>
         </Grid>
 

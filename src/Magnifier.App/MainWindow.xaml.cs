@@ -86,7 +86,7 @@ public partial class MainWindow : Window
 
         _isInputEnabled = isInputEnabled;
         SelectionStatusText.Text = isInputEnabled
-            ? "실제 포인터 입력이 켜졌습니다. 미리보기 창을 원본 영역 밖으로 옮긴 뒤 짧은 드래그만 사용하세요"
+            ? "실제 포인터 입력이 켜졌습니다. 짧은 드래그만 사용하세요"
             : "실제 포인터 입력이 꺼져 있습니다";
     }
 
@@ -134,12 +134,6 @@ public partial class MainWindow : Window
         {
             if (!IsActivePreviewSession(selectionRegion, session))
             {
-                return;
-            }
-
-            if (_previewWindow?.OverlapsCaptureRegion(selectionRegion) == true)
-            {
-                _previewWindow.ShowCaptureOverlap();
                 return;
             }
 
@@ -216,7 +210,7 @@ public partial class MainWindow : Window
     {
         if (_previewWindow is null)
         {
-            var previewWindow = new SelectionPreviewWindow(_pointerInput)
+            var previewWindow = new SelectionPreviewWindow(_pointerInput, _screenCapture)
             {
                 Owner = this
             };
@@ -234,7 +228,6 @@ public partial class MainWindow : Window
             _previewWindow = previewWindow;
             _previewWindow.SetInputEnabled(_isInputEnabled);
             _previewWindow.Show();
-            _previewWindow.PlaceOutsideCaptureRegion(selectionRegion);
         }
 
         if (!_previewWindow.IsVisible)

@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -11,17 +12,22 @@ public partial class SelectionPreviewWindow : Window
     private const int MinimumCountdownSeconds = 1;
     private const int MaximumCountdownSeconds = 10;
     private readonly PointerInputSession _inputSession;
+    private readonly IScreenCapture _screenCapture;
+    private nint _windowHandle;
     private ScreenRegion? _currentRegion;
     private CancellationTokenSource? _straightStrokeCancellation;
     private ScreenPoint? _pointA;
     private ScreenPoint? _pointB;
+    private PreviewPoint? _pointAVisual;
+    private PreviewPoint? _pointBVisual;
     private PointTarget _pendingPointTarget;
     private int _countdownSeconds = 3;
 
-    public SelectionPreviewWindow(IPointerInput pointerInput)
+    public SelectionPreviewWindow(IPointerInput pointerInput, IScreenCapture screenCapture)
     {
         InitializeComponent();
         _inputSession = new PointerInputSession(pointerInput);
+        _screenCapture = screenCapture;
         UpdateStrokeControls();
     }
 
@@ -31,6 +37,16 @@ public partial class SelectionPreviewWindow : Window
 
     public void UpdateCapture(CapturedFrame frame, bool isLivePreview)
     {
+        if (_currentRegion is ScreenRegion currentRegion && currentRegion != frame.Region)
+        {
+            _pointA = null;
+            _pointB = null;
+            _pointAVisual = null;
+            _pointBVisual = null;
+            _pendingPointTarget = PointTarget.None;
+            UpdateStrokeControls();
+        }
+
         _currentRegion = frame.Region;
         SelectionBoundsText.Text =
             $"X {frame.Region.X} · Y {frame.Region.Y} · {frame.Region.Width} × {frame.Region.Height}";
@@ -46,6 +62,7 @@ public partial class SelectionPreviewWindow : Window
         bitmap.Freeze();
 
         CapturedImage.Source = bitmap;
+        UpdatePointMarkers();
         CaptureStatusText.Text = isLivePreview
             ? "실시간 화면 캡처 · 최대 10fps"
             : "실제 화면 캡처";
@@ -61,6 +78,7 @@ public partial class SelectionPreviewWindow : Window
         try
         {
             _inputSession.SetInputEnabled(isEnabled);
+            UpdateStrokeControls();
             PublishInputStatus(isEnabled ? "실제 포인터 입력: 켜짐" : "실제 포인터 입력: 꺼짐");
             return true;
         }
@@ -110,22 +128,23 @@ public partial class SelectionPreviewWindow : Window
     private void CapturedImage_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         e.Handled = true;
+        var imagePoint = e.GetPosition(CapturedImage);
 
         if (_pendingPointTarget != PointTarget.None)
         {
-            SelectPointFromImage(e.GetPosition(CapturedImage));
+            SelectPointFromImage(imagePoint);
+            return;
+        }
+
+        if (!TryMapToScreen(imagePoint, out var point))
+        {
+            PublishInputStatus("이미지가 표시된 범위 안에서만 드래그를 시작할 수 있습니다");
             return;
         }
 
         if (!_inputSession.IsInputEnabled)
         {
-            PublishInputStatus("실제 포인터 입력: 꺼짐 · checkbox를 켜야 드래그를 전달합니다");
-            return;
-        }
-
-        if (!TryMapToScreen(e.GetPosition(CapturedImage), out var point))
-        {
-            PublishInputStatus("이미지가 표시된 범위 안에서만 드래그를 시작할 수 있습니다");
+            PublishInputStatus("A 지정 또는 B 지정 후 이미지에서 지점을 클릭하세요 · 실제 포인터 입력: 꺼짐");
             return;
         }
 
@@ -185,7 +204,8 @@ public partial class SelectionPreviewWindow : Window
 
         try
         {
-            if (TryMapToScreen(e.GetPosition(CapturedImage), out var point))
+            var imagePoint = e.GetPosition(CapturedImage);
+            if (TryMapToScreen(imagePoint, out var point))
             {
                 _inputSession.Complete(point);
                 PublishInputStatus("입력 세션 완료 · 포인터를 해제했습니다");
@@ -210,6 +230,11 @@ public partial class SelectionPreviewWindow : Window
         CancelInputSession();
     }
 
+    private void CapturedImage_OnSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        UpdatePointMarkers();
+    }
+
     private void SelectionPreviewWindow_OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key != Key.Escape)
@@ -223,8 +248,20 @@ public partial class SelectionPreviewWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        if (_windowHandle != nint.Zero)
+        {
+            _screenCapture.SetWindowCaptureExclusion(_windowHandle, excludeFromCapture: false);
+        }
+
         CancelInputSession();
         base.OnClosed(e);
+    }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        _windowHandle = new WindowInteropHelper(this).Handle;
+        _screenCapture.SetWindowCaptureExclusion(_windowHandle, excludeFromCapture: true);
     }
 
     private void CountdownDecrease_OnClick(object sender, RoutedEventArgs e)
@@ -309,42 +346,32 @@ public partial class SelectionPreviewWindow : Window
         }
     }
 
-    private bool TryMapToScreen(Point point, out ScreenPoint screenPoint)
+    private bool TryMapToScreen(Point point, out ScreenPoint screenPoint) =>
+        TryMapToScreen(point, out screenPoint, out _);
+
+    private bool TryMapToScreen(Point point, out ScreenPoint screenPoint, out PreviewPoint visualPoint)
     {
-        if (_currentRegion is not ScreenRegion region || CapturedImage.ActualWidth <= 0 || CapturedImage.ActualHeight <= 0)
+        if (_currentRegion is not ScreenRegion region || !TryGetRenderedImageBounds(region, out var renderedBounds))
         {
             screenPoint = default;
+            visualPoint = default;
             return false;
         }
 
-        var regionRatio = (double)region.Width / region.Height;
-        var imageRatio = CapturedImage.ActualWidth / CapturedImage.ActualHeight;
-        var renderedWidth = CapturedImage.ActualWidth;
-        var renderedHeight = CapturedImage.ActualHeight;
-        var offsetX = 0d;
-        var offsetY = 0d;
-
-        if (imageRatio > regionRatio)
-        {
-            renderedWidth = renderedHeight * regionRatio;
-            offsetX = (CapturedImage.ActualWidth - renderedWidth) / 2;
-        }
-        else
-        {
-            renderedHeight = renderedWidth / regionRatio;
-            offsetY = (CapturedImage.ActualHeight - renderedHeight) / 2;
-        }
-
-        var mappedPoint = new PreviewPoint(point.X - offsetX, point.Y - offsetY);
-        if (mappedPoint.X < 0 || mappedPoint.Y < 0 || mappedPoint.X > renderedWidth || mappedPoint.Y > renderedHeight)
+        var mappedPoint = new PreviewPoint(point.X - renderedBounds.X, point.Y - renderedBounds.Y);
+        if (mappedPoint.X < 0 || mappedPoint.Y < 0 || mappedPoint.X > renderedBounds.Width || mappedPoint.Y > renderedBounds.Height)
         {
             screenPoint = default;
+            visualPoint = default;
             return false;
         }
 
+        visualPoint = new PreviewPoint(
+            mappedPoint.X / renderedBounds.Width,
+            mappedPoint.Y / renderedBounds.Height);
         screenPoint = PreviewCoordinateMapper.MapToScreen(
             region,
-            new PreviewSize(renderedWidth, renderedHeight),
+            new PreviewSize(renderedBounds.Width, renderedBounds.Height),
             mappedPoint);
         return true;
     }
@@ -391,7 +418,7 @@ public partial class SelectionPreviewWindow : Window
 
     private void SelectPointFromImage(Point imagePoint)
     {
-        if (!TryMapToScreen(imagePoint, out var point))
+        if (!TryMapToScreen(imagePoint, out var point, out var visualPoint))
         {
             PublishInputStatus("이미지가 표시된 범위 안에서만 A/B를 지정할 수 있습니다");
             return;
@@ -400,15 +427,18 @@ public partial class SelectionPreviewWindow : Window
         if (_pendingPointTarget == PointTarget.A)
         {
             _pointA = point;
+            _pointAVisual = visualPoint;
         }
         else
         {
             _pointB = point;
+            _pointBVisual = visualPoint;
         }
 
         var selectedTarget = _pendingPointTarget;
         _pendingPointTarget = PointTarget.None;
         UpdateStrokeControls();
+        UpdatePointMarkers();
         PublishInputStatus($"{selectedTarget} 지점을 X {point.X} · Y {point.Y}로 지정했습니다");
     }
 
@@ -428,7 +458,10 @@ public partial class SelectionPreviewWindow : Window
         CountdownText.Text = $"{_countdownSeconds}초";
         PointStatusText.Text = $"A {FormatPoint(_pointA)} · B {FormatPoint(_pointB)}";
         RunStraightStrokeButton.IsEnabled =
-            _pointA.HasValue && _pointB.HasValue && _straightStrokeCancellation is null;
+            _inputSession.IsInputEnabled
+            && _pointA.HasValue
+            && _pointB.HasValue
+            && _straightStrokeCancellation is null;
     }
 
     private static string FormatPoint(ScreenPoint? point)

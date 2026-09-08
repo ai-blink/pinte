@@ -61,7 +61,7 @@
                           Margin="0,22,0,0"
                           Checked="InputEnabledCheckBox_OnChanged"
                           Unchecked="InputEnabledCheckBox_OnChanged"
-                          Content="실제 포인터 입력 전달 활성화"
+                          Content="A→B 실제 입력 허용"
                           FontSize="18"
                           FontWeight="SemiBold"
                           Foreground="#182235" />
@@ -69,7 +69,7 @@
                            FontSize="14"
                            Foreground="#5A6B84"
                            TextWrapping="Wrap"
-                           Text="기본값은 꺼짐입니다. 켜면 미리보기에서의 짧은 드래그가 원본 화면에 전달될 수 있습니다." />
+                           Text="기본값은 꺼짐입니다. A/B 표식과 선은 항상 확인할 수 있고, 켜면 A→B 실행과 미리보기 드래그가 원본 화면에 전달됩니다." />
             </StackPanel>
         </Border>
 

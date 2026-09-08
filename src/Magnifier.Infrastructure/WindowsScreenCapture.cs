@@ -9,6 +9,18 @@ public sealed class WindowsScreenCapture : IScreenCapture
     private const uint Bgr32 = 0;
     private const uint SourceCopy = 0x00CC0020;
     private const uint CaptureLayeredWindows = 0x40000000;
+    private const uint WdaNone = 0x00000000;
+    private const uint WdaExcludeFromCapture = 0x00000011;
+
+    public void SetWindowCaptureExclusion(nint windowHandle, bool excludeFromCapture)
+    {
+        if (windowHandle != nint.Zero)
+        {
+            _ = SetWindowDisplayAffinity(
+                windowHandle,
+                excludeFromCapture ? WdaExcludeFromCapture : WdaNone);
+        }
+    }
 
     public CapturedFrame Capture(ScreenRegion region)
     {
@@ -117,6 +129,10 @@ public sealed class WindowsScreenCapture : IScreenCapture
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern int ReleaseDC(IntPtr windowHandle, IntPtr deviceContext);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetWindowDisplayAffinity(nint windowHandle, uint affinity);
 
     [DllImport("gdi32.dll", SetLastError = true)]
     private static extern IntPtr CreateCompatibleDC(IntPtr deviceContext);
