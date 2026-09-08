@@ -8,13 +8,21 @@ namespace Magnifier.App;
 
 public partial class SelectionPreviewWindow : Window
 {
+    private const int MinimumCountdownSeconds = 1;
+    private const int MaximumCountdownSeconds = 10;
     private readonly PointerInputSession _inputSession;
     private ScreenRegion? _currentRegion;
+    private CancellationTokenSource? _straightStrokeCancellation;
+    private ScreenPoint? _pointA;
+    private ScreenPoint? _pointB;
+    private PointTarget _pendingPointTarget;
+    private int _countdownSeconds = 3;
 
     public SelectionPreviewWindow(IPointerInput pointerInput)
     {
         InitializeComponent();
         _inputSession = new PointerInputSession(pointerInput);
+        UpdateStrokeControls();
     }
 
     public event Action<string>? InputStatusChanged;
@@ -45,6 +53,11 @@ public partial class SelectionPreviewWindow : Window
 
     public bool SetInputEnabled(bool isEnabled)
     {
+        if (!isEnabled)
+        {
+            CancelStraightStroke();
+        }
+
         try
         {
             _inputSession.SetInputEnabled(isEnabled);
@@ -60,8 +73,14 @@ public partial class SelectionPreviewWindow : Window
 
     public void CancelInputSession()
     {
+        var cancelledCountdown = CancelStraightStroke();
         if (!_inputSession.IsPressed)
         {
+            if (cancelledCountdown)
+            {
+                PublishInputStatus("A→B 카운트다운을 취소했습니다");
+            }
+
             return;
         }
 
@@ -91,6 +110,12 @@ public partial class SelectionPreviewWindow : Window
     private void CapturedImage_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         e.Handled = true;
+
+        if (_pendingPointTarget != PointTarget.None)
+        {
+            SelectPointFromImage(e.GetPosition(CapturedImage));
+            return;
+        }
 
         if (!_inputSession.IsInputEnabled)
         {
@@ -202,6 +227,88 @@ public partial class SelectionPreviewWindow : Window
         base.OnClosed(e);
     }
 
+    private void CountdownDecrease_OnClick(object sender, RoutedEventArgs e)
+    {
+        _countdownSeconds = Math.Max(MinimumCountdownSeconds, _countdownSeconds - 1);
+        UpdateStrokeControls();
+        PublishInputStatus($"A→B 시작 대기: {_countdownSeconds}초");
+    }
+
+    private void CountdownIncrease_OnClick(object sender, RoutedEventArgs e)
+    {
+        _countdownSeconds = Math.Min(MaximumCountdownSeconds, _countdownSeconds + 1);
+        UpdateStrokeControls();
+        PublishInputStatus($"A→B 시작 대기: {_countdownSeconds}초");
+    }
+
+    private void SelectPointA_OnClick(object sender, RoutedEventArgs e)
+    {
+        BeginPointSelection(PointTarget.A);
+    }
+
+    private void SelectPointB_OnClick(object sender, RoutedEventArgs e)
+    {
+        BeginPointSelection(PointTarget.B);
+    }
+
+    private async void RunStraightStroke_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (!_inputSession.IsInputEnabled)
+        {
+            PublishInputStatus("실제 포인터 입력: 꺼짐 · A→B 실행은 checkbox를 켠 뒤에만 가능합니다");
+            return;
+        }
+
+        if (_pointA is not ScreenPoint pointA || _pointB is not ScreenPoint pointB)
+        {
+            PublishInputStatus("A와 B를 모두 지정해야 합니다");
+            return;
+        }
+
+        CancelStraightStroke();
+        var cancellation = new CancellationTokenSource();
+        _straightStrokeCancellation = cancellation;
+        UpdateStrokeControls();
+
+        try
+        {
+            for (var remainingSeconds = _countdownSeconds; remainingSeconds > 0; remainingSeconds--)
+            {
+                PublishInputStatus($"{remainingSeconds}초 뒤 A→B 직선 획 · Esc로 취소");
+                await Task.Delay(TimeSpan.FromSeconds(1), cancellation.Token);
+            }
+
+            cancellation.Token.ThrowIfCancellationRequested();
+
+            if (!_inputSession.Begin(pointA))
+            {
+                PublishInputStatus("실제 포인터 입력: 꺼짐 · A→B 실행을 시작하지 않았습니다");
+                return;
+            }
+
+            _inputSession.Complete(pointB);
+            PublishInputStatus("A→B 단일 직선 획 완료 · 포인터를 해제했습니다");
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            PublishInputStatus("A→B 카운트다운을 취소했습니다");
+        }
+        catch (Exception exception)
+        {
+            HandleInputFailure(exception);
+        }
+        finally
+        {
+            if (ReferenceEquals(_straightStrokeCancellation, cancellation))
+            {
+                _straightStrokeCancellation = null;
+                UpdateStrokeControls();
+            }
+
+            cancellation.Dispose();
+        }
+    }
+
     private bool TryMapToScreen(Point point, out ScreenPoint screenPoint)
     {
         if (_currentRegion is not ScreenRegion region || CapturedImage.ActualWidth <= 0 || CapturedImage.ActualHeight <= 0)
@@ -244,6 +351,7 @@ public partial class SelectionPreviewWindow : Window
 
     private void HandleInputFailure(Exception exception)
     {
+        CancelStraightStroke();
         try
         {
             _inputSession.SetInputEnabled(false);
@@ -272,5 +380,66 @@ public partial class SelectionPreviewWindow : Window
         {
             CapturedImage.ReleaseMouseCapture();
         }
+    }
+
+    private void BeginPointSelection(PointTarget target)
+    {
+        _pendingPointTarget = target;
+        UpdateStrokeControls();
+        PublishInputStatus($"미리보기 이미지에서 {target} 지점을 선택하세요 · 실제 입력은 보내지 않습니다");
+    }
+
+    private void SelectPointFromImage(Point imagePoint)
+    {
+        if (!TryMapToScreen(imagePoint, out var point))
+        {
+            PublishInputStatus("이미지가 표시된 범위 안에서만 A/B를 지정할 수 있습니다");
+            return;
+        }
+
+        if (_pendingPointTarget == PointTarget.A)
+        {
+            _pointA = point;
+        }
+        else
+        {
+            _pointB = point;
+        }
+
+        var selectedTarget = _pendingPointTarget;
+        _pendingPointTarget = PointTarget.None;
+        UpdateStrokeControls();
+        PublishInputStatus($"{selectedTarget} 지점을 X {point.X} · Y {point.Y}로 지정했습니다");
+    }
+
+    private bool CancelStraightStroke()
+    {
+        if (_straightStrokeCancellation is null)
+        {
+            return false;
+        }
+
+        _straightStrokeCancellation.Cancel();
+        return true;
+    }
+
+    private void UpdateStrokeControls()
+    {
+        CountdownText.Text = $"{_countdownSeconds}초";
+        PointStatusText.Text = $"A {FormatPoint(_pointA)} · B {FormatPoint(_pointB)}";
+        RunStraightStrokeButton.IsEnabled =
+            _pointA.HasValue && _pointB.HasValue && _straightStrokeCancellation is null;
+    }
+
+    private static string FormatPoint(ScreenPoint? point)
+    {
+        return point is ScreenPoint value ? $"({value.X}, {value.Y})" : "미지정";
+    }
+
+    private enum PointTarget
+    {
+        None,
+        A,
+        B
     }
 }
