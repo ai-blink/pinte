@@ -1,0 +1,65 @@
+<Window x:Class="Magnifier.App.SelectionPreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="선택 영역 미리보기"
+        Width="560"
+        Height="420"
+        MinWidth="420"
+        MinHeight="320"
+        ResizeMode="CanResizeWithGrip"
+        Topmost="True"
+        WindowStyle="ToolWindow">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Text="선택한 영역"
+                       FontSize="22"
+                       FontWeight="SemiBold"
+                       Foreground="#182235" />
+            <TextBlock x:Name="SelectionBoundsText"
+                       Margin="0,6,0,0"
+                       FontSize="16"
+                       Foreground="#40516A"
+                       Text="영역을 선택하는 중입니다" />
+        </StackPanel>
+
+        <Border Grid.Row="1"
+                Margin="0,20,0,20"
+                Padding="22"
+                Background="#101C30"
+                BorderBrush="#3B82F6"
+                BorderThickness="2"
+                CornerRadius="14">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Image x:Name="CapturedImage"
+                       Margin="6"
+                       Stretch="Uniform" />
+                <Border Grid.Row="1"
+                        Margin="0,16,0,0"
+                        Padding="10,7"
+                        HorizontalAlignment="Center"
+                        Background="#2A3850"
+                        CornerRadius="8">
+                    <TextBlock x:Name="CaptureStatusText"
+                               FontSize="14"
+                               Foreground="#DCEBFF"
+                               Text="화면 캡처는 아직 연결하지 않았습니다" />
+                </Border>
+            </Grid>
+        </Border>
+
+        <TextBlock Grid.Row="2"
+                   FontSize="14"
+                   Foreground="#5A6B84"
+                   Text="창 제목 표시줄로 이동하고, 창 모서리 또는 오른쪽 아래 그립으로 크기를 조절할 수 있습니다." />
+    </Grid>
+</Window>

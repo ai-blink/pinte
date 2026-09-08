@@ -1,5 +1,8 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Magnifier.App/Magnifier.App.csproj" />
+    <Project Path="src/Magnifier.Core/Magnifier.Core.csproj" />
+    <Project Path="src/Magnifier.Infrastructure/Magnifier.Infrastructure.csproj" />
+    <Project Path="src/Magnifier.Core.Tests/Magnifier.Core.Tests.csproj" />
   </Folder>
 </Solution>

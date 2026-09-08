@@ -7,6 +7,7 @@
 ## Layer boundaries
 
 - D-002: WPF UI와 Windows 입력·캡처 코드는 분리한다.
+- D-007: M2의 선택 영역과 캡처 프레임은 물리 화면 픽셀을 기준으로 한다. App은 WPF `PointToScreen` 결과를 Core `ScreenRegion`으로 바꾸고, Infrastructure만 GDI 화면 복사를 수행한다.
 
 ## Executor policy
 
