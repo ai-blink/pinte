@@ -1,5 +1,6 @@
 # 로드맵
 
+- [x] M0: Git·.NET 9 WPF·dev-docs 초기화 — `644e343`, build 경고/오류 0 (2026-09-08)
 - [ ] M1: WPF 영역 선택 오버레이와 확대 미리보기
 - [ ] M2: 화면 캡처·좌표 변환 Core/Infrastructure 계약
 - [ ] M3: 상호작용 드래그와 입력 gate·release 경로
