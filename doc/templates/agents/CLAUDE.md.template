@@ -1,0 +1,12 @@
+# <프로젝트명>
+
+<한 줄 제품 설명>
+
+이 파일은 단일 canonical instruction source다. 상세 상태는 `rules/`와 `doc/`를 가리킨다.
+
+## 명령어
+
+```powershell
+<build-command>
+<test-command>
+```

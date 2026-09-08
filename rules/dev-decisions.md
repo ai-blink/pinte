@@ -1,0 +1,25 @@
+# 개발 결정
+
+## Vision
+
+- D-001: 이 도구는 범용 Windows 화면 오버레이다. 특정 페인팅 앱의 내부 API에 결합하지 않는다.
+
+## Layer boundaries
+
+- D-002: WPF UI와 Windows 입력·캡처 코드는 분리한다.
+
+## Executor policy
+
+- D-003: 실제 입력은 기본 비활성이며 Down·Move·Up은 단일 세션과 release 경로로 처리한다.
+
+## Security and safety
+
+- D-004: 권한이 다른 대상 앱에는 입력을 보내지 않고 원인을 표시한다.
+
+## Workflow
+
+- D-005: 구현 전 사용자 UX 설계 승인과 빌드 계획 검증을 요구한다.
+
+## Infrastructure
+
+- D-006: `C:\ai\projects\new-alt`의 원격 포인터·프레임 캡처 구조는 참고하되 코드를 그대로 복사하지 않는다.
