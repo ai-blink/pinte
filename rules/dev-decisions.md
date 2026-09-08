@@ -8,6 +8,7 @@
 
 - D-002: WPF UI와 Windows 입력·캡처 코드는 분리한다.
 - D-007: M2의 선택 영역과 캡처 프레임은 물리 화면 픽셀을 기준으로 한다. App은 WPF `PointToScreen` 결과를 Core `ScreenRegion`으로 바꾸고, Infrastructure만 GDI 화면 복사를 수행한다.
+- D-009: M5 미리보기·선택 오버레이는 항상 위로 고정하지 않는다. 미리보기는 최초에 원본 영역 밖에 배치하며, 원본과 겹치면 자기 캡처 프레임으로 교체하지 않고 마지막 정상 프레임을 유지한다.
 
 ## Executor policy
 

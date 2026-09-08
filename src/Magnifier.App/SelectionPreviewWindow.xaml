@@ -7,7 +7,6 @@
         MinWidth="1080"
         MinHeight="800"
         ResizeMode="CanResizeWithGrip"
-        Topmost="True"
         WindowStyle="ToolWindow"
         PreviewKeyDown="SelectionPreviewWindow_OnPreviewKeyDown">
     <Grid Margin="16">

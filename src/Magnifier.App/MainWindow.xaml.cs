@@ -137,6 +137,12 @@ public partial class MainWindow : Window
                 return;
             }
 
+            if (_previewWindow?.OverlapsCaptureRegion(selectionRegion) == true)
+            {
+                _previewWindow.ShowCaptureOverlap();
+                return;
+            }
+
             var frame = await Task.Run(() => _screenCapture.Capture(selectionRegion));
 
             if (!IsActivePreviewSession(selectionRegion, session))
@@ -144,7 +150,7 @@ public partial class MainWindow : Window
                 return;
             }
 
-            ShowPreview();
+            ShowPreview(selectionRegion);
             _previewWindow!.UpdateCapture(frame, isLivePreview: true);
 
             if (startTimerOnSuccess)
@@ -162,7 +168,7 @@ public partial class MainWindow : Window
 
             StopLivePreview();
             _previewWindow?.CancelInputSession();
-            ShowPreview();
+            ShowPreview(selectionRegion);
             _previewWindow!.ShowCaptureFailure(selectionRegion, exception.Message);
             SelectionStatusText.Text = "실시간 화면 캡처에 실패했습니다";
         }
@@ -206,7 +212,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ShowPreview()
+    private void ShowPreview(ScreenRegion selectionRegion)
     {
         if (_previewWindow is null)
         {
@@ -228,6 +234,7 @@ public partial class MainWindow : Window
             _previewWindow = previewWindow;
             _previewWindow.SetInputEnabled(_isInputEnabled);
             _previewWindow.Show();
+            _previewWindow.PlaceOutsideCaptureRegion(selectionRegion);
         }
 
         if (!_previewWindow.IsVisible)
@@ -235,6 +242,5 @@ public partial class MainWindow : Window
             _previewWindow.Show();
         }
 
-        _previewWindow.Activate();
     }
 }
