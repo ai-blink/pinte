@@ -1,431 +1,298 @@
+using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Interop;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using Magnifier.Core;
 
 namespace Magnifier.App;
 
 public partial class SelectionPreviewWindow : Window
 {
-    private const int MinimumCountdownSeconds = 1;
-    private const int MaximumCountdownSeconds = 10;
-    private readonly PointerInputSession _inputSession;
+    private readonly ILivePointerRelay _relay;
     private readonly IScreenCapture _screenCapture;
-    private nint _windowHandle;
+    private readonly IWindowEnvironment _windows;
+    private readonly PointerInputSession _inputSession;
+    private readonly DispatcherTimer _statusTimer;
     private ScreenRegion? _currentRegion;
-    private CancellationTokenSource? _straightStrokeCancellation;
-    private ScreenPoint? _pointA;
-    private ScreenPoint? _pointB;
-    private PreviewPoint? _pointAVisual;
-    private PreviewPoint? _pointBVisual;
-    private PointTarget _pendingPointTarget;
-    private int _countdownSeconds = 3;
-    private bool _isSynchronizingInputToggle;
+    private nint _frameHandle;
+    private WriteableBitmap? _bitmap;
+    private RelayStatus? _relayStatus;
+    private RelayStatus? _pendingRelayStatus;
+    private bool _captureExcluded, _busy, _closed, _isMoving, _captureStopPending;
+    private int _sourceRevision;
+    private string? _captureFailureReason;
+    private bool _editingAllowed = true;
 
-    public SelectionPreviewWindow(IPointerInput pointerInput, IScreenCapture screenCapture)
+    public SelectionPreviewWindow(ILivePointerRelay relay, IScreenCapture capture,
+        IWindowEnvironment windows, IPointerInput pointer)
     {
+        _relay = relay;
+        _screenCapture = capture;
+        _windows = windows;
+        _inputSession = new PointerInputSession(pointer);
         InitializeComponent();
-        _inputSession = new PointerInputSession(pointerInput);
-        _screenCapture = screenCapture;
-        UpdateStrokeControls();
+        _statusTimer = new DispatcherTimer(DispatcherPriority.Input)
+        {
+            Interval = TimeSpan.FromMilliseconds(16)
+        };
+        _statusTimer.Tick += (_, _) => ApplyPendingRelayStatus();
+        _statusTimer.Start();
+        _relay.StatusChanged += Relay_OnStatusChanged;
+        Loaded += (_, _) => QueueGeometryUpdate();
+        LocationChanged += (_, _) => { if (IsLoaded && !_sizing) QueueGeometryUpdate(); };
+        UpdateControls();
     }
 
+    public event Action? ReturnRequested;
+    public event Action<bool>? EditingAllowedChanged;
     public event Action<string>? InputStatusChanged;
+    public event Action? PlacementChanged;
+    public nint WindowHandle { get; private set; }
+    public ScreenRegion? CurrentRegion => _currentRegion;
+    public double Zoom { get; private set; } = 2;
 
-    public bool IsInputEnabled => _inputSession.IsInputEnabled;
+    public async Task SetSourceAsync(ScreenRegion source, nint frameHandle)
+    {
+        if (_currentRegion == source && _frameHandle == frameHandle) return;
+        var revision = ++_sourceRevision;
+        await StopAsync("영역 변경 · 보기로 전환");
+        if (_closed || revision != _sourceRevision) return;
+        _frameHandle = frameHandle;
+        _currentRegion = source;
+        _captureFailureReason = null;
+        ClearPoints();
+        _bitmap = null;
+        CapturedImage.Source = null;
+        EmptyImageText.Visibility = Visibility.Visible;
+        EmptyImageText.Text = "원본 화면을 기다리는 중입니다";
+        UpdateBoundsText(source);
+        ResizeLens();
+        await Dispatcher.Yield(DispatcherPriority.Loaded);
+        await ConfigureGeometryAsync();
+        UpdateControls();
+    }
 
     public void UpdateCapture(CapturedFrame frame, bool isLivePreview)
     {
-        if (_currentRegion is ScreenRegion currentRegion && currentRegion != frame.Region)
+        if (_closed || _captureStopPending || (_currentRegion is null && _relayStatus is { IsPressed: true })) return;
+        _captureFailureReason = null;
+        // A successful frame may restore viewing after capture failure. It never arms input.
+        if (_currentRegion is null)
         {
-            _pointA = null;
-            _pointB = null;
-            _pointAVisual = null;
-            _pointBVisual = null;
-            _pendingPointTarget = PointTarget.None;
-            UpdateStrokeControls();
+            _currentRegion = frame.Region;
+            UpdateBoundsText(frame.Region);
+            ResizeLens();
+            QueueGeometryUpdate();
         }
-
-        _currentRegion = frame.Region;
-        SelectionBoundsText.Text =
-            $"X {frame.Region.X} · Y {frame.Region.Y} · {frame.Region.Width} × {frame.Region.Height}";
-        var bitmap = BitmapSource.Create(
-            frame.Region.Width,
-            frame.Region.Height,
-            96,
-            96,
-            PixelFormats.Bgra32,
-            null,
-            frame.Bgra32Pixels.ToArray(),
-            frame.Stride);
-        bitmap.Freeze();
-
-        CapturedImage.Source = bitmap;
-        UpdatePointMarkers();
+        if (_currentRegion != frame.Region) return;
+        if (_bitmap is null || _bitmap.PixelWidth != frame.Region.Width || _bitmap.PixelHeight != frame.Region.Height)
+        {
+            _bitmap = new WriteableBitmap(frame.Region.Width, frame.Region.Height, 96, 96, PixelFormats.Bgra32, null);
+            CapturedImage.Source = _bitmap;
+        }
+        var pixels = MemoryMarshal.TryGetArray(frame.Bgra32Pixels, out ArraySegment<byte> buffer)
+            ? buffer : new ArraySegment<byte>(frame.Bgra32Pixels.ToArray());
+        _bitmap.WritePixels(new Int32Rect(0, 0, frame.Region.Width, frame.Region.Height),
+            pixels.Array!, frame.Stride, pixels.Offset);
+        EmptyImageText.Visibility = Visibility.Collapsed;
+        _relay.RefreshFrame();
         CaptureStatusText.Text = isLivePreview
-            ? "실시간 화면 캡처 · 최대 10fps"
-            : "실제 화면 캡처";
+            ? "실시간 화면 · 가장자리를 벗어나면 해제 · 대상 반응을 확인하세요"
+            : "화면 캡처 · 실제 입력 꺼짐";
+        UpdateControls();
     }
 
-    public bool SetInputEnabled(bool isEnabled)
+    public async Task StopAsync(string reason)
     {
-        if (!isEnabled)
-        {
-            CancelStraightStroke();
-        }
-
-        try
-        {
-            _inputSession.SetInputEnabled(isEnabled);
-            SetPreviewInputToggle(isEnabled);
-            UpdateStrokeControls();
-            PublishInputStatus(isEnabled ? "실제 포인터 입력: 켜짐" : "실제 포인터 입력: 꺼짐");
-            return true;
-        }
-        catch (Exception exception)
-        {
-            PublishInputStatus($"입력 해제 실패: {exception.Message}");
-            return false;
-        }
+        CancelStraightStroke();
+        Exception? auxiliaryFailure = null;
+        try { _inputSession.SetInputEnabled(false); }
+        catch (Exception exception) { auxiliaryFailure = exception; reason += $" · A/B 해제 실패: {exception.Message}"; }
+        SetPreviewInputToggle(false);
+        try { await _relay.StopAsync(reason); }
+        catch (Exception exception) { PublishInputStatus($"입력 중지 실패: {exception.Message}"); throw; }
+        UpdateControls();
+        if (auxiliaryFailure is not null) throw new InvalidOperationException(reason, auxiliaryFailure);
     }
 
-    private void PreviewInputEnabledCheckBox_OnChanged(object sender, RoutedEventArgs e)
+    public async void ShowCaptureFailure(ScreenRegion region, string reason)
     {
-        if (_isSynchronizingInputToggle)
-        {
-            return;
-        }
-
-        SetInputEnabled(PreviewInputEnabledCheckBox.IsChecked == true);
-    }
-
-    private void SetPreviewInputToggle(bool isEnabled)
-    {
-        if (PreviewInputEnabledCheckBox.IsChecked == isEnabled)
-        {
-            return;
-        }
-
-        _isSynchronizingInputToggle = true;
-        try
-        {
-            PreviewInputEnabledCheckBox.IsChecked = isEnabled;
-        }
-        finally
-        {
-            _isSynchronizingInputToggle = false;
-        }
-    }
-
-    public void CancelInputSession()
-    {
-        var cancelledCountdown = CancelStraightStroke();
-        if (!_inputSession.IsPressed)
-        {
-            if (cancelledCountdown)
-            {
-                PublishInputStatus("A→B 카운트다운을 취소했습니다");
-            }
-
-            return;
-        }
-
-        try
-        {
-            _inputSession.Cancel();
-            PublishInputStatus("입력 세션을 취소하고 포인터를 해제했습니다");
-        }
-        catch (Exception exception)
-        {
-            PublishInputStatus($"입력 해제 실패: {exception.Message}");
-        }
-        finally
-        {
-            ReleaseImageMouseCapture();
-        }
-    }
-
-    public void ShowCaptureFailure(ScreenRegion selectionRegion, string reason)
-    {
-        SelectionBoundsText.Text =
-            $"X {selectionRegion.X} · Y {selectionRegion.Y} · {selectionRegion.Width} × {selectionRegion.Height}";
+        if (_currentRegion is null && _captureFailureReason == reason) return;
+        _captureFailureReason = reason;
+        _currentRegion = null;
+        _bitmap = null;
         CapturedImage.Source = null;
-        CaptureStatusText.Text = $"캡처 실패: {reason}";
+        ClearPoints();
+        EmptyImageText.Text = $"캡처 실패: {reason}";
+        EmptyImageText.Visibility = Visibility.Visible;
+        UpdateBoundsText(region);
+        CaptureStatusText.Text = "화면 갱신을 기다립니다 · 조작 시작은 다시 눌러야 합니다";
+        UpdateControls();
+        _captureStopPending = true;
+        try { await StopAsync($"캡처 실패 · 보기로 전환: {reason}"); }
+        catch { /* StopAsync reports the failure; input remains unavailable. */ }
+        finally { _captureStopPending = false; }
     }
 
-    private void CapturedImage_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    private async void StartInput_OnClick(object sender, RoutedEventArgs e)
     {
-        e.Handled = true;
-        var imagePoint = e.GetPosition(CapturedImage);
-
-        if (_pendingPointTarget != PointTarget.None)
-        {
-            SelectPointFromImage(imagePoint);
-            return;
-        }
-
-        PublishInputStatus(_inputSession.IsInputEnabled
-            ? "A 지정 또는 B 지정 후 이미지를 클릭하세요 · 실제 입력은 A→B 실행 버튼에서만 보냅니다"
-            : "A 지정 또는 B 지정 후 이미지를 클릭하세요 · 실제 포인터 입력: 꺼짐");
-    }
-
-    private void CapturedImage_OnSizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        UpdatePointMarkers();
-    }
-
-    private void SelectionPreviewWindow_OnPreviewKeyDown(object sender, KeyEventArgs e)
-    {
-        if (e.Key != Key.Escape)
-        {
-            return;
-        }
-
-        CancelInputSession();
-        e.Handled = true;
-    }
-
-    protected override void OnClosed(EventArgs e)
-    {
-        if (_windowHandle != nint.Zero)
-        {
-            _screenCapture.SetWindowCaptureExclusion(_windowHandle, excludeFromCapture: false);
-        }
-
-        CancelInputSession();
-        base.OnClosed(e);
-    }
-
-    protected override void OnSourceInitialized(EventArgs e)
-    {
-        base.OnSourceInitialized(e);
-        _windowHandle = new WindowInteropHelper(this).Handle;
-        _screenCapture.SetWindowCaptureExclusion(_windowHandle, excludeFromCapture: true);
-    }
-
-    private void CountdownDecrease_OnClick(object sender, RoutedEventArgs e)
-    {
-        _countdownSeconds = Math.Max(MinimumCountdownSeconds, _countdownSeconds - 1);
-        UpdateStrokeControls();
-        PublishInputStatus($"A→B 시작 대기: {_countdownSeconds}초");
-    }
-
-    private void CountdownIncrease_OnClick(object sender, RoutedEventArgs e)
-    {
-        _countdownSeconds = Math.Min(MaximumCountdownSeconds, _countdownSeconds + 1);
-        UpdateStrokeControls();
-        PublishInputStatus($"A→B 시작 대기: {_countdownSeconds}초");
-    }
-
-    private void SelectPointA_OnClick(object sender, RoutedEventArgs e)
-    {
-        BeginPointSelection(PointTarget.A);
-    }
-
-    private void SelectPointB_OnClick(object sender, RoutedEventArgs e)
-    {
-        BeginPointSelection(PointTarget.B);
-    }
-
-    private async void RunStraightStroke_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (!_inputSession.IsInputEnabled)
-        {
-            PublishInputStatus("실제 포인터 입력: 꺼짐 · A→B 실행은 checkbox를 켠 뒤에만 가능합니다");
-            return;
-        }
-
-        if (_pointA is not ScreenPoint pointA || _pointB is not ScreenPoint pointB)
-        {
-            PublishInputStatus("A와 B를 모두 지정해야 합니다");
-            return;
-        }
-
-        CancelStraightStroke();
-        var cancellation = new CancellationTokenSource();
-        _straightStrokeCancellation = cancellation;
-        UpdateStrokeControls();
-
+        if (_busy || !StartInputButton.IsEnabled) return;
+        _busy = true;
+        UpdateControls();
         try
         {
-            for (var remainingSeconds = _countdownSeconds; remainingSeconds > 0; remainingSeconds--)
-            {
-                PublishInputStatus($"{remainingSeconds}초 뒤 A→B 직선 획 · Esc로 취소");
-                await Task.Delay(TimeSpan.FromSeconds(1), cancellation.Token);
-            }
-
-            cancellation.Token.ThrowIfCancellationRequested();
-            DeliverStraightStrokeToVisibleScreen(pointA, pointB);
+            await StopAsync("조작 시작 준비");
+            await ConfigureGeometryAsync();
+            if (await _relay.StartAsync())
+                _relayStatus = new RelayStatus(true, false, false, false, default, "조작 켜짐");
         }
-        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
-        {
-            PublishInputStatus("A→B 카운트다운을 취소했습니다");
-        }
-        catch (Exception exception)
-        {
-            HandleInputFailure(exception);
-        }
-        finally
-        {
-            if (ReferenceEquals(_straightStrokeCancellation, cancellation))
-            {
-                _straightStrokeCancellation = null;
-                UpdateStrokeControls();
-            }
-
-            cancellation.Dispose();
-        }
+        catch (Exception exception) { PublishInputStatus($"조작 시작 실패: {exception.Message}"); }
+        finally { _busy = false; UpdateControls(); }
     }
 
-    private void DeliverStraightStrokeToVisibleScreen(ScreenPoint pointA, ScreenPoint pointB)
+    private async void StopInput_OnClick(object sender, RoutedEventArgs e)
     {
-        // SendInput uses global screen coordinates. Hide this preview while it runs so the
-        // selected visible screen area, rather than this window, receives the stroke.
-        Hide();
+        try { await StopAsync("조작 중지 · 보기로 전환"); }
+        catch { }
+    }
 
+    private async void Return_OnClick(object sender, RoutedEventArgs e)
+    {
         try
         {
-            if (!_inputSession.Begin(pointA))
-            {
-                PublishInputStatus("실제 포인터 입력: 꺼짐 · A→B 실행을 시작하지 않았습니다");
-                return;
-            }
-
-            _inputSession.Complete(pointB);
-            PublishInputStatus("A→B 단일 직선 획 완료 · 포인터를 해제했습니다");
+            await StopAsync("원래 화면 · 입력 해제");
+            ReturnRequested?.Invoke();
         }
-        finally
-        {
-            Show();
-        }
+        catch { }
     }
 
-    private bool TryMapToScreen(Point point, out ScreenPoint screenPoint, out PreviewPoint visualPoint)
+    private void Relay_OnStatusChanged(RelayStatus status)
     {
-        if (_currentRegion is not ScreenRegion region || !TryGetRenderedImageBounds(region, out var renderedBounds))
-        {
-            screenPoint = default;
-            visualPoint = default;
-            return false;
-        }
-
-        var mappedPoint = new PreviewPoint(point.X - renderedBounds.X, point.Y - renderedBounds.Y);
-        if (mappedPoint.X < 0 || mappedPoint.Y < 0 || mappedPoint.X > renderedBounds.Width || mappedPoint.Y > renderedBounds.Height)
-        {
-            screenPoint = default;
-            visualPoint = default;
-            return false;
-        }
-
-        visualPoint = new PreviewPoint(
-            mappedPoint.X / renderedBounds.Width,
-            mappedPoint.Y / renderedBounds.Height);
-        screenPoint = PreviewCoordinateMapper.MapToScreen(
-            region,
-            new PreviewSize(renderedBounds.Width, renderedBounds.Height),
-            mappedPoint);
-        return true;
+        // The hook thread only stores the latest value. UI cost is bounded to 62.5 Hz.
+        Interlocked.Exchange(ref _pendingRelayStatus, status);
     }
 
-    private void HandleInputFailure(Exception exception)
+    private void ApplyPendingRelayStatus()
     {
-        CancelStraightStroke();
+        if (_closed || Interlocked.Exchange(ref _pendingRelayStatus, null) is not { } status) return;
         try
         {
-            _inputSession.SetInputEnabled(false);
+            _relayStatus = status;
+            PublishInputStatus(status.Message);
+            VirtualCursor.Visibility = status.IsRelaying ? Visibility.Visible : Visibility.Collapsed;
+            if (status.IsRelaying && CapturedImage.IsVisible)
+            {
+                var point = CapturedImage.PointFromScreen(new Point(status.Position.X, status.Position.Y));
+                Canvas.SetLeft(VirtualCursor, point.X - 13);
+                Canvas.SetTop(VirtualCursor, point.Y - 13);
+            }
+            UpdateControls();
         }
-        catch
+        catch (InvalidOperationException)
         {
-            // 세션은 release를 한 번 시도했고, 아래 상태 문구로 실패를 알린다.
+            // The visual may disconnect during a return/close. Never propagate to the hook.
+            VirtualCursor.Visibility = Visibility.Collapsed;
         }
-        finally
-        {
-            ReleaseImageMouseCapture();
-        }
+    }
 
-        PublishInputStatus($"입력 전달 실패: {exception.Message} · 입력 전달을 껐습니다");
+    private void UpdateControls()
+    {
+        if (!IsInitialized) return;
+        var locked = _relayStatus is { IsEnabled: true } or { IsPressed: true } or { WaitingForRelease: true }
+            || _straightStrokeCancellation is not null || _busy;
+        var editingAllowed = !locked;
+        TitleThumb.IsEnabled = editingAllowed;
+        ZoomDecreaseButton.IsEnabled = editingAllowed && _currentRegion.HasValue;
+        ZoomIncreaseButton.IsEnabled = ZoomDecreaseButton.IsEnabled;
+        AuxiliaryTools.IsEnabled = !locked || AuxiliaryTools.IsExpanded;
+        AuxiliaryControls.IsEnabled = editingAllowed;
+        StartInputButton.IsEnabled = !locked && _captureExcluded && _currentRegion.HasValue
+            && _bitmap is not null && !AuxiliaryTools.IsExpanded;
+        if (_editingAllowed != editingAllowed)
+        {
+            _editingAllowed = editingAllowed;
+            EditingAllowedChanged?.Invoke(editingAllowed);
+        }
+        UpdateStrokeControls();
     }
 
     private void PublishInputStatus(string status)
     {
         InputStatusText.Text = status;
+        InputStatusText.ToolTip = status;
         InputStatusChanged?.Invoke(status);
     }
 
-    private void ReleaseImageMouseCapture()
+    private void UpdateBoundsText(ScreenRegion region) => SelectionBoundsText.Text =
+        $"원본 물리 좌표 X {region.X} · Y {region.Y} · {region.Width} × {region.Height} · 렌즈 이동과 독립";
+
+    private void CapturedImage_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (CapturedImage.IsMouseCaptured)
-        {
-            CapturedImage.ReleaseMouseCapture();
-        }
+        e.Handled = true;
+        if (_pendingPointTarget != PointTarget.None) SelectPointFromImage(e.GetPosition(CapturedImage));
+        else PublishInputStatus(AuxiliaryTools.IsExpanded ? "A 또는 B 지점 지정을 먼저 누르세요" : "보기 · 조작 시작을 누르면 직접 클릭·드래그합니다");
     }
 
-    private void BeginPointSelection(PointTarget target)
+    private void CapturedImage_OnSizeChanged(object sender, SizeChangedEventArgs e)
     {
-        _pendingPointTarget = target;
-        UpdateStrokeControls();
-        PublishInputStatus($"미리보기 이미지에서 {target} 지점을 선택하세요 · 실제 입력은 보내지 않습니다");
-    }
-
-    private void SelectPointFromImage(Point imagePoint)
-    {
-        if (!TryMapToScreen(imagePoint, out var point, out var visualPoint))
-        {
-            PublishInputStatus("이미지가 표시된 범위 안에서만 A/B를 지정할 수 있습니다");
-            return;
-        }
-
-        if (_pendingPointTarget == PointTarget.A)
-        {
-            _pointA = point;
-            _pointAVisual = visualPoint;
-        }
-        else
-        {
-            _pointB = point;
-            _pointBVisual = visualPoint;
-        }
-
-        var selectedTarget = _pendingPointTarget;
-        _pendingPointTarget = PointTarget.None;
-        UpdateStrokeControls();
         UpdatePointMarkers();
-        PublishInputStatus($"{selectedTarget} 지점을 X {point.X} · Y {point.Y}로 지정했습니다");
+        QueueGeometryUpdate();
     }
 
-    private bool CancelStraightStroke()
+    private void TitleThumb_OnDragStarted(object sender, DragStartedEventArgs e) => _isMoving = _editingAllowed;
+    private void TitleThumb_OnDragDelta(object sender, DragDeltaEventArgs e)
     {
-        if (_straightStrokeCancellation is null)
+        if (!_isMoving || !_editingAllowed) return;
+        Left += e.HorizontalChange;
+        Top += e.VerticalChange;
+    }
+    private void TitleThumb_OnDragCompleted(object sender, DragCompletedEventArgs e)
+    {
+        _isMoving = false;
+        KeepLensOnScreen();
+        QueueGeometryUpdate();
+    }
+    private async void TitleThumb_OnLostMouseCapture(object sender, MouseEventArgs e)
+    {
+        if (!_isMoving) return;
+        _isMoving = false;
+        try { await StopAsync("이동 손잡이 capture 해제 · 보기로 전환"); }
+        catch { }
+    }
+
+    private async void SelectionPreviewWindow_OnPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Escape) return;
+        e.Handled = true;
+        try { await StopAsync("Esc · 보기로 전환"); }
+        catch { }
+    }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        WindowHandle = new WindowInteropHelper(this).Handle;
+        try
         {
-            return false;
+            _screenCapture.SetWindowCaptureExclusion(WindowHandle, true);
+            _captureExcluded = true;
         }
-
-        _straightStrokeCancellation.Cancel();
-        return true;
+        catch (Exception exception) { PublishInputStatus($"렌즈 캡처 제외 실패 · 조작 불가: {exception.Message}"); }
+        UpdateControls();
     }
 
-    private void UpdateStrokeControls()
+    protected override void OnClosed(EventArgs e)
     {
-        CountdownText.Text = $"{_countdownSeconds}초";
-        PointStatusText.Text = $"A {FormatPoint(_pointA)} · B {FormatPoint(_pointB)}";
-        RunStraightStrokeButton.IsEnabled =
-            _inputSession.IsInputEnabled
-            && _pointA.HasValue
-            && _pointB.HasValue
-            && _straightStrokeCancellation is null;
-    }
-
-    private static string FormatPoint(ScreenPoint? point)
-    {
-        return point is ScreenPoint value ? $"({value.X}, {value.Y})" : "미지정";
-    }
-
-    private enum PointTarget
-    {
-        None,
-        A,
-        B
+        _closed = true;
+        _statusTimer.Stop();
+        _relay.StatusChanged -= Relay_OnStatusChanged;
+        try { if (_captureExcluded) _screenCapture.SetWindowCaptureExclusion(WindowHandle, false); }
+        catch { }
+        base.OnClosed(e);
     }
 }

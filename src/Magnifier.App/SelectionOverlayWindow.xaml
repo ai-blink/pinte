@@ -1,50 +1,83 @@
 <Window x:Class="Magnifier.App.SelectionOverlayWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="영역 선택"
-        AllowsTransparency="True"
-        Background="Transparent"
-        ShowInTaskbar="False"
-        WindowStyle="None"
-        ResizeMode="NoResize"
+        Title="확대할 원본 영역"
+        Width="420" Height="310" MinWidth="230" MinHeight="150"
+        AllowsTransparency="True" Background="Transparent"
+        ShowInTaskbar="False" Topmost="True"
+        WindowStyle="None" ResizeMode="NoResize"
         WindowStartupLocation="Manual"
         PreviewKeyDown="Window_OnPreviewKeyDown">
-    <Grid x:Name="OverlaySurface"
-          Background="#9B0B1728"
-          MouseLeftButtonDown="OverlaySurface_OnMouseLeftButtonDown"
-          MouseLeftButtonUp="OverlaySurface_OnMouseLeftButtonUp"
-          MouseMove="OverlaySurface_OnMouseMove"
-          LostMouseCapture="OverlaySurface_OnLostMouseCapture">
-        <Canvas x:Name="SelectionCanvas" IsHitTestVisible="False">
-            <Rectangle x:Name="SelectionRectangle"
-                       Visibility="Collapsed"
-                       Fill="#355BA7FF"
-                       Stroke="#F7FBFF"
-                       StrokeThickness="2" />
-        </Canvas>
+    <Window.Resources>
+        <Style x:Key="ResizeHandle" TargetType="Thumb">
+            <Setter Property="Background" Value="#FAEEB855" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="#FF392B11" BorderThickness="1" CornerRadius="3" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <EventSetter Event="DragStarted" Handler="Handle_OnDragStarted" />
+            <EventSetter Event="DragDelta" Handler="ResizeHandle_OnDragDelta" />
+            <EventSetter Event="DragCompleted" Handler="Handle_OnDragCompleted" />
+        </Style>
+    </Window.Resources>
+    <!-- Only the opaque frame and controls intercept the pointer. The fully transparent
+         aperture is neither painted nor hit-testable, so the source application stays visible. -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40" />
+            <RowDefinition Height="20" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="20" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="20" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="20" />
+        </Grid.ColumnDefinitions>
 
-        <Border HorizontalAlignment="Center"
-                VerticalAlignment="Top"
-                Margin="24"
-                Padding="18,12"
-                Background="#E91B2B42"
-                BorderBrush="#B8D5FF"
-                BorderThickness="1"
-                CornerRadius="12"
-                IsHitTestVisible="False">
-            <StackPanel>
-                <TextBlock HorizontalAlignment="Center"
-                           FontSize="22"
-                           FontWeight="SemiBold"
-                           Foreground="White"
-                           Text="확대할 영역을 드래그하세요" />
-                <TextBlock x:Name="HintText"
-                           Margin="0,6,0,0"
-                           HorizontalAlignment="Center"
-                           FontSize="16"
-                           Foreground="#DCEBFF"
-                           Text="Esc를 누르면 취소합니다" />
-            </StackPanel>
-        </Border>
+        <Grid Grid.ColumnSpan="3" Background="#FF312B20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="112" />
+            </Grid.ColumnDefinitions>
+            <Thumb x:Name="MoveHandle" Cursor="SizeAll"
+                   DragStarted="Handle_OnDragStarted" DragDelta="MoveHandle_OnDragDelta"
+                   DragCompleted="Handle_OnDragCompleted">
+                <Thumb.Template>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border Background="#FF312B20" Padding="12,0">
+                            <TextBlock VerticalAlignment="Center"
+                                       Foreground="#FFFFDB92" FontSize="15" FontWeight="SemiBold"
+                                       Text="✥ 원본 영역 이동" />
+                        </Border>
+                    </ControlTemplate>
+                </Thumb.Template>
+            </Thumb>
+            <Button Grid.Column="1" Margin="2,4,5,4" FontSize="14"
+                    Background="#FFFFDC8C" Foreground="#FF24201A"
+                    Content="원래 화면" Click="ReturnButton_OnClick" />
+        </Grid>
+
+        <Border Grid.Row="2" Grid.Column="1" Margin="-3"
+                BorderBrush="#FFF3C767" BorderThickness="3" IsHitTestVisible="False" />
+        <Border x:Name="ContentAperture" Grid.Row="2" Grid.Column="1"
+                Background="{x:Null}" IsHitTestVisible="False" />
+
+        <Thumb x:Name="NorthWestHandle" Grid.Row="1" Grid.Column="0" Tag="NW" Cursor="SizeNWSE" Style="{StaticResource ResizeHandle}" />
+        <Thumb x:Name="NorthHandle" Grid.Row="1" Grid.Column="1" Tag="N" Cursor="SizeNS" Width="48"
+               HorizontalAlignment="Center" Style="{StaticResource ResizeHandle}" />
+        <Thumb x:Name="NorthEastHandle" Grid.Row="1" Grid.Column="2" Tag="NE" Cursor="SizeNESW" Style="{StaticResource ResizeHandle}" />
+        <Thumb x:Name="WestHandle" Grid.Row="2" Grid.Column="0" Tag="W" Cursor="SizeWE" Height="48"
+               VerticalAlignment="Center" Style="{StaticResource ResizeHandle}" />
+        <Thumb x:Name="EastHandle" Grid.Row="2" Grid.Column="2" Tag="E" Cursor="SizeWE" Height="48"
+               VerticalAlignment="Center" Style="{StaticResource ResizeHandle}" />
+        <Thumb x:Name="SouthWestHandle" Grid.Row="3" Grid.Column="0" Tag="SW" Cursor="SizeNESW" Style="{StaticResource ResizeHandle}" />
+        <Thumb x:Name="SouthHandle" Grid.Row="3" Grid.Column="1" Tag="S" Cursor="SizeNS" Width="48"
+               HorizontalAlignment="Center" Style="{StaticResource ResizeHandle}" />
+        <Thumb x:Name="SouthEastHandle" Grid.Row="3" Grid.Column="2" Tag="SE" Cursor="SizeNWSE" Style="{StaticResource ResizeHandle}" />
     </Grid>
 </Window>

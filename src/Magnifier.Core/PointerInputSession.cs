@@ -15,10 +15,17 @@ public sealed class PointerInputSession
 
     public bool IsPressed => _isPressed;
 
+    public ScreenPoint? LastPoint { get; private set; }
+
     public void SetInputEnabled(bool isEnabled)
     {
         if (isEnabled)
         {
+            if (_isPressed && !_isInputEnabled)
+            {
+                throw new InvalidOperationException("해제하지 못한 입력을 먼저 취소해야 합니다.");
+            }
+
             _isInputEnabled = true;
             return;
         }
@@ -45,11 +52,12 @@ public sealed class PointerInputSession
             throw new InvalidOperationException("입력 세션이 이미 진행 중입니다.");
         }
 
-        _pointerInput.MoveTo(point);
-        _isPressed = true;
-
         try
         {
+            _pointerInput.MoveTo(point);
+            LastPoint = point;
+            // Down 실패도 일부 입력이 전달되었을 수 있으므로 release 대상이다.
+            _isPressed = true;
             _pointerInput.LeftButtonDown();
             return true;
         }
@@ -62,7 +70,7 @@ public sealed class PointerInputSession
 
     public void Move(ScreenPoint point)
     {
-        if (!_isPressed)
+        if (!_isPressed || !_isInputEnabled)
         {
             return;
         }
@@ -70,6 +78,7 @@ public sealed class PointerInputSession
         try
         {
             _pointerInput.MoveTo(point);
+            LastPoint = point;
         }
         catch
         {
@@ -85,14 +94,24 @@ public sealed class PointerInputSession
             return;
         }
 
+        if (!_isInputEnabled)
+        {
+            Cancel();
+            return;
+        }
+
         try
         {
             _pointerInput.MoveTo(point);
+            LastPoint = point;
         }
-        finally
+        catch
         {
-            Release();
+            TryReleaseAfterFailure();
+            throw;
         }
+
+        Release();
     }
 
     public void Cancel()
@@ -105,13 +124,15 @@ public sealed class PointerInputSession
 
     private void TryReleaseAfterFailure()
     {
+        _isInputEnabled = false;
+
         try
         {
-            Release();
+            Cancel();
         }
         catch
         {
-            // 원래 입력 실패를 보존하되, release는 반드시 한 번 시도한다.
+            // 원래 입력 실패를 보존하고 IsPressed를 남겨 다음 Cancel에서 재시도한다.
         }
     }
 
@@ -120,10 +141,12 @@ public sealed class PointerInputSession
         try
         {
             _pointerInput.LeftButtonUp();
-        }
-        finally
-        {
             _isPressed = false;
+        }
+        catch
+        {
+            _isInputEnabled = false;
+            throw;
         }
     }
 }

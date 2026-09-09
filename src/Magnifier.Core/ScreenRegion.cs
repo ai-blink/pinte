@@ -4,6 +4,7 @@ public readonly record struct ScreenPoint(int X, int Y);
 
 public readonly record struct ScreenRegion
 {
+    [System.Text.Json.Serialization.JsonConstructor]
     public ScreenRegion(int x, int y, int width, int height)
     {
         if (width <= 0)

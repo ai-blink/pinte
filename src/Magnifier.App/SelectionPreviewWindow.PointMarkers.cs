@@ -15,7 +15,7 @@ public partial class SelectionPreviewWindow
 
     private void UpdatePointMarker(FrameworkElement marker, PreviewPoint? point)
     {
-        if (point is not PreviewPoint visualPoint
+        if (!AuxiliaryTools.IsExpanded || point is not PreviewPoint visualPoint
             || _currentRegion is not ScreenRegion region
             || !TryGetRenderedImageBounds(region, out var renderedBounds))
         {
@@ -31,7 +31,7 @@ public partial class SelectionPreviewWindow
 
     private void UpdateStraightStrokePreview()
     {
-        if (_pointAVisual is not PreviewPoint pointA
+        if (!AuxiliaryTools.IsExpanded || _pointAVisual is not PreviewPoint pointA
             || _pointBVisual is not PreviewPoint pointB
             || _currentRegion is not ScreenRegion region
             || !TryGetRenderedImageBounds(region, out var renderedBounds))

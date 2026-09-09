@@ -1,24 +1,28 @@
-# M3 입력 세션 상태도
+# M5 직접 입력 세션 상태도
 
 ```mermaid
 stateDiagram-v2
     [*] --> Disabled
-    Disabled --> Ready: gate 켜기
-    Ready --> Countdown: A/B 실행
-    Countdown --> Pressed: 대기 완료 / Down(A)
-    Countdown --> Ready: Esc·창 닫기·gate 해제
-    Pressed --> Pressed: Move
-    Pressed --> Ready: Up / LeftUp 시도
-    Pressed --> Disabled: gate 해제 / LeftUp 시도
-    Pressed --> Ready: Esc·capture 손실 / LeftUp 시도
-    Pressed --> Disabled: 입력 오류 / LeftUp 시도
-    Ready --> Disabled: gate 해제·창 닫기
-    Disabled --> [*]: 창 닫기
+    Disabled --> Armed: 명시적 조작 시작 / 최신 프레임·버튼 해제 확인
+    Armed --> Hover: 렌즈 진입 / 두 창 입력 통과
+    Hover --> Pressed: Down / 원본 좌표로 전달
+    Pressed --> Pressed: 연속 Move / 원본 좌표로 전달
+    Pressed --> Hover: 물리 Up / 원본 Up
+    Armed --> Disabled: 중지·복귀·프레임 지연
+    Hover --> Disabled: 경계·중지·복귀
+    Pressed --> Waiting: 경계·중지·취소 / 마지막 유효 위치 Up 수락
+    Pressed --> ReleasePending: 입력 해제 실패 / gate off
+    ReleasePending --> ReleasePending: Up 재시도 실패
+    ReleasePending --> Waiting: Up 재시도 수락 / 물리 버튼 아직 누름
+    ReleasePending --> Disabled: Up 재시도 수락 / 물리 버튼 해제됨
+    Waiting --> Disabled: 모든 물리 버튼 해제 관측
+    Disabled --> [*]: 두 창 숨김 또는 종료
 ```
 
-- `Disabled`가 기본 상태다. 이 상태의 미리보기 클릭과 A/B 지정은 Windows 입력을 호출하지 않는다.
-- `Countdown`은 아직 포인터를 누르지 않은 대기 상태다. 취소하면 `Ready`로 돌아가며 실제 획을 시작하지 않는다.
-- `Countdown → Pressed`의 A→B 실행은 미리보기 창을 잠시 숨긴 뒤 선택한 `ScreenRegion`의 전역 화면 좌표로 `Down(A)`를 보낸다. 대상 창 핸들은 선택하거나 제한하지 않는다.
-- 현재 App은 A/B 실행만 `Pressed`로 전이한다. 확대 미리보기의 실시간 Down → Move → Up 조작은 M5의 미해결 차단 사항이며, 별도 모드 설계 뒤에 이 상태도에 추가한다.
-- `Pressed`를 끝내는 모든 경로는 `LeftUp`을 한 번 시도한다.
-- UIPI 등 Windows가 입력을 거부한 원인은 API 결과만으로 확정할 수 없으므로 App은 성공처럼 표시하지 않는다.
+- 재진입도 Disabled다. 물리 버튼을 놓은 사실만으로 Armed가 되지 않는다.
+- 경계 Up 뒤에만 커서를 렌즈 쪽으로 복원한다. Waiting에서는 이전 누름의 추가 클릭·Up 전달을 억제한다.
+- Stop/취소에는 capture 손실·닫기·Esc·입력 실패·화면 구성 변경·프레임 지연도 포함한다. 물리 버튼이 이미 해제됐다면 Waiting을 거치지 않는다.
+- Up 실패는 누름 상태를 보존한다. 명시적 StopAsync는 미해제 오류를 반환하며, 성공한 복귀로 처리하지 않는다.
+- 직접 조작은 WPF mouse capture를 사용하지 않는다. 전용 hook 스레드가 상태를 소유하고 UI는 최신 상태를 표시한다.
+- A/B는 별도 PointerInputSession이다. 접힌 도구를 열면 직접 중계를 끄고, 별도 허용·카운트다운 뒤 렌즈를 잠시 숨겨 단일 획을 실행한다. 취소·완료 뒤 A/B 허용도 끈다.
+- 이 상태도는 코드의 의도와 API 수락 상태를 설명한다. native Down 한 번 이후 프로브가 중단됐으므로 실제 연속 전달·최종 Up·마우스 복귀는 NEEDS_USER_UI_CHECK다.

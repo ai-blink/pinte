@@ -2,5 +2,7 @@
 
 | Diagram | Source | Owner | Purpose | Status |
 |---|---|---|---|---|
-| 캡처·좌표 흐름 | `docs/diagrams/capture-flow.md` | App·Core·Infrastructure | 선택 영역의 물리 픽셀 캡처와 실시간 미리보기 갱신 경계 | M2.1 완료 |
-| 입력 세션 상태도 | `docs/diagrams/input-session.md` | Core·Infrastructure·App | 기본 비활성 gate, A→B 카운트다운, Down·Move·Up·release 전이 | M4 완료 |
+| 두 창 캡처·좌표 흐름 | [capture-flow.md](capture-flow.md) | App·Core·Infrastructure | 원본/렌즈 독립 좌표, 비중첩 캡처, 중계 경계 | M5 구현 후보 · 실사용 검증 중단 |
+| 직접 입력 세션 상태도 | [input-session.md](input-session.md) | Core·Infrastructure·App | 기본 off, 명시 시작, 연속 입력, 경계 Up·물리 해제 대기 | M5 구현 후보 · 실사용 검증 중단 |
+
+현재 구현의 설명이며 실제 전달 성공 증거가 아니다. [최신 실행 기록](../../notes/runs/2026-09-10-two-window-implementation.md)을 기준으로 수락 상태를 확인한다.

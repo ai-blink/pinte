@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+<title>Magnifier · 두 창 배치 목업</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#10151c;color:#e7edf6;font:15px 'Segoe UI','Malgun Gothic',sans-serif}main{max-width:1280px;margin:auto;padding:24px}h1{font-size:26px;margin:12px 0}p,small{color:#aebed2;line-height:1.7}button{font:inherit;cursor:pointer;background:#29415e;color:#eef5ff;border:1px solid #6487ad;border-radius:7px;padding:10px 14px;white-space:nowrap}button:hover{background:#3c5f87}button:focus-visible{outline:3px solid #ffd27d}#scroll{overflow:auto}#desk{position:relative;min-width:850px;aspect-ratio:5/3;overflow:hidden;border-radius:12px;background:#253243}#source{width:100%;height:100%;display:block}#frame{position:absolute;outline:3px solid #69e1bb;pointer-events:none}#move{position:absolute;top:-39px;left:0;background:#174d42;font-size:13px;cursor:move}#size{position:absolute;right:-15px;bottom:-15px;padding:6px 10px;background:#174d42;cursor:nwse-resize}#frame button{pointer-events:auto;touch-action:none}#panel{position:absolute;width:49%;height:86%;display:flex;flex-direction:column;background:#152130;border:1px solid #8aaed3;border-radius:12px;overflow:hidden;box-shadow:0 14px 32px #0008}#head{flex:none;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;cursor:move;touch-action:none;background:#24374e}#head b{font-size:14px}#state{font-size:12px;color:#b9d1ed}#view{width:100%;flex:1;min-height:0;background:#293748;touch-action:none}#point{cursor:grab}#bar{flex:none;padding:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}#bar button{font-size:14px}#back{background:#edf5ff;color:#183652;font-weight:bold}#arm,#open{background:#2466be}#fit{font-size:12px;color:#b4cbe6}#open{position:absolute;left:20px;bottom:20px}#desk:not(.normal) #open,#desk.normal #frame,#desk.normal #panel{display:none}#status{min-height:26px}footer{display:flex;justify-content:space-between;gap:20px;align-items:center}footer p{font-size:12px}svg text{font-family:inherit;fill:#b2c3d8}
+</style>
+<main><small>MAGNIFIER · 두 창 배치 목업</small><h1>원본은 테두리로, 조작은 확대 렌즈로.</h1>
+<p>초록 손잡이로 원본 영역을 이동·크기 조절하세요. 렌즈 제목부를 옮겨도 원본 영역은 그대로입니다.</p>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#425670" stroke-width=".5"/></pattern>
+<symbol id="scene" viewBox="0 0 1000 600"><rect width="1000" height="600" fill="#293748"/><rect width="1000" height="600" fill="url(#grid)"/><rect width="1000" height="45" fill="#1b2736"/><text x="22" y="29" font-size="14">가상 원본 작업 화면 · 마커 위치 맞추기</text><path d="M280 205V340M280 225L215 275L160 315M280 225L345 275L400 315M280 340L235 460M280 340L325 460" fill="none" stroke="#657990" stroke-width="28" stroke-linecap="round"/><circle cx="280" cy="163" r="33" fill="#657990"/><circle cx="245" cy="251" r="5" fill="none" stroke="#ffd075"/><path d="M237 251H253M245 243V259" stroke="#ffd075" stroke-width=".6"/><text x="32" y="555" font-size="13">작은 파란 마커를 금색 목표에 맞춰 보세요.</text></symbol></defs></svg>
+<div id="scroll"><section id="desk" aria-label="가상 데스크톱">
+<svg id="source" viewBox="0 0 1000 600" aria-label="원본 화면"><use href="#scene" width="1000" height="600"/><circle id="mini" r="4" fill="#68b6ff"/></svg>
+<div id="frame" aria-label="원본 영역 테두리"><button id="move">✥ 원본 영역 이동</button><button id="size" aria-label="원본 영역 크기 조절">↘</button></div>
+<div id="panel"><div id="head"><b>✥ 확대 렌즈 이동</b><span id="state">보기</span></div>
+<svg id="view" aria-label="확대 화면 마커 드래그"><use href="#scene" width="1000" height="600"/><circle id="point" r="4" fill="#68b6ff" stroke="#e9f5ff" stroke-width="1"/></svg>
+<div id="bar"><button id="back">↙ 원래 화면</button><button id="arm">조작 시작</button><span id="fit">맞춤 확대</span></div></div>
+<button id="open">＋ 확대 다시 열기</button></section></div>
+<p id="status" role="status">두 창을 배치한 뒤 조작 시작을 누르면 렌즈에서 파란 마커를 드래그할 수 있습니다.</p>
+<footer><p>배치 시연용 · 실제 Windows 캡처·입력 없음.<br>목업은 영역 전체 맞춤 확대입니다. 제품의 배율·보조 도구는 계획서를 따릅니다.</p><button id="reset">배치 초기화</button></footer></main>
+<script>
+const E=id=>document.getElementById(id),D=E('desk'),V=E('view');
+let r={x:170,y:220,w:160,h:130},l={x:470,y:40},m={x:225,y:244},active=false,drag=null;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function say(s){E('status').textContent=s}
+function arm(a){active=a;E('state').textContent=a?'조작 중':'보기';E('arm').textContent=a?'조작 중지':'조작 시작'}
+function stop(){const d=drag;drag=null;if(d&&d.el.hasPointerCapture(d.id))d.el.releasePointerCapture(d.id)}
+function paint(){
+Object.assign(E('frame').style,{left:r.x/10+'%',top:r.y/6+'%',width:r.w/10+'%',height:r.h/6+'%'});
+Object.assign(E('panel').style,{left:l.x/10+'%',top:l.y/6+'%'});
+V.setAttribute('viewBox',[r.x,r.y,r.w,r.h].join(' '));
+['point','mini'].forEach(id=>{E(id).setAttribute('cx',m.x);E(id).setAttribute('cy',m.y)});
+}
+function pos(e){const b=D.getBoundingClientRect();return{x:(e.clientX-b.left)/b.width*1000,y:(e.clientY-b.top)/b.height*600}}
+function begin(e,k){
+if(e.button!==0)return;
+if(k==='mark'&&(!active||e.target!==E('point')))return;
+e.preventDefault();stop();if(k!=='mark')arm(false);
+drag={id:e.pointerId,el:e.currentTarget,k,p:pos(e),r:{...r},l:{...l}};
+drag.el.setPointerCapture(e.pointerId);
+}
+E('move').onpointerdown=e=>begin(e,'region');
+E('size').onpointerdown=e=>begin(e,'size');
+E('head').onpointerdown=e=>begin(e,'lens');
+V.onpointerdown=e=>begin(e,'mark');
+document.addEventListener('pointermove',e=>{
+const d=drag;if(!d||d.id!==e.pointerId)return;
+const p=pos(e),dx=p.x-d.p.x,dy=p.y-d.p.y;
+if(d.k==='region'){r.x=clamp(d.r.x+dx,8,990-r.w);r.y=clamp(d.r.y+dy,48,586-r.h)}
+if(d.k==='size'){r.w=clamp(d.r.w+dx,75,990-r.x);r.h=clamp(d.r.h+dy,65,586-r.y)}
+if(d.k==='lens'){l.x=clamp(d.l.x+dx,0,510);l.y=clamp(d.l.y+dy,0,84)}
+if(d.k==='mark'){
+const q=new DOMPoint(e.clientX,e.clientY).matrixTransform(V.getScreenCTM().inverse());
+if(q.x<r.x||q.x>r.x+r.w||q.y<r.y||q.y>r.y+r.h){stop();arm(false);say('확대 영역 경계에서 조작을 해제했습니다.');return}
+m={x:q.x,y:q.y};
+}
+paint();
+});
+document.addEventListener('pointerup',e=>{if(!drag||drag.id!==e.pointerId)return;const k=drag.k;stop();say(k==='lens'?'렌즈만 이동했습니다. 원본 영역은 그대로입니다.':k==='mark'?'마커를 놓았습니다.':'원본 영역을 변경했습니다. 렌즈 위치는 그대로입니다.')});
+function cancel(){stop();arm(false)}
+document.addEventListener('pointercancel',cancel);
+document.addEventListener('lostpointercapture',e=>{if(drag&&drag.id===e.pointerId)cancel()});
+window.addEventListener('blur',cancel);
+E('arm').onclick=()=>{stop();arm(!active);say(active?'파란 마커를 드래그하세요.':'보기 상태입니다.')};
+E('back').onclick=()=>{cancel();D.classList.add('normal');say('두 창을 닫고 원래 화면으로 돌아왔습니다.')};
+E('open').onclick=()=>{cancel();D.classList.remove('normal');say('이전 배치로 열었습니다. 실제 입력은 꺼짐입니다.')};
+E('reset').onclick=()=>{cancel();r={x:170,y:220,w:160,h:130};l={x:470,y:40};m={x:225,y:244};D.classList.remove('normal');paint();say('두 창의 배치를 초기화했습니다.')};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')E('back').click()});
+paint();
+</script></html>

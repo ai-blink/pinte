@@ -6,6 +6,8 @@ namespace Magnifier.Infrastructure;
 
 public sealed class WindowsPointerInput : IPointerInput
 {
+    // Only this tag bypasses our relay; injected input from other aids is still observed.
+    internal static readonly nint InjectionTag = unchecked((nint)0x4D41474E);
     private const uint InputMouse = 0;
     private const uint MouseEventMove = 0x0001;
     private const uint MouseEventLeftDown = 0x0002;
@@ -72,7 +74,8 @@ public sealed class WindowsPointerInput : IPointerInput
                     {
                         X = x,
                         Y = y,
-                        Flags = flags
+                        Flags = flags,
+                        ExtraInfo = InjectionTag
                     }
                 }
             }
@@ -90,7 +93,7 @@ public sealed class WindowsPointerInput : IPointerInput
         if (errorCode == 0)
         {
             return new InvalidOperationException(
-                "Windows가 입력 전달을 수락하지 않았습니다. 권한이 높은 대상 창은 입력을 받을 수 없습니다.");
+                "Windows가 입력을 수락하지 않았습니다. 권한 차이 등은 가능한 원인이며 대상 반응은 확인되지 않았습니다.");
         }
 
         return new Win32Exception(errorCode, "Windows 입력 전달에 실패했습니다.");

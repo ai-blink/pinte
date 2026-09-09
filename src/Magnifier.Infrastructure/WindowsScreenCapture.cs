@@ -16,9 +16,10 @@ public sealed class WindowsScreenCapture : IScreenCapture
     {
         if (windowHandle != nint.Zero)
         {
-            _ = SetWindowDisplayAffinity(
+            if (!SetWindowDisplayAffinity(
                 windowHandle,
-                excludeFromCapture ? WdaExcludeFromCapture : WdaNone);
+                excludeFromCapture ? WdaExcludeFromCapture : WdaNone))
+                throw CreateCaptureException("돋보기 창을 캡처에서 제외하지 못했습니다.");
         }
     }
 

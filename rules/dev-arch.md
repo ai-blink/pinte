@@ -2,9 +2,9 @@
 
 ## 현재 구조
 
-- `src/Magnifier.App`: WPF 진입점·선택 오버레이·미리보기 창·기본 비활성 입력 gate와 A/B 시각 계획을 소유한다. 실제 A→B 전달 직전에는 미리보기가 선택 영역을 가로채지 않게 조정하고, Win32 구현을 직접 호출하지 않고 Core 계약을 소비한다.
-- `src/Magnifier.Core`: 물리 화면 영역, BGRA32 프레임, 미리보기→원본 화면 좌표 환산, 단일 포인터 세션과 release 계약을 소유한다.
-- `src/Magnifier.Infrastructure`: Windows GDI 화면 캡처와 `SendInput` 기반 포인터 입력을 구현한다. 대상 창 해석·권한 상승은 소유하지 않는다.
+- `src/Magnifier.App`: Main은 composition root·진입/복귀·비중첩 캡처와 배치 저장을 소유한다. SelectionOverlayWindow는 상시 투명 원본 테두리·8개 크기 손잡이, SelectionPreviewWindow는 독립 렌즈·배율·고정 제어·가상 포인터와 선택형 A/B를 소유한다. 직접 조작에 WPF mouse capture를 사용하지 않는다.
+- `src/Magnifier.Core`: ScreenRegion/LensViewport는 독립된 원본·렌즈 물리 좌표를 보관한다. LensInputState/PointerInputSession은 기본 off·명시 시작·물리 해제 대기·Up 실패 재시도를 관리한다. ILivePointerRelay/IWindowEnvironment는 App이 사용하는 계약이다.
+- `src/Magnifier.Infrastructure`: GDI 캡처, 태그가 있는 SendInput, 전용 hook 스레드의 논리 포인터 중계·layered 창 입력 통과·캡처 freshness/capture 감시, 물리 창 배치를 구현한다. HWND 고정·앱별 분기·권한 상승은 없다. 실제 연속 전달은 R0 검증 중이다.
 - `src/Magnifier.Core.Tests`: Core 좌표 환산·프레임 불변 조건·입력 gate와 release 전이를 단위 테스트한다.
 
 ## 의존성 규칙
@@ -12,6 +12,7 @@
 - App은 Core 계약을 소비하며, composition root에서만 Infrastructure 구현을 만든다. Win32 P/Invoke를 직접 보유하지 않는다.
 - Infrastructure는 Core를 참조할 수 있지만 App을 참조하지 않는다.
 - 실제 입력은 runtime gate와 단일 release 경로 뒤에 둔다. 전달 목적지는 대상 창 핸들이 아니라 선택한 `ScreenRegion`의 물리 화면 좌표다.
+- 원본 영역 변경과 렌즈 위치 변경을 분리한다. 설정에는 두 창 배치와 배율만 기록하며 입력 허용 상태를 복원하지 않는다. manifest는 PerMonitorV2/asInvoker/uiAccess=false다.
 
 ## 검증 전략
 
@@ -21,4 +22,4 @@
 
 ## 다이어그램
 
-`docs/diagrams/capture-flow.md`가 M2.1의 선택·캡처·미리보기 경계를, `docs/diagrams/input-session.md`가 M3 입력 세션의 release 전이를 설명한다.
+`docs/diagrams/capture-flow.md`는 두 창의 독립 좌표와 캡처 경계를, `docs/diagrams/input-session.md`는 현재 입력 중계 후보의 release·물리 해제 대기 전이를 설명한다. 두 다이어그램은 구현 설명이며 실사용 수락 증거가 아니다.
