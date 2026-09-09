@@ -69,8 +69,10 @@ public partial class MainWindow : Window
     private void EnsureWindows()
     {
         if (_frame is not null && _lens is not null) return;
-        _frame = new SelectionOverlayWindow(_capture) { Owner = this };
-        _lens = new SelectionPreviewWindow(_relay, _capture, _windows, _pointer) { Owner = this };
+        // Hiding an owner also hides its owned windows. These two windows must stay
+        // visible while the entry window is hidden; their lifetime is managed below.
+        _frame = new SelectionOverlayWindow(_capture);
+        _lens = new SelectionPreviewWindow(_relay, _capture, _windows, _pointer);
         _frame.RegionChanged += async region =>
         {
             if (_returning || _shuttingDown) return;

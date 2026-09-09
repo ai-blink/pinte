@@ -20,7 +20,8 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
     private nint[] _windows = [];
     private uint _threadId;
     private long _frameTimestamp;
-    private bool _relaying, _leftHeld, _draining, _disposed;
+    private bool _relaying, _leftHeld, _draining, _disposed, _intercepting, _inputPostFailed;
+    private int _hookButtons;
     private int _otherButtonsHeld;
     private bool OtherHeld => _otherButtonsHeld != 0;
     private PreviewPoint _logical;
@@ -54,6 +55,7 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         {
             _leftHeld = (GetAsyncKeyState(1) & 0x8000) != 0;
             _otherButtonsHeld = ReadOtherButtons();
+            _hookButtons = (_leftHeld ? 1 : 0) | (_otherButtonsHeld << 1);
             if (_viewport is null || !FrameIsFresh())
             { Publish("최신 화면을 기다리는 중 · 조작을 시작하지 않았습니다"); return; }
             armed = _state.Arm(_leftHeld || OtherHeld || _draining);
@@ -118,9 +120,31 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         if (mouse.ExtraInfo == WindowsPointerInput.InjectionTag)
             return CallNextHookEx(0, code, message, data);
         var kind = (uint)message;
-        var wasRelaying = _relaying;
-        var wasDraining = _draining;
-        var ownedEvent = wasRelaying || wasDraining;
+        var previousButtons = _hookButtons;
+        var bit = kind switch
+        {
+            0x201 or 0x202 => 1,
+            0x204 or 0x205 => 2,
+            0x207 or 0x208 => 4,
+            0x20B or 0x20C => (mouse.MouseData >> 16) == 1 ? 8 : 16,
+            _ => 0
+        };
+        if (kind is 0x201 or 0x204 or 0x207 or 0x20B) _hookButtons |= bit;
+        if (kind is 0x202 or 0x205 or 0x208 or 0x20C) _hookButtons &= ~bit;
+        var intercepted = _intercepting || _draining || (_state.IsEnabled && previousButtons == 0
+            && _viewport is { } view && view.Contains(new(mouse.Point.X, mouse.Point.Y)));
+        if (intercepted && !_draining) _intercepting = true;
+        var passMove = _draining && kind == 0x200;
+        var hasPrevious = GetCursorPos(out var previous);
+        // Do not call SendInput/SetWindowLong from this callback. Nested input routing
+        // can deliver the original button before the hook's suppression result returns.
+        _commands.Enqueue(() => ProcessMouse(kind, mouse, intercepted, previous, hasPrevious));
+        if (!PostThreadMessage(_threadId, CommandMessage, 0, 0)) _inputPostFailed = true;
+        return intercepted && !passMove ? 1 : CallNextHookEx(0, code, message, data);
+    }
+
+    private void ProcessMouse(uint kind, MouseHookData mouse, bool intercepted, NativePoint previous, bool hasPrevious)
+    {
         if (kind == 0x201) _leftHeld = true;
         if (kind == 0x202) _leftHeld = false;
         var otherBit = kind switch
@@ -133,25 +157,25 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         if (kind is 0x204 or 0x207 or 0x20B) _otherButtonsHeld |= otherBit;
         if (kind is 0x205 or 0x208 or 0x20C) _otherButtonsHeld &= ~otherBit;
         _state.ObservePhysicalButton(_leftHeld || OtherHeld);
+        if (!intercepted) return;
         try
         {
             if (_draining)
             {
                 // The held button belongs to the old drag, never to a return button.
                 if (!_leftHeld && !OtherHeld) { _draining = false; Publish("보기 · 버튼 해제됨"); }
-                return kind == 0x200 ? CallNextHookEx(0, code, message, data) : 1;
+                return;
             }
             if (!_state.IsEnabled || _viewport is not { } view)
-                return CallNextHookEx(0, code, message, data);
-            if (!FrameIsFresh()) { StopInternal("화면 갱신 지연 · 조작 중지"); return wasRelaying ? 1 : CallNextHookEx(0, code, message, data); }
+                return;
+            if (!FrameIsFresh()) { StopInternal("화면 갱신 지연 · 조작 중지"); return; }
             if (!_relaying)
             {
                 if (!view.Contains(new ScreenPoint(mouse.Point.X, mouse.Point.Y)))
-                    return CallNextHookEx(0, code, message, data);
+                    return;
                 // Do not steal a drag that started in another window or a window handle.
                 if ((_leftHeld || OtherHeld) && kind != 0x201)
-                    return CallNextHookEx(0, code, message, data);
-                ownedEvent = true;
+                    return;
                 _logical = new(mouse.Point.X, mouse.Point.Y);
                 SetPassthrough(true);
                 _relaying = true;
@@ -163,13 +187,13 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
                     _logical = new(mouse.Point.X, mouse.Point.Y); // Absolute assistive pointer updates.
                 else
                 {
-                    if (!GetCursorPos(out var previous)) throw new InvalidOperationException("포인터 위치 읽기 실패");
+                    if (!hasPrevious) throw new InvalidOperationException("포인터 위치 읽기 실패");
                     _logical = new(_logical.X + mouse.Point.X - previous.X, _logical.Y + mouse.Point.Y - previous.Y);
                 }
             }
             var logicalPixel = new ScreenPoint((int)Math.Floor(_logical.X), (int)Math.Floor(_logical.Y));
             if (!view.Contains(logicalPixel))
-            { StopInternal("경계에서 버튼 해제 · 보기로 전환"); return 1; }
+            { StopInternal("경계에서 버튼 해제 · 보기로 전환"); return; }
             var target = view.MapToSource(_logical);
             switch (kind)
             {
@@ -180,22 +204,21 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
                 case 0x202: _state.Complete(target); _observedCapture = 0; break;
                 default:
                     StopInternal("이 조작은 아직 직접 전달하지 않습니다 · 보기로 전환");
-                    return 1;
+                    return;
             }
             Publish(_state.IsPressed ? "드래그 중 · 가장자리로 이동하면 중지" : "조작 켜짐 · 실제 대상 반응을 확인하세요");
-            return 1;
         }
         catch (Exception ex)
         {
             try { StopInternal($"입력 실패: {ex.Message}"); } catch { }
-            return ownedEvent ? 1 : CallNextHookEx(0, code, message, data);
         }
     }
 
     private void StopInternal(string reason)
     {
         var restore = _relaying;
-        _draining |= restore && (_leftHeld || OtherHeld);
+        _draining |= (restore || _intercepting) && (_leftHeld || OtherHeld);
+        _intercepting = false;
         try { _state.Stop(); }
         catch (Exception ex) { reason += $" · 해제 재시도 필요: {ex.Message}"; }
         finally
@@ -214,6 +237,7 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
     {
         try
         {
+            if (_inputPostFailed) { _inputPostFailed = false; StopInternal("입력 큐 전달 실패 · 조작 중지"); return; }
             if (_state.IsPressed && !_state.IsEnabled) { _state.Stop(); Publish(_message); }
             if (!_state.IsEnabled) return;
             if (!FrameIsFresh()) { StopInternal("화면 갱신 지연 · 조작 중지"); return; }

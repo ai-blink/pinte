@@ -20,6 +20,9 @@
 
 ## Executor policy
 
+- D-018 (2026-09-10): hook 내 동기 주입에서 원본/중계 Down·Up 중복을 재현했다. hook은 억제 결과를 즉시 반환하고 주입·창 스타일 변경은 같은 전용 스레드의 FIFO 큐에서 수행한다. 분리/겹침 곡선·왕복과 경계 해제 프로브를 통과했다. 제품 수락과 구분한다.
+- D-019 (2026-09-10): 두 보조 창에 진입 창 Owner를 지정하지 않는다. Main Hide가 확대 창까지 숨기지 않게 하며 Main이 반환·종료 이벤트로 수명을 관리한다.
+
 - D-003: 실제 입력은 기본 비활성이며 Down·Move·Up은 단일 세션과 release 경로로 처리한다.
 - D-008: M3의 `SendInput` P/Invoke는 Infrastructure만 소유한다. App gate는 기본 해제이고, Core 세션은 취소·capture 손실·gate 해제·오류에서 `LeftUp`을 시도한다. UIPI 거부 원인은 API 결과만으로 확정하지 않는다.
 

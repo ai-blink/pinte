@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Magnifier 실제 입력 확인</title>
+<style>
+  body { font: 18px system-ui; margin: 24px; color: #172b42; background: #f2f5fa; }
+  h1 { font-size: 26px; margin: 0 0 12px; }
+  p { max-width: 840px; line-height: 1.6; }
+  canvas { display: block; background: white; border: 3px solid #254c75; touch-action: none; }
+  button { font: inherit; padding: 12px 24px; margin: 16px 12px 8px 0; }
+  output { display: block; white-space: pre-line; line-height: 1.6; }
+</style>
+<h1>렌즈로 작은 마커를 옮겨 보세요</h1>
+<p>노란 원본 테두리를 아래 흰 영역에 놓고, 렌즈에서 조작을 시작하세요.
+파란 마커를 누른 채 곡선을 그리며 왕복한 뒤 놓으세요. 마지막으로 렌즈의 ‘원래 화면’을 누르세요.</p>
+<canvas id="surface" width="640" height="420" aria-label="작은 파란 마커를 드래그하는 실제 입력 대상"></canvas>
+<button id="reset">기록 초기화</button>
+<output id="result" aria-live="polite"></output>
+<p>이 페이지는 실제 브라우저 입력을 받는 검증 대상입니다. 자동 입력이나 돋보기 모의 동작을 실행하지 않습니다.</p>
+<script>
+const surface = document.querySelector('#surface');
+const result = document.querySelector('#result');
+const ctx = surface.getContext('2d');
+let state;
+function reset() {
+  if (state?.active) return;
+  state = {x:100, y:100, active:false, pointerId:null, down:0, up:0, moves:0,
+    clicks:0, missed:0, duplicate:0, lost:0, distance:0, reversals:0, direction:0, path:[]};
+  draw(); report();
+}
+function point(e) {
+  const rect = surface.getBoundingClientRect();
+  return {x:(e.clientX-rect.left-surface.clientLeft)*640/surface.clientWidth,
+    y:(e.clientY-rect.top-surface.clientTop)*420/surface.clientHeight};
+}
+function draw() {
+  ctx.clearRect(0,0,640,420);
+  ctx.strokeStyle='#e6edf5'; ctx.lineWidth=1;
+  for(let x=0;x<640;x+=40) {ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,420);ctx.stroke();}
+  for(let y=0;y<420;y+=40) {ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(640,y);ctx.stroke();}
+  ctx.strokeStyle='#eb8b23'; ctx.lineWidth=3; ctx.beginPath();
+  state.path.forEach((p,i)=>i ? ctx.lineTo(p.x,p.y) : ctx.moveTo(p.x,p.y)); ctx.stroke();
+  ctx.fillStyle=state.active?'#c72b4b':'#1769e0';ctx.beginPath();ctx.arc(state.x,state.y,10,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#244668';ctx.font='16px system-ui';ctx.fillText('작은 마커 · 누른 채 왕복 이동',24,395);
+}
+function report() {
+  result.textContent=`Down ${state.down} · Move ${state.moves} · Up ${state.up} · Click ${state.clicks}\n`+
+    `누름 ${state.active?'유지 중':'해제됨'} · 마커 (${Math.round(state.x)}, ${Math.round(state.y)}) · 이동 ${Math.round(state.distance)}px · 가로 방향 전환 ${state.reversals}회\n`+
+    `빗나간 Down ${state.missed} · 중복 Down ${state.duplicate} · 누름 중 capture 손실 ${state.lost}`;
+}
+surface.addEventListener('pointerdown',e=>{
+  if(e.button!==0)return;
+  e.preventDefault();state.down++;
+  if(state.active){state.duplicate++;report();return;}
+  const p=point(e);
+  if(Math.hypot(p.x-state.x,p.y-state.y)>12){state.missed++;report();return;}
+  state.active=true;state.pointerId=e.pointerId;state.path=[p];state.direction=0;
+  surface.setPointerCapture(e.pointerId);draw();report();
+});
+surface.addEventListener('pointermove',e=>{
+  if(!state.active||e.pointerId!==state.pointerId)return;
+  const p=point(e); const dx=p.x-state.x;
+  if(Math.abs(dx)>1){const d=Math.sign(dx);if(state.direction&&state.direction!==d)state.reversals++;state.direction=d;}
+  state.distance+=Math.hypot(dx,p.y-state.y);state.x=p.x;state.y=p.y;state.moves++;state.path.push(p);
+  if(state.path.length>10000)state.path.shift();draw();report();
+});
+surface.addEventListener('pointerup',e=>{
+  if(e.button!==0)return;state.up++;
+  if(e.pointerId===state.pointerId){state.active=false;state.pointerId=null;}
+  draw();report();
+});
+surface.addEventListener('click',()=>{state.clicks++;report();});
+surface.addEventListener('lostpointercapture',()=>{if(state.active){state.lost++;state.active=false;state.pointerId=null;draw();report();}});
+surface.addEventListener('pointercancel',()=>{if(state.active){state.lost++;state.active=false;state.pointerId=null;draw();report();}});
+document.querySelector('#reset').addEventListener('click',reset);
+reset();
+</script>
+</html>

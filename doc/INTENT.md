@@ -36,7 +36,7 @@
 
 ## 현재 상태와 계획
 
-실시간 직접 조작의 실사용 수락은 아직 BLOCKED다. 2026-09-10 확인된 두 창 구조와 입력 중계 후보를 실제 앱에 구현했고 표준 build·Core 23개 테스트를 통과했다. native 입력 프로브가 외부 입력 감지로 중단되어 실제 연속 전달·마우스 복귀는 NEEDS_USER_UI_CHECK다. [구현 기록](../notes/runs/2026-09-10-two-window-implementation.md)을 따른다.
+2026-09-10 두 창 구조를 구현하고 입력 중복을 수정했다. 표준 build·Core 23개 테스트와 native 대상의 분리/겹침 곡선·왕복 및 경계 해제 프로브 3개를 통과했다. 표준 앱 두 창 표시는 사용자 확인을 받았다. 실제 장치·브라우저·Blender의 조작·마우스 복귀 등 제품 수락은 NEEDS_USER_UI_CHECK다. [최신 검증 기록](../notes/runs/2026-09-10-r0-relay-retest.md)을 따른다.
 
 - [기능·UI/UX 개편안](../notes/brainstorm/2026-09-10_magnifier-redesign_design.md)
 - [M5 기술·전달 계획](../notes/plans/2026-09-08-magnifier-m5.md)

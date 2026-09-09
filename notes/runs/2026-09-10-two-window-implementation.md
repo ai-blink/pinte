@@ -4,8 +4,8 @@
 
 ## 판정
 
-**구현 후보와 표준 빌드 전달. M5/R0 실사용 수락은 BLOCKED / NEEDS_USER_UI_CHECK.**
-계획·목업과 별개로 App/Core/Infrastructure를 수정했다. 제어 창에서 실제 목표 창으로 전달된 native Down은 관측했지만, 프로브가 외부 입력을 감지해 연속 드래그 검증을 중단했다. 실제 사용자 장치와 브라우저·Blender의 성공을 주장하지 않는다.
+**`6b5c0df` 최초 구현 당시 기록: M5/R0 수락 BLOCKED / NEEDS_USER_UI_CHECK.**
+아래는 최초 native Down 관측과 외부 입력 감지 중단 기록이다. 이후 입력 중복 수정·native 프로브 3개 통과·두 창 표시 사용자 확인은 [후속 검증](2026-09-10-r0-relay-retest.md)을 따른다. 제품 전체 수락과 구분한다.
 
 ## 구현된 경로
 
