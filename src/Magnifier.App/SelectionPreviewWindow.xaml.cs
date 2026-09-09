@@ -22,6 +22,7 @@ public partial class SelectionPreviewWindow : Window
     private PreviewPoint? _pointBVisual;
     private PointTarget _pendingPointTarget;
     private int _countdownSeconds = 3;
+    private bool _isSynchronizingInputToggle;
 
     public SelectionPreviewWindow(IPointerInput pointerInput, IScreenCapture screenCapture)
     {
@@ -78,6 +79,7 @@ public partial class SelectionPreviewWindow : Window
         try
         {
             _inputSession.SetInputEnabled(isEnabled);
+            SetPreviewInputToggle(isEnabled);
             UpdateStrokeControls();
             PublishInputStatus(isEnabled ? "실제 포인터 입력: 켜짐" : "실제 포인터 입력: 꺼짐");
             return true;
@@ -86,6 +88,34 @@ public partial class SelectionPreviewWindow : Window
         {
             PublishInputStatus($"입력 해제 실패: {exception.Message}");
             return false;
+        }
+    }
+
+    private void PreviewInputEnabledCheckBox_OnChanged(object sender, RoutedEventArgs e)
+    {
+        if (_isSynchronizingInputToggle)
+        {
+            return;
+        }
+
+        SetInputEnabled(PreviewInputEnabledCheckBox.IsChecked == true);
+    }
+
+    private void SetPreviewInputToggle(bool isEnabled)
+    {
+        if (PreviewInputEnabledCheckBox.IsChecked == isEnabled)
+        {
+            return;
+        }
+
+        _isSynchronizingInputToggle = true;
+        try
+        {
+            PreviewInputEnabledCheckBox.IsChecked = isEnabled;
+        }
+        finally
+        {
+            _isSynchronizingInputToggle = false;
         }
     }
 
@@ -136,98 +166,9 @@ public partial class SelectionPreviewWindow : Window
             return;
         }
 
-        if (!TryMapToScreen(imagePoint, out var point))
-        {
-            PublishInputStatus("이미지가 표시된 범위 안에서만 드래그를 시작할 수 있습니다");
-            return;
-        }
-
-        if (!_inputSession.IsInputEnabled)
-        {
-            PublishInputStatus("A 지정 또는 B 지정 후 이미지에서 지점을 클릭하세요 · 실제 포인터 입력: 꺼짐");
-            return;
-        }
-
-        if (!CapturedImage.CaptureMouse())
-        {
-            PublishInputStatus("미리보기 mouse capture를 시작하지 못했습니다");
-            return;
-        }
-
-        try
-        {
-            if (_inputSession.Begin(point))
-            {
-                PublishInputStatus("입력 세션 진행 중 · Esc 또는 mouse capture 손실 시 해제합니다");
-            }
-            else
-            {
-                ReleaseImageMouseCapture();
-            }
-        }
-        catch (Exception exception)
-        {
-            HandleInputFailure(exception);
-        }
-    }
-
-    private void CapturedImage_OnMouseMove(object sender, MouseEventArgs e)
-    {
-        if (!_inputSession.IsPressed || !CapturedImage.IsMouseCaptured)
-        {
-            return;
-        }
-
-        if (!TryMapToScreen(e.GetPosition(CapturedImage), out var point))
-        {
-            return;
-        }
-
-        try
-        {
-            _inputSession.Move(point);
-        }
-        catch (Exception exception)
-        {
-            HandleInputFailure(exception);
-        }
-    }
-
-    private void CapturedImage_OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-    {
-        if (!CapturedImage.IsMouseCaptured)
-        {
-            return;
-        }
-
-        e.Handled = true;
-
-        try
-        {
-            var imagePoint = e.GetPosition(CapturedImage);
-            if (TryMapToScreen(imagePoint, out var point))
-            {
-                _inputSession.Complete(point);
-                PublishInputStatus("입력 세션 완료 · 포인터를 해제했습니다");
-            }
-            else
-            {
-                CancelInputSession();
-            }
-        }
-        catch (Exception exception)
-        {
-            HandleInputFailure(exception);
-        }
-        finally
-        {
-            ReleaseImageMouseCapture();
-        }
-    }
-
-    private void CapturedImage_OnLostMouseCapture(object sender, MouseEventArgs e)
-    {
-        CancelInputSession();
+        PublishInputStatus(_inputSession.IsInputEnabled
+            ? "A 지정 또는 B 지정 후 이미지를 클릭하세요 · 실제 입력은 A→B 실행 버튼에서만 보냅니다"
+            : "A 지정 또는 B 지정 후 이미지를 클릭하세요 · 실제 포인터 입력: 꺼짐");
     }
 
     private void CapturedImage_OnSizeChanged(object sender, SizeChangedEventArgs e)
@@ -316,15 +257,7 @@ public partial class SelectionPreviewWindow : Window
             }
 
             cancellation.Token.ThrowIfCancellationRequested();
-
-            if (!_inputSession.Begin(pointA))
-            {
-                PublishInputStatus("실제 포인터 입력: 꺼짐 · A→B 실행을 시작하지 않았습니다");
-                return;
-            }
-
-            _inputSession.Complete(pointB);
-            PublishInputStatus("A→B 단일 직선 획 완료 · 포인터를 해제했습니다");
+            DeliverStraightStrokeToVisibleScreen(pointA, pointB);
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
@@ -346,8 +279,28 @@ public partial class SelectionPreviewWindow : Window
         }
     }
 
-    private bool TryMapToScreen(Point point, out ScreenPoint screenPoint) =>
-        TryMapToScreen(point, out screenPoint, out _);
+    private void DeliverStraightStrokeToVisibleScreen(ScreenPoint pointA, ScreenPoint pointB)
+    {
+        // SendInput uses global screen coordinates. Hide this preview while it runs so the
+        // selected visible screen area, rather than this window, receives the stroke.
+        Hide();
+
+        try
+        {
+            if (!_inputSession.Begin(pointA))
+            {
+                PublishInputStatus("실제 포인터 입력: 꺼짐 · A→B 실행을 시작하지 않았습니다");
+                return;
+            }
+
+            _inputSession.Complete(pointB);
+            PublishInputStatus("A→B 단일 직선 획 완료 · 포인터를 해제했습니다");
+        }
+        finally
+        {
+            Show();
+        }
+    }
 
     private bool TryMapToScreen(Point point, out ScreenPoint screenPoint, out PreviewPoint visualPoint)
     {

@@ -48,7 +48,6 @@ public partial class MainWindow : Window
     {
         StopLivePreview();
         _previewWindow?.CancelInputSession();
-        DisableInputGate();
         _previewWindow?.Hide();
 
         var overlay = new SelectionOverlayWindow
@@ -72,8 +71,8 @@ public partial class MainWindow : Window
         var isInputEnabled = InputEnabledCheckBox.IsChecked == true;
         if (isInputEnabled && _previewWindow is null)
         {
-            SelectionStatusText.Text = "먼저 영역을 선택한 뒤 입력 전달을 켤 수 있습니다";
-            InputEnabledCheckBox.IsChecked = false;
+            _isInputEnabled = true;
+            SelectionStatusText.Text = "입력 전달을 켰습니다. 영역을 고르면 바로 사용할 수 있습니다";
             return;
         }
 
@@ -185,25 +184,16 @@ public partial class MainWindow : Window
         _livePreviewSession++;
     }
 
-    private void DisableInputGate()
-    {
-        _isInputEnabled = false;
-        _previewWindow?.SetInputEnabled(false);
-
-        if (InputEnabledCheckBox.IsChecked == true)
-        {
-            InputEnabledCheckBox.IsChecked = false;
-        }
-    }
-
     private void PreviewWindow_OnInputStatusChanged(string status)
     {
         SelectionStatusText.Text = status;
 
-        if (_previewWindow?.IsInputEnabled == false && InputEnabledCheckBox.IsChecked == true)
+        if (_previewWindow is not null && InputEnabledCheckBox.IsChecked != _previewWindow.IsInputEnabled)
         {
-            InputEnabledCheckBox.IsChecked = false;
+            InputEnabledCheckBox.IsChecked = _previewWindow.IsInputEnabled;
         }
+
+        _isInputEnabled = _previewWindow?.IsInputEnabled == true;
     }
 
     private void ShowPreview(ScreenRegion selectionRegion)

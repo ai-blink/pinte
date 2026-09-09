@@ -1,8 +1,8 @@
 # 재개 컨텍스트
 
 - 브랜치: `main`.
-- 현재 상태: M4 길게 누름 수치 제어와 A→B 단일 직선 획의 비활성 UI까지 완료됐다. M5는 `new-alt` 미니맵 패턴으로 전환했다. 미리보기 창을 Windows 캡처에서 제외하고 원본 영역과 겹쳐도 갱신을 보류하지 않으며, A/B 표식은 클릭 당시 정규화 좌표로 고정하고 점선 직선 계획을 표시한다. 사용자가 A/B 표식 일치를 확인했다.
-- 사용자 승인 설계: 범용 Windows 오버레이, 이동 가능한 상호작용 확대창, 길게 누름 수치 조절, A→B 단일 직선 획.
-- 최근 증거: `dotnet build Magnifier.slnx --nologo` 경고·오류 0, `dotnet test Magnifier.slnx --nologo` Core 테스트 7개 통과, 사용자가 A/B 표식 중심과 클릭 위치의 일치(2026-09-09)를 확인했다. 실행 기록은 `notes/runs/2026-09-09-m5-minimap-ab-preview.md`다.
-- `NEEDS_USER_UI_CHECK`: checkbox 활성화 뒤 실제 대상 앱 짧은 드래그와 A→B 획은 전역 포인터를 조작한다. 대상 앱·권한 상태를 정한 명시적 사용자 승인 전에는 실행하지 않는다.
-- 다음 M5: 브라우저 마스크 페인팅 화면과 Blender 5.2에서 겹친 미리보기의 계속 갱신을 확인한 뒤, 실제 대상 하나·비관리자 권한 상태·Esc 취소 절차를 사용자와 확정해 한 번의 짧은 A→B 획만 검증한다.
+- 현재 상태: M5는 `BLOCKED`다. 최신 App은 A/B 표식·한 획·입력 허용 유지까지 build/test했지만, 사용자가 원하는 확대 화면의 실시간 지속 조작은 동작하지 않는다. A/B 전용 흐름을 실제 돋보기 완료로 취급하지 않는다.
+- 관찰된 차단: 미리보기 클릭을 실시간 입력으로 쓰면 자신의 창이 전역 입력을 가로채거나 실패 경로에서 gate가 풀린다. 현재 App은 이를 막기 위해 A/B 지정과 `실제 A→B 실행`만 입력 경로로 남겼다.
+- 다음 목표: `notes/plans/2026-09-08-magnifier-m5.md`의 실시간 조작 모드를 별도 설계한다. 확대 좌표를 계속 받으면서 아래 보이는 화면에 Down → Move → Up을 전달하고, 미리보기·capture·Esc release가 충돌하지 않는 구조를 브라우저와 Blender에서 확인한다.
+- 최근 증거: 최신 표준 실행본 `dotnet build Magnifier.slnx --nologo` 경고·오류 0, `dotnet test Magnifier.slnx --nologo` Core 테스트 7개 통과. 사용자 관찰은 `notes/runs/2026-09-09-m5-realtime-magnifier-handoff.md`에 기록한다.
+- 주의: `notes/transfers/`는 외부 자료이므로 수정·스테이징하지 않는다. 현재 실행 중인 `Magnifier.App.exe`를 닫기 전에는 표준 경로 build를 다시 실행하지 않는다.

@@ -60,9 +60,6 @@
                        Stretch="Uniform"
                        Cursor="Cross"
                        MouseLeftButtonDown="CapturedImage_OnMouseLeftButtonDown"
-                       MouseMove="CapturedImage_OnMouseMove"
-                       MouseLeftButtonUp="CapturedImage_OnMouseLeftButtonUp"
-                       LostMouseCapture="CapturedImage_OnLostMouseCapture"
                        SizeChanged="CapturedImage_OnSizeChanged" />
                 <Canvas x:Name="PointMarkerLayer"
                         Panel.ZIndex="1"
@@ -176,6 +173,16 @@
                        Text="A와 B를 지정하세요" />
             <StackPanel Grid.Column="2"
                         Orientation="Horizontal">
+                <CheckBox x:Name="PreviewInputEnabledCheckBox"
+                          Margin="0,0,6,0"
+                          VerticalAlignment="Center"
+                          Checked="PreviewInputEnabledCheckBox_OnChanged"
+                          Unchecked="PreviewInputEnabledCheckBox_OnChanged"
+                          Content="실제 입력 허용"
+                          FontSize="13"
+                          FontWeight="SemiBold"
+                          Foreground="#182235"
+                          ToolTip="켜면 A→B 실행이 선택한 화면 영역에 실제 포인터 입력을 보냅니다." />
                 <Button MinWidth="68"
                         MinHeight="34"
                         Padding="9,4"
