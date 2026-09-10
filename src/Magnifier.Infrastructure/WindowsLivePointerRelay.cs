@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Magnifier.Core;
@@ -11,7 +10,7 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
 {
     private readonly WindowsPointerInput _output = new();
     private readonly LensInputState _state;
-    private readonly ConcurrentQueue<Action> _commands = new();
+    private readonly RelayCommandPump _commands = new();
     private readonly TaskCompletionSource _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly HookProc _mouseProc;
     private readonly Dictionary<nint, nint> _savedStyles = [];
@@ -25,7 +24,7 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
     private int _otherButtonsHeld;
     private bool OtherHeld => _otherButtonsHeld != 0;
     private PreviewPoint _logical;
-    private nint _observedCapture;
+    private readonly PointerCaptureMonitor _captureMonitor = new();
     private string _message = "보기 · 실제 입력 꺼짐";
 
     public WindowsLivePointerRelay()
@@ -42,8 +41,9 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
     public Task ConfigureAsync(LensViewport viewport, params nint[] overlayWindows) => Dispatch(() =>
     {
         if (_viewport == viewport && _windows.SequenceEqual(overlayWindows)) return;
-        StopInternal("배치 변경 · 보기로 전환");
+        StopInternal("배치 변경 · 조작 자동 재개 대기", resume: true);
         EnsureReleased();
+        Interlocked.Exchange(ref _frameTimestamp, 0);
         _viewport = viewport;
         _windows = overlayWindows.Where(x => x != 0).Distinct().ToArray();
     });
@@ -53,18 +53,21 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         var armed = false;
         await Dispatch(() =>
         {
-            _leftHeld = (GetAsyncKeyState(1) & 0x8000) != 0;
-            _otherButtonsHeld = ReadOtherButtons();
-            _hookButtons = (_leftHeld ? 1 : 0) | (_otherButtonsHeld << 1);
-            if (_viewport is null || !FrameIsFresh())
-            { Publish("최신 화면을 기다리는 중 · 조작을 시작하지 않았습니다"); return; }
-            armed = _state.Arm(_leftHeld || OtherHeld || _draining);
-            Publish(armed ? "조작 켜짐 · 렌즈 안으로 이동하세요" : "마우스 버튼을 놓은 뒤 조작 시작을 누르세요");
+            _state.RequestStart();
+            TryResumeInput();
+            armed = _state.IsEnabled;
+            Publish(armed ? "조작 켜짐 · 렌즈 안으로 이동하세요" : "버튼 해제와 최신 화면을 기다린 뒤 자동 재개합니다");
         });
         return armed;
     }
 
     public Task StopAsync(string reason) => Dispatch(() => { StopInternal(reason); EnsureReleased(); });
+    public Task PauseAsync(string reason) => Dispatch(() =>
+    {
+        StopInternal(reason, resume: true);
+        Interlocked.Exchange(ref _frameTimestamp, 0);
+        EnsureReleased();
+    });
     private void EnsureReleased()
     {
         if (_state.IsPressed) throw new InvalidOperationException("Windows가 버튼 해제를 수락하지 않았습니다. 중지를 다시 눌러 해제를 재시도하세요.");
@@ -101,8 +104,7 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         {
             while (GetMessage(out var msg, 0, 0, 0) > 0)
             {
-                if (msg.Id == CommandMessage) while (_commands.TryDequeue(out var action)) action();
-                if (msg.Id == 0x113) CheckSession();
+                _commands.ProcessMessage(msg.Id == 0x113, CheckSession);
             }
         }
         finally
@@ -131,14 +133,14 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         };
         if (kind is 0x201 or 0x204 or 0x207 or 0x20B) _hookButtons |= bit;
         if (kind is 0x202 or 0x205 or 0x208 or 0x20C) _hookButtons &= ~bit;
-        var intercepted = _intercepting || _draining || (_state.IsEnabled && previousButtons == 0
+        var intercepted = _intercepting || _draining || (_state.IsEnabled && kind == 0x201 && previousButtons == 0
             && _viewport is { } view && view.Contains(new(mouse.Point.X, mouse.Point.Y)));
         if (intercepted && !_draining) _intercepting = true;
         var passMove = _draining && kind == 0x200;
         var hasPrevious = GetCursorPos(out var previous);
         // Do not call SendInput/SetWindowLong from this callback. Nested input routing
         // can deliver the original button before the hook's suppression result returns.
-        _commands.Enqueue(() => ProcessMouse(kind, mouse, intercepted, previous, hasPrevious));
+        _commands.Enqueue(() => ProcessMouse(kind, mouse, intercepted, previous, hasPrevious), leftRelease: kind == 0x202);
         if (!PostThreadMessage(_threadId, CommandMessage, 0, 0)) _inputPostFailed = true;
         return intercepted && !passMove ? 1 : CallNextHookEx(0, code, message, data);
     }
@@ -163,14 +165,16 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
             if (_draining)
             {
                 // The held button belongs to the old drag, never to a return button.
-                if (!_leftHeld && !OtherHeld) { _draining = false; Publish("보기 · 버튼 해제됨"); }
+                if (!_leftHeld && !OtherHeld) { _draining = false; Publish("버튼 해제됨 · 조작 자동 재개 대기"); }
                 return;
             }
             if (!_state.IsEnabled || _viewport is not { } view)
                 return;
-            if (!FrameIsFresh()) { StopInternal("화면 갱신 지연 · 조작 중지"); return; }
+            if (!FrameIsFresh()) { StopInternal("화면 갱신 대기 · 조작 자동 재개 대기", resume: true); return; }
             if (!_relaying)
             {
+                // Hover belongs to the actual cursor. Only a new press starts source routing.
+                if (kind != 0x201) return;
                 if (!view.Contains(new ScreenPoint(mouse.Point.X, mouse.Point.Y)))
                     return;
                 // Do not steal a drag that started in another window or a window handle.
@@ -193,42 +197,57 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
             }
             var logicalPixel = new ScreenPoint((int)Math.Floor(_logical.X), (int)Math.Floor(_logical.Y));
             if (!view.Contains(logicalPixel))
-            { StopInternal("경계에서 버튼 해제 · 보기로 전환"); return; }
+            { StopInternal("경계에서 버튼 해제 · 조작 자동 재개 대기", resume: true); return; }
             var target = view.MapToSource(_logical);
             switch (kind)
             {
-                case 0x201: _state.Begin(target); _observedCapture = 0; break;
+                case 0x201:
+                    BeginCaptureMonitoring(target);
+                    _state.Begin(target);
+                    break;
                 case 0x200:
                     if (_state.IsPressed) _state.Move(target); else _output.MoveTo(target);
                     break;
-                case 0x202: _state.Complete(target); _observedCapture = 0; break;
+                case 0x202:
+                    _state.Complete(target);
+                    StopInternal("버튼 해제 · 실제 커서 복귀", resume: true);
+                    TryResumeInput();
+                    return;
                 default:
-                    StopInternal("이 조작은 아직 직접 전달하지 않습니다 · 보기로 전환");
+                    StopInternal("이 조작은 아직 직접 전달하지 않습니다 · 버튼 해제 후 자동 재개", resume: true);
                     return;
             }
             Publish(_state.IsPressed ? "드래그 중 · 가장자리로 이동하면 중지" : "조작 켜짐 · 실제 대상 반응을 확인하세요");
         }
         catch (Exception ex)
         {
-            try { StopInternal($"입력 실패: {ex.Message}"); } catch { }
+            try { StopInternal($"입력 실패: {ex.Message}", failed: true); } catch { }
         }
     }
 
-    private void StopInternal(string reason)
+    private void StopInternal(string reason, bool resume = false, bool failed = false)
     {
+        var wasRequested = _state.IsRequested;
+        var wasPressed = _state.IsPressed;
         var restore = _relaying;
-        _draining |= (restore || _intercepting) && (_leftHeld || OtherHeld);
+        var ownsPress = restore || _intercepting || _draining || _state.IsPressed;
+        _draining |= ownsPress && (_leftHeld || OtherHeld);
         _intercepting = false;
-        try { _state.Stop(); }
+        try
+        {
+            if (resume) _state.Pause(ownsPhysicalPress: ownsPress);
+            else _state.Stop(ownsPhysicalPress: ownsPress);
+        }
         catch (Exception ex) { reason += $" · 해제 재시도 필요: {ex.Message}"; }
         finally
         {
             _relaying = false;
-            _observedCapture = 0;
             SetPassthrough(false);
             // Up is sent before this move, preventing a long stroke towards the toolbar.
             if (restore && !_state.IsPressed)
                 _output.MoveTo(new ScreenPoint((int)Math.Round(_logical.X), (int)Math.Round(_logical.Y)));
+            if ((wasRequested || failed) && !_state.IsRequested) RecordStop(reason, wasPressed);
+            _captureMonitor.Reset();
             Publish(reason);
         }
     }
@@ -239,24 +258,40 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         {
             if (_inputPostFailed) { _inputPostFailed = false; StopInternal("입력 큐 전달 실패 · 조작 중지"); return; }
             if (_state.IsPressed && !_state.IsEnabled) { _state.Stop(); Publish(_message); }
-            if (!_state.IsEnabled) return;
-            if (!FrameIsFresh()) { StopInternal("화면 갱신 지연 · 조작 중지"); return; }
+            if (!_state.IsRequested) return;
             if ((GetAsyncKeyState(0x1B) & 0x8000) != 0) { StopInternal("Esc · 보기로 전환"); return; }
             var desktop = OpenInputDesktop(0, false, 1);
             if (desktop == 0) { StopInternal("입력 화면 변경 · 조작 중지"); return; }
             CloseDesktop(desktop);
-            if (_state.IsPressed)
-            {
-                var info = new GuiThreadInfo { Size = (uint)Marshal.SizeOf<GuiThreadInfo>() };
-                if (GetGUIThreadInfo(0, ref info))
-                {
-                    if (_observedCapture != 0 && info.Capture != _observedCapture)
-                    { StopInternal("대상 포인터 capture 손실 · 조작 중지"); return; }
-                    if (info.Capture != 0) _observedCapture = info.Capture;
-                }
-            }
+            if (!_state.IsEnabled) { TryResumeInput(); return; }
+            if (!FrameIsFresh()) { StopInternal("화면 갱신 대기 · 조작 자동 재개 대기", resume: true); return; }
+            if (_state.IsPressed && _captureMonitor.LostCapture(ReadTargetCapture, () => _commands.HasPendingLeftRelease))
+                StopInternal("원본 대상 capture 손실 또는 조회 실패 · 조작 중지");
         }
-        catch (Exception ex) { try { StopInternal($"입력 상태 확인 실패: {ex.Message}"); } catch { } }
+        catch (Exception ex) { try { StopInternal($"입력 상태 확인 실패: {ex.Message}", failed: true); } catch { } }
+    }
+
+    private void BeginCaptureMonitoring(ScreenPoint point)
+    {
+        var window = WindowFromPoint(new NativePoint { X = point.X, Y = point.Y });
+        var thread = window == 0 ? 0 : GetWindowThreadProcessId(window, out _);
+        _captureMonitor.Begin(thread, window == 0 ? 0 : GetAncestor(window, 2));
+    }
+
+    private static CaptureSample ReadTargetCapture(uint thread)
+    {
+        var info = new GuiThreadInfo { Size = (uint)Marshal.SizeOf<GuiThreadInfo>() };
+        var success = GetGUIThreadInfo(thread, ref info);
+        return new(success, info.Capture, info.Capture == 0 ? 0 : GetAncestor(info.Capture, 2));
+    }
+
+    private void TryResumeInput()
+    {
+        if (_viewport is null || !FrameIsFresh() || _draining || _intercepting) return;
+        // Hook-observed release must drain first. Sampling cannot skip a queued physical Up.
+        var held = _hookButtons != 0 || _leftHeld || OtherHeld
+            || (GetAsyncKeyState(1) & 0x8000) != 0 || ReadOtherButtons() != 0;
+        if (_state.TryResume(held)) Publish("조작 켜짐 · 렌즈 안으로 이동하세요");
     }
 
     private static int ReadOtherButtons() => ((GetAsyncKeyState(2) & 0x8000) != 0 ? 1 : 0)
@@ -289,7 +324,7 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
     {
         _message = message;
         StatusChanged?.Invoke(new(_state.IsEnabled, _relaying, _state.IsPressed,
-            _state.IsWaitingForRelease || _draining, _logical, message));
+            _state.IsWaitingForRelease || _draining, _logical, message, _state.IsRequested));
     }
 
     public async ValueTask DisposeAsync()

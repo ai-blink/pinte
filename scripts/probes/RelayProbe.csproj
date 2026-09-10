@@ -6,6 +6,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(InputTransformTrial)' == 'true'">
+    <ApplicationManifest>../../src/Magnifier.App/app.uiaccess.manifest</ApplicationManifest>
+    <OutputType>WinExe</OutputType>
+    <DefineConstants>$(DefineConstants);INPUT_TRANSFORM_TRIAL</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Magnifier.Core">
       <HintPath>../../src/Magnifier.Core/bin/Debug/net9.0/Magnifier.Core.dll</HintPath>

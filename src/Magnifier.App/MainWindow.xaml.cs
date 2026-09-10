@@ -32,38 +32,61 @@ public partial class MainWindow : Window
     }
 
     private async void SelectRegionButton_OnClick(object sender, RoutedEventArgs e)
+        => await OpenMagnifierAsync(placeLower: false);
+
+    private async void LowerPlacementButton_OnClick(object sender, RoutedEventArgs e)
+        => await OpenMagnifierAsync(placeLower: true);
+
+    private async Task OpenMagnifierAsync(bool placeLower)
     {
         SelectRegionButton.IsEnabled = false;
+        LowerPlacementButton.IsEnabled = false;
         var savedLayout = _layout;
         try
         {
-            await _relay.StopAsync("확대 시작 · 보기 모드");
+            await _relay.StopAsync("확대 시작 · 화면 준비");
             EnsureWindows();
             _frame!.Show();
             _lens!.Show();
             var work = _windows.GetWindowWorkArea(new WindowInteropHelper(this).Handle);
             var source = savedLayout?.Source;
             if (source is null || !_windows.IsRegionVisible(source.Value))
-                source = new ScreenRegion(work.X + 48, work.Y + 80,
+            {
+                placeLower = true;
+                source = new ScreenRegion(work.X + work.Width / 4, work.Y + work.Height / 2,
                     Math.Min(320, work.Width / 3), Math.Min(220, work.Height / 3));
+            }
             _frame.SetRegion(source.Value);
             if (savedLayout is { } layout && _windows.IsRegionVisible(layout.Lens))
                 _windows.PlaceWindow(_lens.WindowHandle, layout.Lens);
             else
+            {
+                placeLower = true;
                 _windows.PlaceWindow(_lens.WindowHandle, new ScreenRegion(work.X + work.Width / 3,
-                    work.Y + 40, Math.Min(800, work.Width * 2 / 3), Math.Min(640, work.Height - 60)));
+                    work.Y + work.Height / 3, Math.Min(800, work.Width * 2 / 3), Math.Min(640, work.Height - 60)));
+            }
             _lens.SetZoom(savedLayout?.Zoom ?? 2);
             await ChangeSourceAsync(_frame.Region);
+            if (placeLower)
+            {
+                // Measure complete native windows after layout, including DPI-scaled title bars.
+                var pair = WindowPairPlacement.Lower(work, _windows.GetWindowBounds(_frame.WindowHandle),
+                    _windows.GetWindowBounds(_lens.WindowHandle));
+                _windows.PlaceWindow(_frame.WindowHandle, pair.Frame);
+                _windows.PlaceWindow(_lens.WindowHandle, pair.Lens);
+                await ChangeSourceAsync(_frame.Region);
+            }
             Hide();
             _timer.Start();
             await CaptureOnceAsync();
+            await _lens.StartInputAsync();
         }
         catch (Exception ex)
         {
             await ReturnToScreenAsync();
             SelectionStatusText.Text = $"확대 시작 실패: {ex.Message}";
         }
-        finally { SelectRegionButton.IsEnabled = true; }
+        finally { SelectRegionButton.IsEnabled = true; LowerPlacementButton.IsEnabled = true; }
     }
 
     private void EnsureWindows()
@@ -79,7 +102,11 @@ public partial class MainWindow : Window
             try { await ChangeSourceAsync(region); }
             catch (Exception ex) { SelectionStatusText.Text = ex.Message; }
         };
-        _frame.AdjustmentStarted += async () => await _lens.StopAsync("원본 영역 조절 · 보기 모드");
+        _frame.AdjustmentStarted += async () =>
+        {
+            try { await _lens.PauseAsync("원본 영역 조절 · 버튼 해제 후 자동 재개"); }
+            catch (Exception ex) { SelectionStatusText.Text = ex.Message; }
+        };
         _frame.ReturnRequested += async () => await ReturnToScreenAsync();
         _lens.ReturnRequested += async () => await ReturnToScreenAsync();
         _lens.EditingAllowedChanged += allowed => _frame.SetEditingEnabled(allowed);
@@ -138,7 +165,7 @@ public partial class MainWindow : Window
         _returning = true;
         try
         {
-            // Release -> disable -> hide both -> restore entry. Input gate is never restored.
+            // Release -> disable -> hide both -> restore entry. A new open requests input anew.
             if (_lens is not null) await _lens.StopAsync("원래 화면 · 입력 꺼짐");
             else await _relay.StopAsync("원래 화면 · 입력 꺼짐");
             _timer.Stop();
@@ -148,7 +175,7 @@ public partial class MainWindow : Window
             _lens?.Hide();
             Show();
             Activate();
-            SelectionStatusText.Text = "원래 화면으로 돌아왔습니다. 다시 확대해도 보기로 시작합니다.";
+            SelectionStatusText.Text = "원래 화면으로 돌아왔습니다. 확대 시작을 누르면 바로 조작할 수 있습니다.";
             if (_layout is not null && !LensLayoutStore.Save(_layout))
                 SelectionStatusText.Text += " 배치는 이번 실행에서만 기억합니다.";
             return true;

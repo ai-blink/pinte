@@ -9,7 +9,7 @@ using System.Windows.Threading;
 using Magnifier.Core;
 using Magnifier.Infrastructure;
 
-internal static class RelayProbe
+internal static partial class RelayProbe
 {
     private const nint ProbeTag = 0x50524F42;
     private const nint RelayTag = 0x4D41474E;
@@ -33,6 +33,11 @@ internal static class RelayProbe
     [STAThread]
     public static int Main(string[] args)
     {
+#if INPUT_TRANSFORM_TRIAL
+        if (!args.Contains("--input-transform") && !args.Contains("--input-transform-manual") &&
+            !args.Contains("--input-transform-native") && !args.Contains("--describe")) return 4;
+#endif
+        _cursorDiagnostic = args.Contains("--cursor-diagnostic");
         if (args.Contains("--describe"))
         {
             Console.WriteLine(JsonSerializer.Serialize(new { EngineBuild = typeof(WindowsLivePointerRelay).Assembly.ManifestModule.ModuleVersionId, InputAbi = DescribeAbi() }));
@@ -40,7 +45,13 @@ internal static class RelayProbe
         }
         SetProcessDpiAwarenessContext(-4);
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
-        app.Startup += async (_, _) => await Run(app);
+        app.Startup += async (_, _) =>
+        {
+            if (args.Contains("--input-transform-manual")) await RunInputTransformManual(app);
+            else if (args.Contains("--input-transform-native")) await RunInputTransform(app, nativeSurface: true);
+            else if (args.Contains("--input-transform")) await RunInputTransform(app);
+            else await Run(app);
+        };
         app.Run();
         return Environment.ExitCode;
     }
@@ -78,9 +89,20 @@ internal static class RelayProbe
             frameTimer.Tick += (_, _) => _relay.RefreshFrame();
             frameTimer.Start();
 
+            if (_cursorDiagnostic)
+            {
+                await CursorDiagnostic();
+                Console.WriteLine(JsonSerializer.Serialize(new { Result = "DIAGNOSTIC_COMPLETE", Fixed = false,
+                    EngineBuild = typeof(WindowsLivePointerRelay).Assembly.ManifestModule.ModuleVersionId, Scenarios = Results }));
+                return;
+            }
+
+            await WindowHandleScenario();
+            await HeldStartScenario();
             await DragScenario("분리 창 곡선·왕복", overlap: false);
             await DragScenario("겹친 창 곡선·왕복", overlap: true);
             await BoundaryScenario();
+            await FreshnessScenario(frameTimer);
             Console.WriteLine(JsonSerializer.Serialize(new { Result = "PASS", EngineBuild = typeof(WindowsLivePointerRelay).Assembly.ManifestModule.ModuleVersionId, Scenarios = Results }));
         }
         catch (Exception ex)
@@ -117,6 +139,39 @@ internal static class RelayProbe
         }
     }
 
+    private static async Task WindowHandleScenario()
+    {
+        var view = Viewport();
+        await _relay!.ConfigureAsync(view, _lensHwnd);
+        _relay.RefreshFrame();
+        Check(await _relay.StartAsync(), "손잡이 probe 시작 실패");
+        _lensDowns = 0;
+        await Move(ToPhysical(_lens!, new Point(160, 20))); // Title, outside relayed content.
+        await Button(down: true);
+        await _relay.PauseAsync("창 이동 시작 · 자동 재개 대기");
+        await _relay.ConfigureAsync(view with { Destination = new ScreenRegion(
+            view.Destination.X, view.Destination.Y + 1, view.Destination.Width, view.Destination.Height) }, _lensHwnd);
+        Check(_status is { IsEnabled: false, IsPressed: false, WaitingForRelease: false },
+            "원본 UI 손잡이 누름을 중계 해제 대기로 오인함");
+        await Button(down: false);
+        await WaitForResume();
+        Check(_lensDowns == 1, "손잡이 원본 Down이 누락되거나 중복됨");
+        Results.Add(new { Name = "창 손잡이 누름 중 배치 갱신·해제 후 자동 재개", Result = "PASS", LensDowns = _lensDowns });
+    }
+
+    private static async Task HeldStartScenario()
+    {
+        await _relay!.StopAsync("확대 진입 클릭 준비");
+        await Move(ToPhysical(_lens!, new Point(160, 20)));
+        await Button(down: true);
+        _relay.RefreshFrame();
+        Check(!await _relay.StartAsync(), "진입 버튼을 누른 채 조작이 켜짐");
+        Check(_status is { InputRequested: true, WaitingForRelease: false }, "진입 누름이 창 손잡이를 잠금");
+        await Button(down: false);
+        await WaitForResume();
+        Results.Add(new { Name = "진입 클릭 해제 후 자동 시작", Result = "PASS" });
+    }
+
     private static async Task DragScenario(string name, bool overlap)
     {
         Check(_relay is not null && _lens is not null && _target is not null, "검증 초기화 실패");
@@ -136,16 +191,22 @@ internal static class RelayProbe
         var path = new[] { (0.20, 0.20), (0.35, 0.25), (0.50, 0.45), (0.65, 0.65), (0.50, 0.45), (0.35, 0.25), (0.20, 0.20) };
         var points = path.Select(p => DestinationPoint(view, p.Item1, p.Item2)).ToArray();
         await Move(points[0]);
-        Check(_status?.IsRelaying == true, "렌즈 진입이 중계로 전환되지 않음: " + _status?.Message);
-        Check(((long)GetWindowLongPtr(_lensHwnd, -20) & 0x20) != 0, "렌즈가 입력 통과 스타일로 전환되지 않음");
+        Check(_status is { IsEnabled: true, IsRelaying: false }, "hover만으로 원본 입력 중계가 시작됨");
+        Check(Near(ReadCursor(), points[0]), "hover 실제 커서가 원본으로 이동함");
+        Check(((long)GetWindowLongPtr(_lensHwnd, -20) & 0x20) == 0, "hover에서 렌즈가 입력 통과로 바뀜");
         await Button(down: true);
+        Check(_status?.IsRelaying == true, "Down에서 중계로 전환되지 않음: " + _status?.Message);
+        Check(((long)GetWindowLongPtr(_lensHwnd, -20) & 0x20) != 0, "Down에서 렌즈가 입력 통과로 전환되지 않음");
         foreach (var point in points.Skip(1)) await Move(point);
         await Button(down: false);
         var expected = points.Select(p => view.MapToSource(new PreviewPoint(p.X, p.Y))).ToArray();
         ValidateDrag(expected);
         Check(_status?.IsPressed == false, "완료 뒤 중계 누름이 남음");
+        Check(_status is { IsRelaying: false, InputRequested: true }, "Up 뒤 hover로 돌아오지 않거나 조작 요청 해제됨");
+        Check(Near(ReadCursor(), points[^1]), "Up 뒤 실제 커서가 렌즈 클릭 위치로 복귀하지 않음");
         Check(_lensDowns == 0, "렌즈가 대상 Down을 수신함");
-        Results.Add(new { Name = name, Result = "PASS", Expected = expected, Receipts = Receipts.ToArray(), LensDowns = _lensDowns });
+        Results.Add(new { Name = name, Result = "PASS", Expected = expected, Receipts = Receipts.ToArray(),
+            LensDowns = _lensDowns, HoverAndReleasedCursorMatch = true });
         await _relay.StopAsync("probe 시나리오 완료");
         Check(((long)GetWindowLongPtr(_lensHwnd, -20) & 0x20) == 0, "중지 뒤 렌즈 스타일 미복구");
     }
@@ -174,11 +235,39 @@ internal static class RelayProbe
         Check(Receipts.Where(r => r.Kind == "move" && r.Pressed).All(r => Near(r.Point, lastTarget) || Near(r.Point, startTarget)), "경계 복귀로 긴 획이 전달됨");
         await Button(down: false);
         Check(Receipts.Count(r => r.Kind == "down") == 1 && Receipts.Count(r => r.Kind == "up") == 1, "남은 물리 Up이 추가 대상 입력으로 전달됨");
-        Check(_lensDowns == 0 && _status is { IsEnabled: false, WaitingForRelease: false }, "해제 뒤 자동 활성화 또는 추가 렌즈 클릭");
-        _relay.RefreshFrame();
-        Check(await _relay.StartAsync(), "물리 버튼 해제 뒤 명시적 재시작 실패");
+        Check(_lensDowns == 0 && _status is { WaitingForRelease: false }, "해제 뒤 추가 렌즈 클릭 또는 해제 대기 잔류");
+        await WaitForResume();
         await _relay.StopAsync("경계 probe 완료");
-        Results.Add(new { Name = "경계 Up 및 누른 버튼 해제 대기", Result = "PASS", LastTarget = lastTarget, Receipts = Receipts.ToArray() });
+        Results.Add(new { Name = "경계 Up·물리 해제 대기·자동 재개", Result = "PASS", LastTarget = lastTarget, Receipts = Receipts.ToArray() });
+    }
+
+    private static async Task FreshnessScenario(DispatcherTimer frameTimer)
+    {
+        await Move(ToPhysical(_lens!, new Point(160, 20)));
+        _relay!.RefreshFrame();
+        Check(await _relay.StartAsync(), "화면 지연 probe 시작 실패");
+        frameTimer.Stop();
+        await Task.Delay(900);
+        CheckOwnedForeground();
+        Check(_status is { IsEnabled: false, InputRequested: true }, "화면 지연이 조작 요청을 해제함");
+        frameTimer.Start();
+        await WaitForResume();
+        await _relay.StopAsync("명시적 조작 중지");
+        await Task.Delay(180);
+        CheckOwnedForeground();
+        Check(_status is { IsEnabled: false, InputRequested: false }, "명시적 중지가 자동으로 풀림");
+        Results.Add(new { Name = "화면 지연 후 자동 재개·명시적 중지 유지", Result = "PASS" });
+    }
+
+    private static async Task WaitForResume()
+    {
+        for (var i = 0; i < 20; i++)
+        {
+            CheckOwnedForeground();
+            if (_status is { IsEnabled: true, WaitingForRelease: false }) return;
+            await Task.Delay(25);
+        }
+        Check(false, "버튼 해제·최신 화면 뒤 조작이 자동 재개되지 않음: " + _status?.Message);
     }
 
     private static void ValidateDrag(ScreenPoint[] expected)
@@ -238,6 +327,7 @@ internal static class RelayProbe
         if (code >= 0)
         {
             var mouse = Marshal.PtrToStructure<MouseHook>(data);
+            if (mouse.Extra == SuppressedRestoreTag) { _suppressedRestoreCount++; return 1; }
             if (mouse.Extra != ProbeTag && mouse.Extra != RelayTag)
             {
                 if (!_conflict)

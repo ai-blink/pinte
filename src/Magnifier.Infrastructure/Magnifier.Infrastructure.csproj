@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Magnifier.Core\Magnifier.Core.csproj" />
+    <InternalsVisibleTo Include="Magnifier.Infrastructure.Tests" />
   </ItemGroup>
 
 </Project>

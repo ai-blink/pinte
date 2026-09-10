@@ -9,6 +9,11 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(InputTransformTrial)' == 'true'">
+    <ApplicationManifest>app.uiaccess.manifest</ApplicationManifest>
+    <DefineConstants>$(DefineConstants);INPUT_TRANSFORM_TRIAL</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Magnifier.Core\Magnifier.Core.csproj" />
     <ProjectReference Include="..\Magnifier.Infrastructure\Magnifier.Infrastructure.csproj" />

@@ -19,4 +19,8 @@
 - 최초 구현 검증은 `BLOCKED / NEEDS_USER_UI_CHECK`였다. native 프로브의 목표 Down 수신 뒤 외부 입력 guard가 작동해 중단했으며 상세는 `notes/runs/2026-09-10-two-window-implementation.md`에 보존한다.
 - 2026-09-10 커밋: 사용자 요청으로 계획·UX·결정·상태도를 동기화하고 구현·테스트 45개 파일을 main의 `6b5c0df`에 저장했다. `notes/transfers/` 제외, 푸시 없음.
 - 2026-09-10 R0 재검사: 사용자 직접 조작 확인 뒤 재개. 대상 원본/중계 Down·Up 중복을 재현했고 hook 내 직접 주입을 FIFO 처리로 옮겨 분리/겹침 곡선·왕복과 경계 Up·재무장 프로브 3개를 통과했다. 표준 build 경고·오류 0, Core 23개 통과. Main Hide/Owner 관계 수정 뒤 표준 앱 두 창 표시는 사용자 확인을 받았다.
-- 다음: Chrome 마커 페이지에서 실제 렌즈 드래그·복귀 확인. 독립 이동·크기·실제 장치·Blender·혼합 DPI·다중 모니터는 미검증이며 제품 수락은 `NEEDS_USER_UI_CHECK`. 최신 기록은 `notes/runs/2026-09-10-r0-relay-retest.md`.
+- 2026-09-10 창 이동: 손잡이 수정·아래쪽 배치, build 0/0·Core 28·native 4개 통과. 사용자 이동 확인. `notes/runs/2026-09-10-window-drag-placement.md`.
+- 2026-09-10 조작 유지: 확대 열기·일시 정지 뒤 자동 재개, Core 34·native 6개 통과. 사용자 클릭·드래그 확인 뒤 재실패.
+- 2026-09-10 커서: hover·Up 복원, build 0/0·Core 34개·native 6개 통과. 드래그 중 이중 포인터 `BLOCKED`.
+- 2026-09-10 OS 변환: 승인된 UIAccess 설치/API 수락 완료. WPF 수동·native 합성 클릭 전달 실패. build 0/0·Core 34개. 사용자 관리자 검증 진입 파일 준비, 자동 UI 중단. `notes/runs/2026-09-10-uiaccess-pointer-trial.md`.
+- 2026-09-11 인계: 두 차례 수정 뒤에도 실패. 다른 root capture 전환 2회가 누름 중 중지를 유발했다. build 0/0·44개 통과와 별개로 BLOCKED. 관련 변경 커밋·푸시 없음. `notes/runs/2026-09-11-drag-blocked-handoff.md`.

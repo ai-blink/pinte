@@ -11,11 +11,13 @@ public partial class SelectionPreviewWindow
     private PointTarget _pendingPointTarget;
     private int _countdownSeconds = 3;
     private bool _isSynchronizingInputToggle;
+    private bool _resumeAfterAuxiliary;
 
     private async void AuxiliaryTools_OnExpanded(object sender, RoutedEventArgs e)
     {
         if (!IsInitialized) return;
-        try { await StopAsync("A/B 보조 도구 · 직접 조작 꺼짐"); }
+        var resume = _relayStatus is { InputRequested: true };
+        try { await StopAsync("A/B 보조 도구 · 직접 조작 꺼짐"); _resumeAfterAuxiliary = resume; }
         catch { }
         ResizeLens();
         QueueGeometryUpdate();
@@ -26,13 +28,19 @@ public partial class SelectionPreviewWindow
     private async void AuxiliaryTools_OnCollapsed(object sender, RoutedEventArgs e)
     {
         if (!IsInitialized) return;
+        var resume = _resumeAfterAuxiliary;
         _pendingPointTarget = PointTarget.None;
         try { await StopAsync("A/B 보조 도구 닫기 · 보기로 전환"); }
-        catch { }
+        catch { resume = false; }
         ResizeLens();
         QueueGeometryUpdate();
         UpdatePointMarkers();
         UpdateControls();
+        if (resume)
+        {
+            try { await StartInputAsync(); }
+            catch (Exception exception) { PublishInputStatus($"조작 재개 실패: {exception.Message}"); }
+        }
     }
 
     private void PreviewInputEnabledCheckBox_OnChanged(object sender, RoutedEventArgs e)

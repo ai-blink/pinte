@@ -1,7 +1,7 @@
 <Window x:Class="Magnifier.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Magnifier" Width="410" Height="290" ResizeMode="NoResize"
+        Title="Magnifier" Width="410" Height="350" ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen" Background="#F3F6FA">
     <StackPanel Margin="24">
         <TextBlock Text="필요한 곳을 크게" FontSize="26" FontWeight="SemiBold" Foreground="#182235" />
@@ -9,7 +9,9 @@
                    TextWrapping="Wrap" FontSize="15" Foreground="#40516A" />
         <Button x:Name="SelectRegionButton" Content="확대 시작" Height="64" FontSize="23"
                 Foreground="White" Background="#1769E0" Click="SelectRegionButton_OnClick" />
+        <Button x:Name="LowerPlacementButton" Content="두 창 아래쪽에 배치" Height="48" Margin="0,8,0,0"
+                FontSize="18" Click="LowerPlacementButton_OnClick" />
         <TextBlock x:Name="SelectionStatusText" Margin="0,16,0,0" FontSize="14" Foreground="#40516A"
-                   TextWrapping="Wrap" Text="시작은 보기 모드입니다. 조작은 렌즈에서 켭니다." />
+                   TextWrapping="Wrap" Text="확대하면 바로 조작됩니다. 창을 옮겨도 조작 상태가 유지됩니다." />
     </StackPanel>
 </Window>

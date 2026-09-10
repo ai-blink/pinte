@@ -34,7 +34,7 @@
                            IsHitTestVisible="False" Text="확대 렌즈 · 이 제목부를 잡아 이동" />
             </Grid>
             <WrapPanel x:Name="Toolbar" Grid.Row="1" Margin="5">
-                <Button x:Name="StartInputButton" Content="조작 시작" Click="StartInput_OnClick" Background="#D9EAFE" />
+                <Button x:Name="StartInputButton" Content="조작 재개" Click="StartInput_OnClick" Background="#D9EAFE" />
                 <Button x:Name="StopInputButton" Content="조작 중지" Click="StopInput_OnClick" />
                 <Button Content="원래 화면" Click="Return_OnClick" Background="#FFE8BC"
                         AutomationProperties.Name="입력을 해제하고 원래 화면으로 복귀" />
@@ -48,7 +48,7 @@
             <Border x:Name="ImageBorder" Grid.Row="2" Margin="6,0" Background="#132033"
                     BorderBrush="#738DAE" BorderThickness="1" ClipToBounds="True">
                 <Grid>
-                    <Image x:Name="CapturedImage" Stretch="Uniform" Cursor="Cross"
+                    <Image x:Name="CapturedImage" Stretch="Uniform" Cursor="Arrow"
                            RenderOptions.BitmapScalingMode="NearestNeighbor"
                            MouseLeftButtonDown="CapturedImage_OnMouseLeftButtonDown"
                            SizeChanged="CapturedImage_OnSizeChanged" />
@@ -76,7 +76,7 @@
             </Border>
             <StackPanel x:Name="StatusPanel" Grid.Row="3" Margin="12,6">
                 <TextBlock x:Name="InputStatusText" FontSize="14" Foreground="#754000"
-                           Text="보기 · 실제 입력 꺼짐" TextTrimming="CharacterEllipsis" />
+                           Text="화면 준비 후 바로 조작할 수 있습니다" TextTrimming="CharacterEllipsis" />
                 <TextBlock x:Name="CaptureStatusText" FontSize="12" Foreground="#40516A"
                            Text="조작 중 가장자리를 벗어나면 입력을 해제합니다" TextTrimming="CharacterEllipsis" />
                 <TextBlock x:Name="SelectionBoundsText" FontSize="11" Foreground="#40516A" TextTrimming="CharacterEllipsis" />

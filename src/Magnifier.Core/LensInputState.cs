@@ -1,6 +1,6 @@
 namespace Magnifier.Core;
 
-/// <summary>직접 조작의 명시적 시작, 누름 해제, 물리 버튼 재무장을 관리한다.</summary>
+/// <summary>조작 요청을 일시 정지와 분리하고, 누름 해제 뒤 재개를 관리한다.</summary>
 public sealed class LensInputState
 {
     private readonly PointerInputSession _session;
@@ -13,6 +13,17 @@ public sealed class LensInputState
 
     public bool IsEnabled => _session.IsInputEnabled;
 
+    public bool IsRequested { get; private set; }
+
+    public void RequestStart() => IsRequested = true;
+
+    public bool TryResume(bool physicalButtonDown)
+    {
+        if (!IsRequested || IsEnabled || physicalButtonDown || _physicalButtonDown
+            || IsPressed || IsWaitingForRelease) return false;
+        return Arm(false);
+    }
+
     public bool IsPressed => _session.IsPressed;
 
     public bool IsWaitingForRelease { get; private set; }
@@ -21,6 +32,7 @@ public sealed class LensInputState
 
     public bool Arm(bool physicalButtonDown)
     {
+        RequestStart();
         _physicalButtonDown = physicalButtonDown;
         if (physicalButtonDown)
         {
@@ -91,14 +103,27 @@ public sealed class LensInputState
         }
     }
 
-    public void Stop()
+    public void Stop() => Stop(ownsPhysicalPress: true);
+
+    /// <param name="ownsPhysicalPress">false for a WPF window handle press that was never relayed.</param>
+    public void Stop(bool ownsPhysicalPress)
     {
-        IsWaitingForRelease |= _physicalButtonDown;
-        _session.SetInputEnabled(false);
+        IsRequested = false;
+        Pause(ownsPhysicalPress);
+    }
+
+    public void Pause(bool ownsPhysicalPress = true)
+    {
+        // A window thumb must retain its capture while geometry stops the relay.
+        // A real target press always drains, even if the caller says otherwise.
+        IsWaitingForRelease |= _physicalButtonDown && (ownsPhysicalPress || IsPressed);
+        try { _session.SetInputEnabled(false); }
+        catch { IsRequested = false; throw; }
     }
 
     private void StopAfterFailure()
     {
+        IsRequested = false;
         IsWaitingForRelease |= _physicalButtonDown;
         // PointerInputSession 자체가 입력 게이트를 닫고 Up을 시도한다.
         // 이미 실패한 Up을 여기서 즉시 반복하지 않고 Stop에서 재시도한다.

@@ -153,6 +153,44 @@ public sealed class LensInputStateTests
         CollectionAssert.AreEqual(new[] { "move:10,20", "down", "up" }, input.Calls);
     }
 
+    [TestMethod]
+    public void WindowHandlePress_GeometryStopDoesNotEnterRelayDrain()
+    {
+        var input = new RecordingPointerInput();
+        var state = new LensInputState(input);
+        state.Arm(false);
+        state.ObservePhysicalButton(true); // Native WPF thumb owns this press.
+
+        state.Stop(ownsPhysicalPress: false);
+        state.Stop(ownsPhysicalPress: false); // Repeated geometry updates during drag.
+
+        Assert.IsFalse(state.IsEnabled);
+        Assert.IsFalse(state.IsPressed);
+        Assert.IsFalse(state.IsWaitingForRelease);
+        Assert.AreEqual(0, input.Calls.Count);
+        Assert.IsFalse(state.Arm(true)); // Input still cannot rearm with a held button.
+        state.ObservePhysicalButton(false);
+        Assert.IsTrue(state.Arm(false));
+    }
+
+    [TestMethod]
+    public void RealTargetPress_CannotSkipReleaseDrainWithWindowAdjustmentFlag()
+    {
+        var input = new RecordingPointerInput();
+        var state = new LensInputState(input);
+        state.Arm(false);
+        state.ObservePhysicalButton(true);
+        state.Begin(new ScreenPoint(42, 84));
+
+        state.Stop(ownsPhysicalPress: false);
+
+        Assert.IsFalse(state.IsEnabled);
+        Assert.IsFalse(state.IsPressed);
+        Assert.IsTrue(state.IsWaitingForRelease);
+        Assert.IsFalse(state.Arm(false));
+        CollectionAssert.AreEqual(new[] { "move:42,84", "down", "up" }, input.Calls);
+    }
+
     private sealed class RecordingPointerInput : IPointerInput
     {
         public List<string> Calls { get; } = [];

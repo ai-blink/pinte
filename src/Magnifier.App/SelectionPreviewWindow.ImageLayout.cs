@@ -22,8 +22,20 @@ public partial class SelectionPreviewWindow
         QueueGeometryUpdate();
     }
 
-    private void ZoomDecrease_OnClick(object sender, RoutedEventArgs e) => SetZoom(Math.Max(0.25, Zoom - 0.5));
-    private void ZoomIncrease_OnClick(object sender, RoutedEventArgs e) => SetZoom(Zoom + 0.5);
+    private async void ZoomDecrease_OnClick(object sender, RoutedEventArgs e) => await ChangeZoomAsync(Math.Max(0.25, Zoom - 0.5));
+    private async void ZoomIncrease_OnClick(object sender, RoutedEventArgs e) => await ChangeZoomAsync(Zoom + 0.5);
+
+    private async Task ChangeZoomAsync(double zoom)
+    {
+        if (!_editingAllowed) return;
+        try
+        {
+            await PauseAsync("배율 변경 · 조작 자동 재개 대기");
+            SetZoom(zoom);
+            await ConfigureGeometryAsync();
+        }
+        catch (Exception exception) { PublishInputStatus($"배율 변경 실패: {exception.Message}"); }
+    }
 
     private void ResizeLens()
     {
@@ -128,7 +140,7 @@ public partial class SelectionPreviewWindow
         if (!IsLoaded || _closed) return;
         try
         {
-            await StopAsync("화면 DPI 변경 · 보기로 전환");
+            await PauseAsync("화면 DPI 변경 · 조작 자동 재개 대기");
             ResizeLens();
             QueueGeometryUpdate();
         }
