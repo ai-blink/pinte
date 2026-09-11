@@ -22,10 +22,13 @@ public partial class MainWindow : Window
     private bool _selecting, _openingLens;
     private int _captureVersion, _sessionVersion;
     private LensLayout? _layout;
+    private MagnifierSettings _settings;
 
     public MainWindow()
     {
         InitializeComponent();
+        _settings = MagnifierSettingsStore.Load();
+        MagnifierTheme.Apply(_settings.Theme);
         _layout = LensLayoutStore.Load();
         _timer.Tick += CaptureTick;
         Closing += MainClosing;
@@ -33,18 +36,14 @@ public partial class MainWindow : Window
     }
 
     private async void SelectRegionButton_OnClick(object sender, RoutedEventArgs e)
-        => await SelectRegionAsync(placeLower: false);
+        => await SelectRegionAsync();
 
-    private async void LowerPlacementButton_OnClick(object sender, RoutedEventArgs e)
-        => await SelectRegionAsync(placeLower: true);
-
-    private async Task SelectRegionAsync(bool placeLower)
+    private async Task SelectRegionAsync()
     {
         if (_selecting || _openingLens || _returning || _shuttingDown) return;
         var version = ++_sessionVersion;
         _selecting = true;
         SelectRegionButton.IsEnabled = false;
-        LowerPlacementButton.IsEnabled = false;
         var savedLayout = _layout;
         try
         {
@@ -58,23 +57,17 @@ public partial class MainWindow : Window
             _frame.SetSelectionMode(true);
             _frame!.Show();
             var work = _windows.GetWindowWorkArea(new WindowInteropHelper(this).Handle);
-            var source = savedLayout?.Source;
+            var source = _settings.RememberLayout ? savedLayout?.Source : null;
             if (source is null || !_windows.IsRegionVisible(source.Value))
             {
-                placeLower = true;
-                source = new ScreenRegion(work.X + work.Width / 4, work.Y + work.Height / 2,
-                    Math.Min(320, work.Width / 3), Math.Min(220, work.Height / 3));
+                var requested = new ScreenRegion(work.X + (work.Width - _settings.DefaultSourceWidth) / 2,
+                    work.Y + (work.Height - _settings.DefaultSourceHeight) / 2,
+                    _settings.DefaultSourceWidth, _settings.DefaultSourceHeight);
+                source = ScreenRegionSizing.Fit(requested, work);
             }
+            _frame.ApplySizing(source.Value.Width, source.Value.Height,
+                _settings.RememberLayout ? savedLayout?.LockedAspectRatio : null);
             _frame.SetRegion(source.Value);
-            if (placeLower)
-            {
-                var bounds = _windows.GetWindowBounds(_frame.WindowHandle);
-                var width = Math.Min(bounds.Width, work.Width);
-                var height = Math.Min(bounds.Height, work.Height);
-                _windows.PlaceWindow(_frame.WindowHandle, new ScreenRegion(
-                    work.X + (work.Width - width) / 2,
-                    work.Y + (int)((work.Height - height) * 0.8), width, height));
-            }
             _region = _frame.Region;
             _captureVersion++;
             Hide();
@@ -86,7 +79,7 @@ public partial class MainWindow : Window
             await ReturnToScreenAsync();
             SelectionStatusText.Text = $"영역 지정 실패: {ex.Message}";
         }
-        finally { SelectRegionButton.IsEnabled = true; LowerPlacementButton.IsEnabled = true; }
+        finally { SelectRegionButton.IsEnabled = true; }
     }
 
     private async Task OpenSelectedRegionAsync()
@@ -101,12 +94,12 @@ public partial class MainWindow : Window
         {
             _lens.Show();
             var work = _windows.GetWindowWorkArea(_frame.WindowHandle);
-            if (savedLayout is { } layout && _windows.IsRegionVisible(layout.Lens))
+            if (_settings.RememberLayout && savedLayout is { } layout && _windows.IsRegionVisible(layout.Lens))
                 _windows.PlaceWindow(_lens.WindowHandle, layout.Lens);
             else
                 _windows.PlaceWindow(_lens.WindowHandle, new ScreenRegion(work.X + work.Width / 3,
                     work.Y + work.Height / 3, Math.Min(800, work.Width * 2 / 3), Math.Min(640, work.Height - 60)));
-            _lens.SetZoom(savedLayout?.Zoom ?? 2);
+            _lens.SetZoom(_settings.RememberLayout ? savedLayout?.Zoom ?? _settings.DefaultZoom : _settings.DefaultZoom);
             // The confirmed source stays exactly where the user placed it.
             await ChangeSourceAsync(_frame.Region);
             if (version != _sessionVersion || _returning || _shuttingDown) return;
@@ -136,8 +129,9 @@ public partial class MainWindow : Window
         if (_frame is not null && _lens is not null) return;
         // Hiding an owner also hides its owned windows. These two windows must stay
         // visible while the entry window is hidden; their lifetime is managed below.
-        _frame = new SelectionOverlayWindow(_capture);
+        _frame = new SelectionOverlayWindow(_capture, _windows);
         _lens = new SelectionPreviewWindow(_relay, _capture, _windows, _pointer);
+        _lens.SetToolbarPlacement(_settings.ToolbarPlacement);
         _frame.RegionChanged += async region =>
         {
             if (_returning || _shuttingDown || _frame.IsVisible != true) return;
@@ -158,7 +152,11 @@ public partial class MainWindow : Window
         };
         _frame.RegionConfirmed += async () => await OpenSelectedRegionAsync();
         _frame.ReturnRequested += async () => await ReturnToScreenAsync();
+        _frame.RegionSettingsRequested += async () => await ShowRegionSettingsAsync(_frame);
+        _frame.AppSettingsRequested += async () => await ShowAppSettingsAsync(_frame);
         _lens.ReturnRequested += async () => await ReturnToScreenAsync();
+        _lens.RegionSettingsRequested += async () => await ShowRegionSettingsAsync(_lens);
+        _lens.AppSettingsRequested += async () => await ShowAppSettingsAsync(_lens);
         _lens.EditingAllowedChanged += allowed => _frame.SetEditingEnabled(_selecting || allowed);
         _lens.InputStatusChanged += text => SelectionStatusText.Text = text;
         _lens.PlacementChanged += RememberLayout;
@@ -207,7 +205,91 @@ public partial class MainWindow : Window
     {
         if (_selecting || _openingLens || _lens?.IsVisible != true) return;
         if (_region is not { } region || _lens?.WindowHandle is not { } handle || handle == 0) return;
-        _layout = new(region, _windows.GetWindowBounds(handle), _lens.Zoom);
+        _layout = new(region, _windows.GetWindowBounds(handle), _lens.Zoom, _frame?.LockedAspectRatio);
+    }
+
+    private async Task ShowRegionSettingsAsync(Window owner)
+    {
+        if (_returning || _shuttingDown || _frame is null || _lens?.IsInteractionLocked == true) return;
+        var lensVisible = _lens?.IsVisible == true;
+        _lens?.SetInteractionLocked(true);
+        _frame.SetEditingEnabled(false);
+        try
+        {
+            if (lensVisible) await _lens!.SetInputSuspendedAsync(true, "크기·비율 설정 · 조작 일시 중지");
+            var settings = new QuickRegionSettingsWindow(_capture, _windows.DesktopBounds, _frame.Region, _frame.LockedAspectRatio) { Owner = owner };
+            settings.SizingChanged += options => _frame.ApplySizing(options.Width, options.Height, options.LockedAspectRatio);
+            settings.ShowDialog();
+            RememberLayout();
+        }
+        catch (Exception ex)
+        {
+            SelectionStatusText.Text = $"크기·비율 설정 실패: {ex.Message}";
+        }
+        finally
+        {
+            _lens?.SetInteractionLocked(false);
+            if (_lens is null || !lensVisible) _frame.SetEditingEnabled(true);
+            if (lensVisible && !_returning && !_shuttingDown)
+            {
+                await ResumeInputAfterModalAsync("크기·비율 설정 닫기 · 새 화면 확인 뒤 조작 자동 재개");
+            }
+        }
+    }
+
+    private async Task ShowAppSettingsAsync(Window owner)
+    {
+        if (_returning || _shuttingDown || _lens?.IsInteractionLocked == true) return;
+        var lensVisible = _lens?.IsVisible == true;
+        _lens?.SetInteractionLocked(true);
+        _frame?.SetEditingEnabled(false);
+        try
+        {
+            if (lensVisible) await _lens!.SetInputSuspendedAsync(true, "앱 설정 · 조작 일시 중지");
+            var settings = new SettingsWindow(_settings, _capture) { Owner = owner };
+            settings.SettingsChanged += ApplySettings;
+            settings.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            SelectionStatusText.Text = $"앱 설정 실패: {ex.Message}";
+        }
+        finally
+        {
+            _lens?.SetInteractionLocked(false);
+            if (_lens is null || !lensVisible) _frame?.SetEditingEnabled(true);
+            if (lensVisible && !_returning && !_shuttingDown)
+            {
+                await ResumeInputAfterModalAsync("앱 설정 닫기 · 새 화면 확인 뒤 조작 자동 재개");
+            }
+        }
+    }
+
+    private void ApplySettings(MagnifierSettings settings)
+    {
+        _settings = settings;
+        MagnifierTheme.Apply(settings.Theme);
+        _lens?.SetToolbarPlacement(settings.ToolbarPlacement);
+        if (!MagnifierSettingsStore.Save(settings))
+            SelectionStatusText.Text = "설정 저장에 실패해 이번 실행에만 적용합니다.";
+    }
+
+    private async Task ResumeInputAfterModalAsync(string reason)
+    {
+        if (_lens is null) return;
+        // Capture begun before the modal closed must not refresh the relay's new-frame gate.
+        _captureVersion++;
+        try { await _lens.SetInputSuspendedAsync(false, reason); }
+        catch (Exception exception)
+        {
+            try { await _lens.StopAsync("설정 종료 뒤 조작 재개 실패 · 입력 해제"); }
+            catch (Exception releaseException)
+            {
+                SelectionStatusText.Text = $"입력 해제 재시도 필요: {releaseException.Message}";
+                return;
+            }
+            SelectionStatusText.Text = $"조작 재개 준비 실패 · 입력을 껐습니다: {exception.Message}";
+        }
     }
 
     private async Task<bool> ReturnToScreenAsync()

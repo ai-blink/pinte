@@ -9,6 +9,7 @@ public interface ILivePointerRelay : IAsyncDisposable
     Task ConfigureAsync(LensViewport viewport, params nint[] overlayWindows);
     Task<bool> StartAsync();
     Task PauseAsync(string reason);
+    Task SetSuspendedAsync(bool suspended, string reason);
     Task StopAsync(string reason);
     void RefreshFrame();
 }

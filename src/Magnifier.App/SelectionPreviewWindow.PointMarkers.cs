@@ -23,7 +23,7 @@ public partial class SelectionPreviewWindow
             return;
         }
 
-        var imagePoint = MapToRenderedImage(visualPoint, renderedBounds);
+        var imagePoint = MapToMarkerLayer(visualPoint, renderedBounds);
         Canvas.SetLeft(marker, imagePoint.X - (marker.Width / 2));
         Canvas.SetTop(marker, imagePoint.Y - (marker.Height / 2));
         marker.Visibility = Visibility.Visible;
@@ -40,8 +40,8 @@ public partial class SelectionPreviewWindow
             return;
         }
 
-        var start = MapToRenderedImage(pointA, renderedBounds);
-        var end = MapToRenderedImage(pointB, renderedBounds);
+        var start = MapToMarkerLayer(pointA, renderedBounds);
+        var end = MapToMarkerLayer(pointB, renderedBounds);
         StraightStrokePreview.X1 = start.X;
         StraightStrokePreview.Y1 = start.Y;
         StraightStrokePreview.X2 = end.X;
@@ -49,8 +49,11 @@ public partial class SelectionPreviewWindow
         StraightStrokePreview.Visibility = Visibility.Visible;
     }
 
-    private static Point MapToRenderedImage(PreviewPoint point, Rect renderedBounds) =>
-        new(
+    private Point MapToMarkerLayer(PreviewPoint point, Rect renderedBounds)
+    {
+        var imagePoint = new Point(
             renderedBounds.X + (point.X * renderedBounds.Width),
             renderedBounds.Y + (point.Y * renderedBounds.Height));
+        return CapturedImage.TranslatePoint(imagePoint, PointMarkerLayer);
+    }
 }

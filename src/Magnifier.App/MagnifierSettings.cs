@@ -1,0 +1,103 @@
+using System.IO;
+using System.Text.Json;
+using System.Windows;
+using System.Windows.Media;
+
+namespace Magnifier.App;
+
+public enum ToolbarPlacement
+{
+    Top,
+    Bottom
+}
+
+public enum ThemePreference
+{
+    System,
+    Light,
+    Dark
+}
+
+public sealed record MagnifierSettings
+{
+    public ToolbarPlacement ToolbarPlacement { get; init; } = ToolbarPlacement.Top;
+    public ThemePreference Theme { get; init; } = ThemePreference.System;
+    public bool RememberLayout { get; init; } = true;
+    public int DefaultSourceWidth { get; init; } = 960;
+    public int DefaultSourceHeight { get; init; } = 540;
+    public double DefaultZoom { get; init; } = 2;
+
+    public static MagnifierSettings Default { get; } = new();
+
+    public bool IsValid() => Enum.IsDefined(typeof(ToolbarPlacement), ToolbarPlacement)
+        && Enum.IsDefined(typeof(ThemePreference), Theme)
+        && DefaultSourceWidth is >= 80 and <= 7680
+        && DefaultSourceHeight is >= 60 and <= 4320
+        && double.IsFinite(DefaultZoom) && DefaultZoom is >= 0.25 and <= 8;
+}
+
+internal static class MagnifierSettingsStore
+{
+    private static readonly string FilePath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Magnifier", "settings.json");
+
+    public static MagnifierSettings Load()
+    {
+        try
+        {
+            if (!File.Exists(FilePath)) return MagnifierSettings.Default;
+            var settings = JsonSerializer.Deserialize<MagnifierSettings>(File.ReadAllText(FilePath));
+            return settings is { } value && value.IsValid() ? value : MagnifierSettings.Default;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or ArgumentException)
+        {
+            return MagnifierSettings.Default;
+        }
+    }
+
+    public static bool Save(MagnifierSettings settings)
+    {
+        if (!settings.IsValid()) return false;
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
+            var temporary = FilePath + ".tmp";
+            File.WriteAllText(temporary, JsonSerializer.Serialize(settings));
+            File.Move(temporary, FilePath, true);
+            return true;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+}
+
+internal static class MagnifierTheme
+{
+    public static void Apply(ThemePreference preference)
+    {
+        // System follows WPF high-contrast visibility; a normal system palette stays light.
+        var dark = preference == ThemePreference.Dark ||
+            (preference == ThemePreference.System && SystemParameters.HighContrast);
+        Application.Current.Resources["AppSurfaceBrush"] = CreateBrush(dark ? "#14171D" : "#F5F6F8");
+        Application.Current.Resources["AppPanelBrush"] = CreateBrush(dark ? "#1D222A" : "#FFFFFF");
+        Application.Current.Resources["AppToolbarBrush"] = CreateBrush(dark ? "#1D222A" : "#FFFFFF");
+        Application.Current.Resources["AppCanvasBrush"] = CreateBrush(dark ? "#171D26" : "#F7F9FD");
+        Application.Current.Resources["AppBorderBrush"] = CreateBrush(dark ? "#343C47" : "#DFE3E9");
+        Application.Current.Resources["AppTextBrush"] = CreateBrush(dark ? "#F1F3F6" : "#17232F");
+        Application.Current.Resources["AppMutedTextBrush"] = CreateBrush(dark ? "#ACB5C2" : "#65717D");
+        Application.Current.Resources["AppHoverBrush"] = CreateBrush(dark ? "#282E38" : "#EDF0F4");
+        Application.Current.Resources["AppPressedBrush"] = CreateBrush(dark ? "#343C47" : "#DFE5ED");
+        Application.Current.Resources["AppAccentBrush"] = CreateBrush(dark ? "#A6C5FF" : "#286BE8");
+        Application.Current.Resources["AppAccentHoverBrush"] = CreateBrush(dark ? "#BED4FF" : "#1F5FCE");
+        Application.Current.Resources["AppAccentSoftBrush"] = CreateBrush(dark ? "#364662" : "#EAF1FF");
+    }
+
+    private static SolidColorBrush CreateBrush(string value)
+    {
+        var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(value)!);
+        brush.Freeze();
+        return brush;
+    }
+}

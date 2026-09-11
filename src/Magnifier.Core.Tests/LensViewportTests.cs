@@ -46,4 +46,16 @@ public sealed class LensViewportTests
         Assert.IsFalse(viewport.Contains(new ScreenPoint(0, 50)));
         Assert.IsFalse(viewport.Contains(new ScreenPoint(0, -51)));
     }
+
+    [TestMethod]
+    public void CroppedSource_MapsFixedLensViewportToVisibleCenterOfOriginal()
+    {
+        // The outer lens can stay fixed while its scaled image is clipped to this source crop.
+        var viewport = new LensViewport(new ScreenRegion(125, 220, 150, 100),
+            new ScreenRegion(400, 500, 600, 400));
+
+        Assert.AreEqual(new ScreenPoint(125, 220), viewport.MapToSource(new PreviewPoint(400, 500)));
+        Assert.AreEqual(new ScreenPoint(200, 270), viewport.MapToSource(new PreviewPoint(700, 700)));
+        Assert.AreEqual(new ScreenPoint(274, 319), viewport.MapToSource(new PreviewPoint(999, 899)));
+    }
 }

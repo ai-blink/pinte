@@ -10,16 +10,19 @@ namespace Magnifier.App;
 public partial class SelectionOverlayWindow : Window
 {
     private readonly IScreenCapture _capture;
+    private readonly IWindowEnvironment _windows;
     private ScreenRegion _region = new(100, 150, 380, 230);
     private ScreenRegion? _pendingRegion;
     private bool _editingEnabled = true;
     private bool _adjusting;
     private bool _settingRegion;
+    private double? _lockedAspectRatio;
 
-    public SelectionOverlayWindow(IScreenCapture capture)
+    public SelectionOverlayWindow(IScreenCapture capture, IWindowEnvironment windows)
     {
         InitializeComponent();
         _capture = capture;
+        _windows = windows;
         SourceInitialized += (_, _) =>
         {
             WindowHandle = new WindowInteropHelper(this).Handle;
@@ -51,7 +54,13 @@ public partial class SelectionOverlayWindow : Window
 
     public event Action? AdjustmentStarted;
 
+    public event Action? RegionSettingsRequested;
+
+    public event Action? AppSettingsRequested;
+
     public ScreenRegion Region => _region;
+
+    public double? LockedAspectRatio => _lockedAspectRatio;
 
     public nint WindowHandle { get; private set; }
 
@@ -62,12 +71,23 @@ public partial class SelectionOverlayWindow : Window
         Title = selecting ? "화면 영역 지정 · 테두리를 맞춘 뒤 이 영역 확대" : "확대할 원본 영역";
     }
 
-    public void SetRegion(ScreenRegion region)
+    public void SetRegion(ScreenRegion region) => ApplyRegion(region, force: false);
+
+    public void ApplySizing(int width, int height, double? lockedAspectRatio)
     {
-        if (!_editingEnabled || _adjusting)
+        if (width <= 0 || height <= 0) return;
+        _lockedAspectRatio = lockedAspectRatio is { } ratio && double.IsFinite(ratio) && ratio > 0 ? ratio : null;
+        ApplyRegion(new ScreenRegion(_region.X, _region.Y, width, height), force: true);
+    }
+
+    private void ApplyRegion(ScreenRegion region, bool force)
+    {
+        if ((!_editingEnabled || _adjusting) && !force)
         {
             return;
         }
+
+        region = ScreenRegionSizing.Fit(region, _windows.DesktopBounds);
 
         if (!IsLoaded)
         {
@@ -89,8 +109,8 @@ public partial class SelectionOverlayWindow : Window
                 var topLeft = ContentAperture.PointToScreen(new Point());
                 Left += (region.X - topLeft.X) / dpi.DpiScaleX;
                 Top += (region.Y - topLeft.Y) / dpi.DpiScaleY;
-                Width = Math.Max(MinWidth, region.Width / dpi.DpiScaleX + 40);
-                Height = Math.Max(MinHeight, region.Height / dpi.DpiScaleY + 80);
+                Width = Math.Max(MinWidth, region.Width / dpi.DpiScaleX + 56);
+                Height = Math.Max(MinHeight, region.Height / dpi.DpiScaleY + 108);
             }
             UpdateLayout();
         }
@@ -139,9 +159,12 @@ public partial class SelectionOverlayWindow : Window
     {
         if (_editingEnabled && _adjusting)
         {
-            Left += e.HorizontalChange;
-            Top += e.VerticalChange;
-            PublishRegion();
+            var dpi = VisualTreeHelper.GetDpi(this);
+            var region = ScreenRegionSizing.Fit(new ScreenRegion(
+                _region.X + (int)Math.Round(e.HorizontalChange * dpi.DpiScaleX),
+                _region.Y + (int)Math.Round(e.VerticalChange * dpi.DpiScaleY),
+                _region.Width, _region.Height), _windows.DesktopBounds);
+            ApplyRegion(region, force: true);
         }
         e.Handled = true;
     }
@@ -154,32 +177,23 @@ public partial class SelectionOverlayWindow : Window
             return;
         }
 
-        var width = ActualWidth;
-        var height = ActualHeight;
-        if (edge.Contains('W'))
+        var dpi = VisualTreeHelper.GetDpi(this);
+        var handle = edge switch
         {
-            var delta = Math.Min(e.HorizontalChange, width - MinWidth);
-            Left += delta;
-            Width = width - delta;
-        }
-        else if (edge.Contains('E'))
-        {
-            Width = Math.Max(MinWidth, width + e.HorizontalChange);
-        }
-
-        if (edge.Contains('N'))
-        {
-            var delta = Math.Min(e.VerticalChange, height - MinHeight);
-            Top += delta;
-            Height = height - delta;
-        }
-        else if (edge.Contains('S'))
-        {
-            Height = Math.Max(MinHeight, height + e.VerticalChange);
-        }
-
-        UpdateLayout();
-        PublishRegion();
+            "NW" => RegionResizeHandle.NorthWest,
+            "N" => RegionResizeHandle.North,
+            "NE" => RegionResizeHandle.NorthEast,
+            "W" => RegionResizeHandle.West,
+            "E" => RegionResizeHandle.East,
+            "SW" => RegionResizeHandle.SouthWest,
+            "S" => RegionResizeHandle.South,
+            _ => RegionResizeHandle.SouthEast
+        };
+        var region = ScreenRegionSizing.Resize(_region, handle,
+            (int)Math.Round(e.HorizontalChange * dpi.DpiScaleX),
+            (int)Math.Round(e.VerticalChange * dpi.DpiScaleY),
+            _windows.DesktopBounds, lockedAspectRatio: _lockedAspectRatio);
+        ApplyRegion(region, force: true);
         e.Handled = true;
     }
 
@@ -220,10 +234,28 @@ public partial class SelectionOverlayWindow : Window
         e.Handled = true;
     }
 
+    private void CloseButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        ReturnRequested?.Invoke();
+        e.Handled = true;
+    }
+
     private void ConfirmRegionButton_OnClick(object sender, RoutedEventArgs e)
     {
         ConfirmRegionButton.IsEnabled = false;
         RegionConfirmed?.Invoke();
+        e.Handled = true;
+    }
+
+    private void RegionSettingsButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        RegionSettingsRequested?.Invoke();
+        e.Handled = true;
+    }
+
+    private void AppSettingsButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        AppSettingsRequested?.Invoke();
         e.Handled = true;
     }
 

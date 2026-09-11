@@ -4,7 +4,7 @@ using Magnifier.Core;
 
 namespace Magnifier.App;
 
-internal sealed record LensLayout(ScreenRegion Source, ScreenRegion Lens, double Zoom);
+internal sealed record LensLayout(ScreenRegion Source, ScreenRegion Lens, double Zoom, double? LockedAspectRatio = null);
 
 internal static class LensLayoutStore
 {
@@ -18,7 +18,9 @@ internal static class LensLayoutStore
             if (!File.Exists(FilePath)) return null;
             var layout = JsonSerializer.Deserialize<LensLayout>(File.ReadAllText(FilePath));
             return layout is { Source.Width: > 0, Source.Height: > 0, Lens.Width: > 0, Lens.Height: > 0 }
-                && double.IsFinite(layout.Zoom) && layout.Zoom is >= 0.25 and <= 8 ? layout : null;
+                && double.IsFinite(layout.Zoom) && layout.Zoom is >= 0.25 and <= 8
+                && (layout.LockedAspectRatio is null || (double.IsFinite(layout.LockedAspectRatio.Value) && layout.LockedAspectRatio > 0))
+                ? layout : null;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or ArgumentException)
         { return null; }

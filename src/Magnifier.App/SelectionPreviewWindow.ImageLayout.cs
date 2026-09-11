@@ -18,6 +18,7 @@ public partial class SelectionPreviewWindow
     {
         if (!_editingAllowed || !double.IsFinite(zoom)) return;
         _requestedZoom = Math.Clamp(zoom, 0.25, 8);
+        RequestViewportCentering();
         ResizeLens();
         QueueGeometryUpdate();
     }
@@ -44,34 +45,15 @@ public partial class SelectionPreviewWindow
         try
         {
             var dpi = VisualTreeHelper.GetDpi(this);
-            var work = WindowHandle != 0 ? _windows.GetWindowWorkArea(WindowHandle) : _windows.DesktopBounds;
-            var availableWidth = work.Width;
-            var availableHeight = work.Height;
-            if (WindowHandle != 0 && IsLoaded)
-            {
-                var position = _windows.GetWindowBounds(WindowHandle);
-                availableWidth = Math.Min(work.Width, Math.Max(1, work.X + work.Width - position.X));
-                availableHeight = Math.Min(work.Height, Math.Max(1, work.Y + work.Height - position.Y));
-            }
-            var maxWidth = Math.Max(160, availableWidth / dpi.DpiScaleX);
-            var maxHeight = Math.Max(180, availableHeight / dpi.DpiScaleY);
-            var proposedWidth = Math.Min(maxWidth, Math.Max(560, region.Width * _requestedZoom / dpi.DpiScaleX + 18));
-            Toolbar.Measure(new Size(Math.Max(1, proposedWidth - 4), double.PositiveInfinity));
-            StatusPanel.Measure(new Size(Math.Max(1, proposedWidth - 4), double.PositiveInfinity));
-            AuxiliaryTools.Measure(new Size(Math.Max(1, proposedWidth - 4), double.PositiveInfinity));
-            var chromeHeight = 44 + Toolbar.DesiredSize.Height + StatusPanel.DesiredSize.Height + AuxiliaryTools.DesiredSize.Height;
-            var fit = Math.Min((maxWidth - 18) * dpi.DpiScaleX / region.Width,
-                Math.Max(1, maxHeight - chromeHeight - 2) * dpi.DpiScaleY / region.Height);
-            Zoom = Math.Max(0.01, Math.Min(_requestedZoom, fit));
-            Width = Math.Min(maxWidth, Math.Max(560, region.Width * Zoom / dpi.DpiScaleX + 18));
-            Height = Math.Min(maxHeight, Math.Max(chromeHeight + 3, region.Height * Zoom / dpi.DpiScaleY + chromeHeight + 2));
+            // 배율은 렌즈 내부의 이미지에만 적용한다. 바깥 창은 독립 viewport라서
+            // 배율·원본 변경으로 Width/Height를 수정하지 않는다.
+            Zoom = _requestedZoom;
+            CapturedImage.Width = Math.Max(1, region.Width * Zoom / dpi.DpiScaleX);
+            CapturedImage.Height = Math.Max(1, region.Height * Zoom / dpi.DpiScaleY);
             ZoomText.Text = $"{Zoom:0.##}×";
-            ZoomText.ToolTip = Zoom + 0.01 < _requestedZoom
-                ? $"요청 {_requestedZoom:0.##}× · 현재 모니터에 전체 원본이 보이도록 {Zoom:0.##}×로 맞췄습니다"
-                : "원본 물리 픽셀 대비 표시 배율";
-            UpdateLayout();
+            ZoomText.ToolTip = "원본 물리 픽셀 대비 표시 배율 · 렌즈 창 크기는 유지합니다";
+            UpdatePanSurface(CapturedImage.Width, CapturedImage.Height);
             UpdatePointMarkers();
-            // Source changes can resize the content but never move this independent window.
         }
         finally { _sizing = false; }
     }
@@ -114,22 +96,11 @@ public partial class SelectionPreviewWindow
         try
         {
             if (_closed || _currentRegion is not ScreenRegion region ||
-                !TryGetRenderedImageBounds(region, out var bounds)) return;
-            var start = CapturedImage.PointToScreen(bounds.TopLeft);
-            var end = CapturedImage.PointToScreen(bounds.BottomRight);
-            var left = (int)Math.Round(start.X);
-            var top = (int)Math.Round(start.Y);
-            var width = (int)Math.Round(end.X) - left;
-            var height = (int)Math.Round(end.Y) - top;
-            if (width <= 0 || height <= 0) return;
-            var viewport = new LensViewport(region, new ScreenRegion(left, top, width, height));
+                !TryGetVisibleViewport(region, out var viewport)) return;
             if (_configuredViewport == viewport && _configuredFrameHandle == _frameHandle) return;
             await _relay.ConfigureAsync(viewport, WindowHandle, _frameHandle);
             _configuredViewport = viewport;
             _configuredFrameHandle = _frameHandle;
-            // Show the scale after actual layout, including possible letterboxing.
-            Zoom = (double)width / region.Width;
-            ZoomText.Text = $"{Zoom:0.##}×";
         }
         finally { _configurationLock.Release(); }
     }
@@ -141,6 +112,7 @@ public partial class SelectionPreviewWindow
         try
         {
             await PauseAsync("화면 DPI 변경 · 조작 자동 재개 대기");
+            RequestViewportCentering();
             ResizeLens();
             QueueGeometryUpdate();
         }
@@ -154,11 +126,57 @@ public partial class SelectionPreviewWindow
             renderedBounds = default;
             return false;
         }
-        var scale = Math.Min(CapturedImage.ActualWidth / region.Width, CapturedImage.ActualHeight / region.Height);
-        var width = region.Width * scale;
-        var height = region.Height * scale;
-        renderedBounds = new Rect((CapturedImage.ActualWidth - width) / 2,
-            (CapturedImage.ActualHeight - height) / 2, width, height);
+        // Explicit dimensions keep the full captured bitmap at the requested scale.
+        // ImageBorder clips any overflowing portion; direct input uses the matching
+        // visible source crop from TryGetVisibleViewport.
+        renderedBounds = new Rect(0, 0, CapturedImage.ActualWidth, CapturedImage.ActualHeight);
+        return true;
+    }
+
+    private bool TryGetVisibleViewport(ScreenRegion source, out LensViewport viewport)
+    {
+        viewport = default!;
+        if (!TryGetScreenBounds(CapturedImage, out var image) ||
+            !TryGetScreenBounds(ImageViewport, out var canvas)) return false;
+
+        var left = Math.Max(image.X, canvas.X);
+        var top = Math.Max(image.Y, canvas.Y);
+        var right = Math.Min(image.X + image.Width, canvas.X + canvas.Width);
+        var bottom = Math.Min(image.Y + image.Height, canvas.Y + canvas.Height);
+        if (right <= left || bottom <= top) return false;
+
+        var destination = new ScreenRegion(left, top, right - left, bottom - top);
+        var sourceLeft = source.X + ScaleOffset(destination.X - image.X, image.Width, source.Width, roundUp: false);
+        var sourceTop = source.Y + ScaleOffset(destination.Y - image.Y, image.Height, source.Height, roundUp: false);
+        var sourceRight = source.X + ScaleOffset(destination.X + destination.Width - image.X,
+            image.Width, source.Width, roundUp: true);
+        var sourceBottom = source.Y + ScaleOffset(destination.Y + destination.Height - image.Y,
+            image.Height, source.Height, roundUp: true);
+        var sourceCrop = new ScreenRegion(sourceLeft, sourceTop,
+            Math.Max(1, sourceRight - sourceLeft), Math.Max(1, sourceBottom - sourceTop));
+        viewport = new LensViewport(sourceCrop, destination);
+        return true;
+    }
+
+    private static int ScaleOffset(int value, int inputLength, int outputLength, bool roundUp)
+    {
+        var scaled = Math.Clamp((double)value / inputLength * outputLength, 0, outputLength);
+        var offset = roundUp ? (int)Math.Ceiling(scaled) : (int)Math.Floor(scaled);
+        return Math.Clamp(offset, roundUp ? 1 : 0, outputLength);
+    }
+
+    private static bool TryGetScreenBounds(FrameworkElement element, out ScreenRegion bounds)
+    {
+        bounds = default;
+        if (element.ActualWidth <= 0 || element.ActualHeight <= 0) return false;
+        var start = element.PointToScreen(new Point(0, 0));
+        var end = element.PointToScreen(new Point(element.ActualWidth, element.ActualHeight));
+        var left = (int)Math.Floor(Math.Min(start.X, end.X));
+        var top = (int)Math.Floor(Math.Min(start.Y, end.Y));
+        var right = (int)Math.Ceiling(Math.Max(start.X, end.X));
+        var bottom = (int)Math.Ceiling(Math.Max(start.Y, end.Y));
+        if (right <= left || bottom <= top) return false;
+        bounds = new ScreenRegion(left, top, right - left, bottom - top);
         return true;
     }
 

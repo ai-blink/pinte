@@ -1,0 +1,63 @@
+<Window x:Class="Magnifier.App.QuickRegionSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="원본 크기와 비율" Width="410" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False"
+        PreviewKeyDown="QuickRegionSettingsWindow_OnPreviewKeyDown"
+        Background="{DynamicResource AppSurfaceBrush}" Foreground="{DynamicResource AppTextBrush}">
+    <Grid Margin="14">
+        <Border Background="{DynamicResource AppPanelBrush}" BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="1" CornerRadius="14" Padding="20">
+            <StackPanel>
+                <DockPanel LastChildFill="True" Margin="0,0,0,6">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource IconButtonStyle}" Width="36" MinWidth="36" MinHeight="36"
+                            Content="×" Click="Close_OnClick" ToolTip="닫기"
+                            AutomationProperties.Name="크기와 비율 패널 닫기" />
+                    <StackPanel>
+                        <TextBlock FontSize="19" FontWeight="SemiBold" Text="원본 크기와 비율" />
+                        <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource AppMutedTextBrush}" FontSize="12"
+                                   Text="렌즈 크기와 무관한 실제 캡처 영역입니다." />
+                    </StackPanel>
+                </DockPanel>
+                <Border Margin="0,14,0,18" Padding="12" CornerRadius="9" Background="{DynamicResource AppCanvasBrush}"
+                        BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1">
+                    <TextBlock x:Name="CurrentSizeText" Foreground="{DynamicResource AppMutedTextBrush}"
+                               Text="현재 원본 영역" />
+                </Border>
+                <TextBlock FontWeight="SemiBold" Text="원본 영역 크기" />
+                <ComboBox x:Name="PresetBox" Style="{StaticResource AppComboBoxStyle}" Margin="0,7,0,18" MinHeight="42"
+                          SelectionChanged="PresetBox_OnSelectionChanged" AutomationProperties.Name="원본 영역 크기 프리셋">
+                    <ComboBox.ItemContainerStyle>
+                        <Style TargetType="ComboBoxItem">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsAvailable}" Value="False">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                    <Setter Property="ToolTip" Value="현재 가상 화면보다 커서 적용할 수 없습니다." />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ComboBox.ItemContainerStyle>
+                </ComboBox>
+                <TextBlock FontWeight="SemiBold" Text="고정할 가로 세로 비율" />
+                <ComboBox x:Name="RatioBox" Style="{StaticResource AppComboBoxStyle}" Margin="0,7,0,10" MinHeight="42"
+                          SelectionChanged="RatioBox_OnSelectionChanged" AutomationProperties.Name="고정할 가로 세로 비율" />
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="112" />
+                    </Grid.ColumnDefinitions>
+                    <Border Background="{DynamicResource AppCanvasBrush}" BorderBrush="{DynamicResource AppBorderBrush}"
+                            BorderThickness="1" CornerRadius="8" Padding="10,0" Margin="0,0,8,0">
+                        <CheckBox x:Name="LockBox" MinHeight="40" VerticalContentAlignment="Center"
+                                  Content="비율 고정" Checked="LockBox_OnChanged" Unchecked="LockBox_OnChanged"
+                                  AutomationProperties.Name="비율 고정 켜기 또는 끄기" />
+                    </Border>
+                    <Button x:Name="DirectionButton" Grid.Column="1" Content="가로" Click="DirectionButton_OnClick"
+                            ToolTip="가로와 세로 바꾸기" AutomationProperties.Name="가로와 세로 바꾸기" />
+                </Grid>
+                <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource AppMutedTextBrush}" FontSize="12" LineHeight="18"
+                           Text="프리셋은 현재 테두리에 즉시 적용됩니다. 고정 중에는 8개 손잡이에서도 같은 비율을 유지합니다." />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

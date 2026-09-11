@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<!-- html-mock template adapted for Magnifier. Self-contained; no native input or screen capture. -->
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Magnifier · 앱 설정</title>
+<style>
+:root{--bg:#f5f6f8;--paper:#fff;--soft:#edf0f4;--line:#dfe3e9;--ink:#17232f;--muted:#65717d;--accent:#286be8;--r:14px;font-family:"Segoe UI Variable","Segoe UI","Malgun Gothic",sans-serif;color-scheme:light}
+[data-theme=dark]{--bg:#14171d;--paper:#1d222a;--soft:#282e38;--line:#343c47;--ink:#f1f3f6;--muted:#acb5c2;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-size:14px;-webkit-font-smoothing:antialiased}
+button,input{font:inherit}button{cursor:pointer;color:inherit;border:0;background:none}button:focus-visible,summary:focus-visible{outline:3px solid #548aff;outline-offset:3px}
+button:disabled{opacity:.32;cursor:default}svg.icon{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+button svg{pointer-events:none}.hidden,[hidden]{display:none!important}h1,h2,p{margin:0}.muted{color:var(--muted)}
+.top{height:72px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 4vw;background:var(--paper)}
+.brand{display:flex;gap:12px;align-items:center;font-weight:650;letter-spacing:-.4px;font-size:19px}.brand-mark{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#286be8;color:white}
+.brand small{font-size:12px;font-weight:400;color:var(--muted);padding-left:14px;margin-left:3px;border-left:1px solid var(--line);letter-spacing:0}
+.top-right{display:flex;align-items:center;gap:16px;font-size:12px;color:var(--muted)}.circle{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;border:1px solid var(--line)}
+.circle:hover{background:var(--soft)}main{max-width:1420px;margin:auto;padding:27px 4vw 36px}
+.intro{display:flex;justify-content:space-between;align-items:end;margin-bottom:21px;gap:16px}h1{font-size:25px;font-weight:650;letter-spacing:-1px}.intro p{margin-top:7px;color:var(--muted);font-size:13px}
+.pill{font-size:11px;background:var(--soft);color:var(--muted);padding:6px 10px;border:1px solid var(--line);border-radius:7px;white-space:nowrap}
+.options{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:23px}
+.option{min-height:88px;text-align:left;background:var(--paper);border:1px solid var(--line);border-radius:13px;padding:15px;display:flex;gap:15px;align-items:center;transition:background .15s,border-color .15s}
+.option:hover{border-color:#8eaee7}.option.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}.option strong{font-size:15px;font-weight:650}.option small{display:block;color:var(--muted);font-size:12px;margin-top:6px}
+.option em{font-style:normal;font-size:10px;color:#286be8;background:#eaf1ff;border-radius:4px;padding:2px 5px;margin-left:6px}.thumb{width:70px;height:49px;border-radius:6px;background:#e6ebf3;border:1px solid #cad3e0;position:relative;flex-shrink:0;overflow:hidden}
+.thumb::before{content:"";position:absolute;left:0;right:0;top:0;height:10px;background:#fff;border-bottom:1px solid #cad3e0}.thumb::after{content:"";position:absolute;left:14px;right:12px;top:22px;height:18px;border:2px solid #7ca2e7;border-radius:50% 40% 0 0}
+.thumb.dark{background:#303b49;border-color:#465366}.thumb.dark::before{height:auto;bottom:0;width:11px;background:#222832;border-right:1px solid #465366;border-bottom:0}.thumb.compact::before{top:auto;bottom:3px;left:11px;right:11px;height:9px;border-radius:4px}
+.preview-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px}.preview-name{font-size:14px;font-weight:650}.preview-name span{color:var(--muted);font-size:12px;font-weight:400;margin-left:10px}
+.segments{display:flex;gap:3px;padding:3px;background:var(--soft);border-radius:9px;border:1px solid var(--line)}.segments button{padding:8px 14px;color:var(--muted);font-size:12px;border-radius:6px;min-height:34px}
+.segments button.active{background:var(--paper);color:var(--ink);box-shadow:0 1px 4px #0000000d}.segments button:hover{color:var(--ink)}
+.stage{height:568px;position:relative;overflow:hidden;background:#dce3ed;border:1px solid #c9d2df;border-radius:16px;isolation:isolate;--ui:#fbfcfe;--ui-soft:#f0f3f8;--ui-ink:#233348;--ui-muted:#68778b;--ui-line:#dce2ed;--ui-accent:#286be8;--ui-accent-soft:#e8f0ff}
+.stage::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 4% 100%,#c4d5ed 0,transparent 60%),radial-gradient(ellipse at 100% 0,#eaf0f9 0,transparent 65%);z-index:-1}
+.stage.style-b{--ui:#222831;--ui-soft:#303844;--ui-ink:#f0f3f9;--ui-muted:#aab8cb;--ui-line:#3a4656;--ui-accent:#a6c5ff;--ui-accent-soft:#364662}
+.stage.style-c{--ui:#ffffff;--ui-soft:#f0f4f6;--ui-ink:#233745;--ui-muted:#687e8c;--ui-line:#dce5ea;--ui-accent:#26777d;--ui-accent-soft:#e2f2f1}
+.desktop-label{position:absolute;left:22px;top:17px;font-size:11px;color:#6b7d94;display:flex;align-items:center;gap:7px;letter-spacing:.2px}.desktop-label .icon{width:15px;height:15px}
+.sample-app{position:absolute;inset:50px 24px 27px;background:#eff3f8;border:1px solid #c3cedd;border-radius:9px;box-shadow:0 5px 20px #40526c0b;overflow:hidden}
+.sample-head{height:41px;border-bottom:1px solid #d3dce8;display:flex;align-items:center;gap:12px;padding:0 15px;color:#8795a8;background:#f8fafd;font-size:12px}.dots{display:flex;gap:5px;margin-right:5px}.dots i{width:7px;height:7px;border:1px solid #c0cddd;border-radius:50%}.sample-head .right{margin-left:auto;font-size:11px}
+.sample-sidebar{position:absolute;top:41px;bottom:0;left:0;width:47px;border-right:1px solid #dce4ef;display:flex;align-items:center;flex-direction:column;gap:24px;padding:20px 0;color:#9caabd}.sample-sidebar svg{width:17px;height:17px}
+.source-art{position:absolute;left:48px;top:42px;right:0;bottom:0;overflow:hidden;background:#edf2f8}.scene{display:block;width:100%;height:100%;user-select:none;touch-action:none}
+.source-frame{position:absolute;left:6.5%;top:181px;width:27%;height:194px;min-width:188px;border:2px solid var(--ui-accent);border-radius:4px;z-index:3;box-shadow:0 0 0 1px #ffffff91;color:var(--ui-ink)}
+.frame-controls{position:absolute;left:-2px;top:-48px;min-width:100%;height:46px;display:flex;align-items:center;gap:3px;padding:2px 5px;background:var(--ui);border:1px solid var(--ui-line);border-radius:9px 9px 2px 2px;box-shadow:0 -4px 18px #2738530c;white-space:nowrap}
+.frame-grip{display:flex;align-items:center;gap:5px;flex:1;min-width:40px;padding-left:4px;cursor:move;touch-action:none;color:var(--ui-muted);height:40px}.frame-grip small{font-size:11px}
+.ib{width:44px;height:44px;display:inline-grid;place-items:center;border-radius:8px;color:var(--ui-ink);flex-shrink:0;padding:0}.ib:hover{background:var(--ui-soft)}.ib:active{background:var(--ui-line)}.ib.accent{color:var(--ui-accent);background:var(--ui-accent-soft)}
+.frame-controls .ib{height:38px;width:40px}.frame-controls .confirm{display:flex;gap:5px;width:auto;padding:0 11px;font-size:12px;background:var(--ui-accent);color:var(--ui);border-radius:6px}
+.handle{position:absolute;width:26px;height:26px;padding:0;touch-action:none;display:grid;place-items:center;cursor:nwse-resize}.handle::before{content:"";width:8px;height:8px;background:white;border:2px solid var(--ui-accent);border-radius:2px}.nw{left:-14px;top:-14px}.ne{right:-14px;top:-14px;cursor:nesw-resize}.sw{left:-14px;bottom:-14px;cursor:nesw-resize}.se{right:-14px;bottom:-14px}
+.source-tag{position:absolute;top:calc(100% + 13px);left:0;color:#556982;font-size:11px;display:flex;align-items:center;gap:5px;white-space:nowrap}.source-tag::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--ui-accent)}
+.lens{position:absolute;left:37%;top:101px;width:59%;height:403px;border:1px solid var(--ui-line);background:var(--ui);border-radius:13px;box-shadow:0 22px 55px #31415e30,0 2px 8px #31415e15;z-index:4;display:flex;flex-direction:column;color:var(--ui-ink)}
+.lens-bar{height:57px;display:flex;align-items:center;padding:5px 8px;gap:4px;border-bottom:1px solid var(--ui-line);flex-shrink:0;background:var(--ui);border-radius:13px 13px 0 0;position:relative;z-index:2}
+.lens-grip{align-self:stretch;flex:1;min-width:22px;display:flex;align-items:center;gap:8px;color:var(--ui-muted);cursor:move;touch-action:none;padding-left:8px}.lens-grip strong{font-size:12px;font-weight:600;color:var(--ui-ink)}.lens-grip .icon{width:17px;height:17px}
+.zoom-tools{display:flex;gap:1px;align-items:center}.zoom-value{min-width:47px;text-align:center;font-size:14px;font-weight:650;font-variant-numeric:tabular-nums;color:var(--ui-ink)}
+.sep{height:22px;width:1px;background:var(--ui-line);margin:0 5px;flex-shrink:0}
+.return{display:flex;align-items:center;justify-content:center;gap:7px;padding:0 13px;height:44px;border-radius:8px;font-size:12px;font-weight:600;white-space:nowrap;color:var(--ui-accent);background:var(--ui-accent-soft)}.return:hover{filter:brightness(.96)}
+.lens-body{flex:1;min-height:0;position:relative;overflow:hidden;background:#f7f9fd;border-radius:0 0 12px 12px;margin:5px;}.lens-body .scene{position:absolute;inset:0}
+.lens-caption{position:absolute;top:17px;left:19px;color:#74859d;font-size:11px;pointer-events:none;letter-spacing:1px}.lens-caption span{font-size:9px;display:block;letter-spacing:0;margin-top:5px;color:#98a6ba}
+.target{cursor:grab}.target:active{cursor:grabbing}.target circle{filter:drop-shadow(0 2px 2px #253e6b21)}.target .target-dot{stroke:white;stroke-width:3}
+.menu{position:absolute;z-index:20;right:9px;top:54px;width:183px;padding:6px;background:var(--ui);border:1px solid var(--ui-line);border-radius:10px;box-shadow:0 12px 30px #152d5424}
+.menu button{display:flex;gap:10px;align-items:center;width:100%;min-height:43px;border-radius:6px;padding:8px 9px;color:var(--ui-ink);font-size:12px}.menu button:hover{background:var(--ui-soft)}.menu .icon{width:17px;height:17px}
+.style-b .lens{border-radius:10px;height:418px;top:87px;flex-direction:row;padding-top:43px}.style-b .lens-bar{position:absolute;inset:0 0 auto;height:43px;border-radius:10px 10px 0 0;padding:1px 7px}.style-b .lens-bar .return{height:34px;background:transparent;color:var(--ui-ink)}
+.style-b .lens-body{border-radius:4px 4px 7px 4px;margin:4px 7px 7px 0;background:#e8edf4}.side-tools{display:none}.style-b .side-tools{display:flex;width:62px;align-items:center;flex-direction:column;gap:7px;padding-top:12px;flex-shrink:0}.side-tools .sep{height:1px;width:25px;margin:5px}.side-tools .zoom-value{font-size:12px}
+.style-b .frame-controls{border-radius:7px 7px 0 0}.style-b .source-frame{border-color:#679bed}.style-b .menu{top:47px}
+.style-c .lens{background:transparent;border:0;box-shadow:none;top:106px;height:406px;padding-bottom:62px}.style-c .lens-body{order:0;margin:0;border:1px solid #cbdcde;border-radius:11px;box-shadow:0 16px 45px #31415e24}.style-c .lens-bar{position:absolute;bottom:0;top:auto;left:50%;transform:translateX(-50%);height:53px;border:1px solid var(--ui-line);border-radius:13px;width:max-content;max-width:100%;padding:4px 7px;gap:3px;box-shadow:0 7px 20px #2e536421}
+.style-c .lens-grip{min-width:31px;padding-left:0;flex:0}.style-c .lens-grip strong{display:none}.style-c .lens-caption{left:19px;top:17px}.style-c .menu{top:auto;bottom:59px;right:0}.style-c .frame-controls{border-radius:9px;left:-2px;top:-54px;min-width:0}
+.launcher{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:328px;padding:26px;background:var(--ui);color:var(--ui-ink);border:1px solid var(--ui-line);border-radius:17px;box-shadow:0 24px 60px #31415e2c;z-index:5;text-align:center}
+.launcher-close{position:absolute;right:8px;top:8px;width:35px;height:35px}.launch-icon{display:grid;place-items:center;width:60px;height:60px;background:var(--ui-accent-soft);color:var(--ui-accent);border-radius:18px;margin:13px auto 21px}.launch-icon .icon{width:30px;height:30px;stroke-width:1.5}
+.launcher h2{font-size:21px;letter-spacing:-.6px;font-weight:650;margin-bottom:9px}.launcher p{font-size:12px;color:var(--ui-muted);margin-bottom:24px}.primary{width:100%;display:flex;align-items:center;justify-content:center;gap:9px;border-radius:9px;background:var(--ui-accent);color:var(--ui);height:52px;font-size:14px;font-weight:600}.primary:hover{filter:brightness(.96)}.launcher small{display:block;color:var(--ui-muted);font-size:11px;margin-top:16px}
+.stage[data-phase=start] .source-frame,.stage[data-phase=start] .lens,.stage[data-phase=select] .lens,.stage[data-phase=closed] .source-frame,.stage[data-phase=closed] .lens{display:none}
+.stage:not([data-phase=start]) .launcher{display:none}.stage[data-phase=zoom] .confirm{display:none}.stage[data-phase=zoom] .frame-grip small{display:none}.stage[data-phase=zoom] .frame-controls{min-width:0}
+.selection-hint{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ui);color:var(--ui-ink);box-shadow:0 4px 20px #273a5214;border:1px solid var(--ui-line);padding:12px 18px;border-radius:10px;z-index:6;font-size:12px;white-space:nowrap;pointer-events:none}
+.stage:not([data-phase=select]) .selection-hint{display:none}.closed-state{position:absolute;inset:0;display:grid;place-content:center;gap:14px;text-align:center;color:#536980}.stage:not([data-phase=closed]) .closed-state{display:none}
+.closed-state button{background:white;border:1px solid #c1ccd9;border-radius:9px;padding:13px 25px;font-size:13px}
+.under{display:flex;justify-content:space-between;align-items:center;gap:15px;margin:14px 0 23px;font-size:12px;color:var(--muted)}.hint{display:flex;align-items:center;gap:8px}.hint .icon{width:16px;height:16px}.reset{display:flex;gap:6px;align-items:center;color:var(--muted);padding:7px 9px;border-radius:7px;white-space:nowrap}.reset:hover{background:var(--soft)}.reset .icon{width:16px;height:16px}
+.notes{display:grid;grid-template-columns:1fr 1fr 1.4fr;border-top:1px solid var(--line);padding:20px 0;gap:25px}.notes small{display:block;color:var(--muted);font-size:11px;margin-bottom:8px}.notes p{font-size:13px;line-height:1.65}.notes strong{font-size:14px;font-weight:600}.notes .fine{font-size:12px;color:var(--muted)}
+details{border-top:1px solid var(--line);font-size:12px;color:var(--muted)}summary{cursor:pointer;padding:13px 0;list-style:none}summary::before{content:"+ ";margin-right:5px}details[open] summary::before{content:"− "}details p{max-width:900px;line-height:1.8;padding:0 0 14px}
+footer{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:15px;margin-top:3px;font-size:11px;color:var(--muted)}
+@media(min-width:1500px){.stage{height:608px}.lens{height:431px;top:115px}.style-b .lens{height:443px;top:103px}.style-c .lens{height:438px;top:111px}.source-frame{top:196px}}
+@media(max-width:1000px){.top{padding:0 20px}main{padding:23px 20px}.top-right span{display:none}.option{gap:10px;padding:12px}.thumb{width:48px;height:38px}.option small{font-size:11px}.preview-name span{display:none}.lens-grip strong{display:none}.lens{left:34%;width:63%}.source-frame{left:5%;width:25%}.frame-grip small{display:none}.notes{grid-template-columns:1fr 1fr}.notes>div:last-child{grid-column:1/-1}}
+@media(max-width:720px){.brand small{display:none}h1{font-size:21px}.intro .pill{display:none}.options{gap:7px}.option{display:block;padding:11px}.thumb{display:none}.option strong{font-size:12px}.option small{font-size:10px}.option em{display:none}.preview-head{align-items:start;gap:10px;flex-direction:column}.segments{width:100%}.segments button{flex:1}.stage{height:770px}.sample-app{inset:45px 12px 20px}.source-frame{width:calc(100% - 74px);left:37px;top:131px;height:158px}.lens,.style-b .lens,.style-c .lens{left:18px;width:calc(100% - 36px);top:352px;height:377px}.lens-bar{gap:1px;padding:4px}.lens-grip{padding:0;min-width:18px}.ib{width:40px}.return{padding:0 9px}.zoom-value{min-width:35px}.sep{margin:0 2px}.frame-grip small{display:block}.under{align-items:start}.hint{align-items:start;font-size:11px;line-height:1.7}.notes{gap:15px}.style-c .lens-bar{gap:0}.selection-hint{max-width:calc(100% - 25px);white-space:normal;text-align:center;width:100%}.stage[data-phase=select],.stage[data-phase=start],.stage[data-phase=closed]{height:520px}}
+@media(max-width:720px){.source-art{bottom:auto;height:260px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* Accepted styles and size-control comparison. */
+.options{grid-template-columns:repeat(2,1fr)}.stage{height:654px}.source-frame{min-width:0}.lens{height:453px}.style-c .lens{height:455px}
+.control-choice{display:flex;justify-content:space-between;align-items:center;margin:0 0 16px;gap:16px;padding:13px 15px;background:var(--paper);border:1px solid var(--line);border-radius:12px}
+.control-choice strong{font-size:13px;font-weight:600}.control-choice p{font-size:11px;color:var(--muted);margin-top:5px}.control-choice em{font-style:normal;color:var(--accent);font-size:10px;margin-left:4px}
+.size-controls{display:grid;grid-template-columns:minmax(126px,1.5fr) minmax(78px,1fr) auto auto;align-items:end;gap:7px;padding:9px 10px 11px;background:var(--ui);border-bottom:1px solid var(--ui-line);position:relative;z-index:6;color:var(--ui-ink);flex-shrink:0}
+.size-field{display:grid;gap:5px;min-width:0;font-size:10px;color:var(--ui-muted)}.size-field select{font:inherit;font-size:12px;height:38px;width:100%;padding:0 8px;border:1px solid var(--ui-line);border-radius:7px;color:var(--ui-ink);background:var(--ui-soft);outline-offset:2px}
+.direction,.ratio-lock{height:38px;display:flex;gap:6px;justify-content:center;align-items:center;padding:0 9px;border-radius:7px;border:1px solid var(--ui-line);font-size:11px;white-space:nowrap}.direction .icon,.ratio-lock .icon{width:17px;height:17px}
+.direction:hover,.ratio-lock:hover{background:var(--ui-soft)}.ratio-lock.on{background:var(--ui-accent-soft);color:var(--ui-accent);border-color:var(--ui-accent)}.settings-title{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:0 0 4px}.settings-title .ib{width:32px;height:32px}
+.stage[data-settings=panel] .size-controls{position:absolute;top:62px;left:10px;right:10px;box-shadow:0 10px 25px #24364e29;border:1px solid var(--ui-line);border-radius:11px;padding:10px}
+.style-c[data-settings=always] .lens{padding-bottom:137px;height:477px}.style-c[data-settings=always] .lens-bar{bottom:78px;width:100%;border-radius:12px 12px 0 0;border-bottom:0}
+.style-c[data-settings=always] .size-controls{position:absolute;bottom:0;left:0;right:0;height:79px;border:1px solid var(--ui-line);border-radius:0 0 12px 12px;box-shadow:0 8px 20px #2e536421}
+.style-c[data-settings=panel] .size-controls{top:auto;bottom:63px;left:0;right:0}
+.select-sizes{position:absolute;left:22px;bottom:72px;z-index:7;max-width:calc(100% - 44px);color:var(--ui-ink)}.stage:not([data-phase=select]) .select-sizes{display:none}
+.select-size-button{display:flex;align-items:center;gap:9px;padding:0 13px;height:44px;border-radius:9px;border:1px solid var(--ui-line);background:var(--ui);box-shadow:0 4px 12px #24364e16;font-size:12px}.select-size-button .icon{width:17px;height:17px}.select-size-button small{color:var(--ui-muted)}
+.select-size-panel{display:grid;grid-template-columns:minmax(120px,1.4fr) minmax(75px,1fr) auto auto;align-items:end;gap:7px;position:absolute;bottom:52px;left:0;width:466px;max-width:calc(100vw - 90px);padding:13px;border-radius:11px;border:1px solid var(--ui-line);background:var(--ui);box-shadow:0 10px 25px #24364e20}
+.current-region{font-size:11px;color:var(--muted);white-space:nowrap}.source-tag{background:#f6f9ffdd;border-radius:4px;padding:4px 6px;top:calc(100% + 9px)}
+@media(min-width:1500px){.stage{height:674px}.lens{height:470px}.style-c[data-settings=always] .lens{height:490px}}
+@media(max-width:1000px){.size-controls{gap:4px;padding:9px 6px;grid-template-columns:minmax(113px,1.4fr) minmax(67px,1fr) auto auto}.direction,.ratio-lock{padding:0 6px;font-size:10px;gap:4px}.size-field select{padding:0 5px;font-size:11px}}
+@media(max-width:720px){.stage{height:908px}.lens,.style-c .lens{top:353px;height:504px}.control-choice{align-items:start;flex-direction:column}.control-choice .segments{width:100%}.size-controls{grid-template-columns:minmax(120px,1fr) minmax(90px,1fr);gap:7px;min-height:116px}.size-controls .direction,.size-controls .ratio-lock{height:36px}.style-c[data-settings=always] .lens{padding-bottom:183px;height:521px}.style-c[data-settings=always] .lens-bar{bottom:125px}.style-c[data-settings=always] .size-controls{height:126px}.stage[data-phase=start],.stage[data-phase=closed],.stage[data-phase=select]{height:598px}.select-size-panel{grid-template-columns:1fr 1fr;width:300px}.under{flex-wrap:wrap}.current-region{width:100%}}
+
+
+/* App settings: a separate modal with a persistent left navigation. */
+.control-choice .app-settings-open{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:8px;white-space:nowrap;background:var(--soft);font-size:12px}
+.launch-settings{margin:18px auto 0;display:flex;align-items:center;gap:7px;color:var(--ui-muted);font-size:12px;min-height:40px;padding:0 12px;border-radius:7px}.launch-settings:hover{background:var(--ui-soft)}.launch-settings .icon{width:18px;height:18px}
+.stage[data-app-theme=dark]{--ui:#20262e;--ui-soft:#2c3440;--ui-ink:#eef3fa;--ui-muted:#aab7c7;--ui-line:#3d4858;--ui-accent:#96baff;--ui-accent-soft:#324460}
+.stage.style-c[data-app-theme=dark]{--ui-accent:#8cd2cf;--ui-accent-soft:#234a4c}
+.app-dialog{--dialog-bg:#fafbfd;--dialog-side:#f0f3f7;--dialog-card:#fff;--dialog-ink:#202e40;--dialog-muted:#69778a;--dialog-line:#dde3eb;--dialog-accent:#286be8;--dialog-selected:#e9f0ff;color-scheme:light;width:min(840px,calc(100vw - 32px));height:min(624px,calc(100dvh - 40px));padding:0;border:1px solid #bac5d5;border-radius:12px;background:var(--dialog-bg);color:var(--dialog-ink);box-shadow:0 30px 95px #10203c40;overflow:hidden}
+.app-dialog[data-app-theme=dark]{--dialog-bg:#20262e;--dialog-side:#191f27;--dialog-card:#272f3a;--dialog-ink:#eef3fa;--dialog-muted:#aab7c7;--dialog-line:#3d4858;--dialog-accent:#96baff;--dialog-selected:#324460;color-scheme:dark;border-color:#465466}
+.app-dialog::backdrop{background:#15223866;backdrop-filter:blur(2px)}.app-dialog[open]{display:flex;flex-direction:column}
+.dialog-titlebar{height:57px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 20px;border-bottom:1px solid var(--dialog-line)}.dialog-titlebar h2{font-size:14px;font-weight:600;display:flex;gap:9px;align-items:center}.dialog-titlebar h2 .icon{width:18px;height:18px}
+.dialog-close{width:40px;height:40px;display:grid;place-items:center;border-radius:7px}.dialog-close:hover{background:var(--dialog-side)}.dialog-close .icon{width:18px;height:18px}
+.dialog-middle{display:flex;flex:1;min-height:0}.settings-nav{width:180px;flex-shrink:0;background:var(--dialog-side);padding:24px 10px 14px;border-right:1px solid var(--dialog-line);display:flex;flex-direction:column;gap:4px}
+.settings-nav .nav-heading{font-size:10px;letter-spacing:1px;color:var(--dialog-muted);padding:0 13px 17px}.settings-nav button{position:relative;display:flex;align-items:center;gap:10px;width:100%;min-height:44px;text-align:left;font-size:13px;border-radius:7px;padding:0 13px;color:var(--dialog-muted)}.settings-nav button .icon{width:18px;height:18px}
+.settings-nav button:hover{background:var(--dialog-card)}.settings-nav button.active{color:var(--dialog-ink);background:var(--dialog-card)}.settings-nav button.active::before{content:"";width:3px;height:18px;border-radius:3px;background:var(--dialog-accent);position:absolute;left:0}
+.settings-nav .nav-bottom{margin-top:auto;padding:20px 13px 0;font-size:11px;color:var(--dialog-muted);line-height:1.7}
+.settings-content{flex:1;min-width:0;overflow-y:auto;padding:27px 30px;scrollbar-gutter:stable}.settings-content h3{font-size:23px;font-weight:650;letter-spacing:-.6px;margin:0 0 8px}.settings-content .page-description{font-size:12px;color:var(--dialog-muted);line-height:1.75;margin-bottom:27px}
+.settings-content h4{font-size:12px;font-weight:600;margin:23px 0 11px}.settings-content h4:first-of-type{margin-top:0}
+.layout-choices{display:grid;grid-template-columns:1fr 1fr;gap:12px}.layout-choice{border:1px solid var(--dialog-line);background:var(--dialog-card);padding:13px;border-radius:9px;text-align:left;position:relative}
+.layout-choice[aria-pressed=true]{border-color:var(--dialog-accent);box-shadow:0 0 0 1px var(--dialog-accent)}.layout-choice .selected-mark{position:absolute;right:9px;top:9px;width:21px;height:21px;display:grid;place-items:center;border-radius:50%;color:var(--dialog-card);background:var(--dialog-accent)}.selected-mark .icon{width:14px;height:14px}
+.layout-choice strong{font-size:12px;font-weight:600;display:block;margin-top:11px}.layout-choice small{font-size:10px;color:var(--dialog-muted);display:block;margin-top:5px}
+.layout-preview{height:91px;position:relative;background:#e4ebf4;border-radius:5px;overflow:hidden}.layout-preview::before{content:"";position:absolute;width:65%;height:63%;left:17%;top:19%;border:1px solid #cbd9ec;border-radius:3px;background:linear-gradient(155deg,#edf3fa 0 58%,#c3d8ed 58% 73%,#a3c4e5 73%);box-shadow:0 4px 12px #344b7315}
+.layout-preview::after{content:"−  2×  +    ⚙   ↶";font-family:"Segoe UI",sans-serif;font-size:10px;color:#586d85;background:#fff;position:absolute;top:17%;left:17%;width:65%;height:20px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid #d9e2ed;border-radius:3px 3px 0 0}
+.layout-preview.bottom::before{top:10%;height:59%}.layout-preview.bottom::after{top:auto;bottom:8%;left:21%;width:57%;border:1px solid #d9e2ed;border-radius:5px}
+.pref-row{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 0;border-bottom:1px solid var(--dialog-line)}.pref-row>div{min-width:0}.pref-row label,.pref-row strong{font-size:12px;font-weight:500;display:block}.pref-row p{font-size:11px;color:var(--dialog-muted);line-height:1.6;margin:5px 0 0}
+.pref-select{font:inherit;font-size:12px;min-width:128px;max-width:170px;height:40px;padding:0 10px;border:1px solid var(--dialog-line);border-radius:6px;background:var(--dialog-card);color:var(--dialog-ink)}.pref-select:disabled{opacity:.45}
+.pref-toggle{display:inline-flex;align-items:center;min-height:44px;cursor:pointer;flex-shrink:0}.pref-toggle input{position:absolute;opacity:0;width:40px;height:24px;margin:0}.pref-toggle span{display:block;width:40px;height:22px;background:var(--dialog-muted);border-radius:20px;position:relative;pointer-events:none}.pref-toggle span::before{content:"";width:16px;height:16px;position:absolute;left:3px;top:3px;border-radius:50%;background:var(--dialog-card)}.pref-toggle input:checked+span{background:var(--dialog-accent)}.pref-toggle input:checked+span::before{left:21px}.pref-toggle input:focus-visible+span{outline:3px solid var(--dialog-accent);outline-offset:3px}
+.dialog-footer{border-top:1px solid var(--dialog-line);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-shrink:0;background:var(--dialog-side)}.dialog-footer span{font-size:11px;color:var(--dialog-muted)}.dialog-done{min-width:88px;min-height:38px;border:1px solid var(--dialog-line);border-radius:6px;background:var(--dialog-card);font-size:12px}
+.dialog-done:hover{border-color:var(--dialog-accent)}.settings-content .small-note{font-size:11px;line-height:1.8;color:var(--dialog-muted);margin-top:15px}.settings-content .about-logo{display:grid;place-items:center;width:58px;height:58px;border-radius:16px;background:var(--dialog-selected);color:var(--dialog-accent);margin-bottom:17px}.about-logo .icon{width:30px;height:30px}.settings-content .about-name{font-size:25px;margin-bottom:7px}
+.help-list{list-style:none;padding:0;margin:0;counter-reset:help}.help-list li{counter-increment:help;display:flex;align-items:start;gap:13px;padding:14px 0;border-bottom:1px solid var(--dialog-line);font-size:12px;line-height:1.7}.help-list li::before{content:counter(help);display:grid;place-items:center;min-width:23px;height:23px;border-radius:7px;background:var(--dialog-selected);color:var(--dialog-accent);font-size:11px}.help-list span{color:var(--dialog-muted)}
+@media(max-width:600px){.app-dialog{height:calc(100dvh - 24px);width:calc(100vw - 18px)}.settings-nav{width:116px;padding:19px 7px}.settings-nav button{font-size:11px;gap:6px;padding:0 8px}.settings-nav button .icon{width:16px}.settings-nav .nav-heading,.settings-nav .nav-bottom{padding-left:8px;font-size:9px}.settings-content{padding:23px 16px}.settings-content h3{font-size:20px}.layout-choices{grid-template-columns:1fr}.pref-row{align-items:start;flex-wrap:wrap;gap:10px}.pref-select{width:100%;max-width:none}.dialog-footer span{font-size:10px}.dialog-footer{padding:10px 13px}.dialog-done{min-width:65px}}
+
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true"><defs>
+<symbol id="i-zoom" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5M8 10.5h5m-2.5-2.5v5"/></symbol>
+<symbol id="i-area" viewBox="0 0 24 24"><path d="M9 3H3v6m12-6h6v6M3 15v6h6m6 0h6v-6M8 8h8v8H8z"/></symbol>
+<symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="m9 5-6 6 6 6M3 11h11a6 6 0 0 1 0 12" transform="translate(0 -2)"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></symbol>
+<symbol id="i-grip" viewBox="0 0 24 24"><path d="M8 5h.1M16 5h.1M8 12h.1M16 12h.1M8 19h.1M16 19h.1" stroke-width="3"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24"><path d="M5 12h.1M12 12h.1M19 12h.1" stroke-width="3"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 14.3A8.5 8.5 0 0 1 9.7 3.5 8.5 8.5 0 1 0 20.5 14.3Z"/></symbol>
+<symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 9a8 8 0 1 1-.1 6M4 3v6h6"/></symbol>
+<symbol id="i-cursor" viewBox="0 0 24 24"><path d="m5 3 14 9-7 2-3 7Z"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m3 17 6-6 5 5 3-3 4 4"/><circle cx="16" cy="8" r="1"/></symbol>
+<symbol id="i-move" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M9 6l3-3 3 3m-6 12 3 3 3-3M6 9l-3 3 3 3m12-6 3 3-3 3"/></symbol>
+<symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="var(--ui,#fff)"/><circle cx="15" cy="17" r="3" fill="var(--ui,#fff)"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></symbol><symbol id="i-unlock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 7.5-2m-3.5 10v2"/></symbol><symbol id="i-rotate" viewBox="0 0 24 24"><path d="M4 9a8 8 0 0 1 13-5l3 3m0-5v5h-5M20 15a8 8 0 0 1-13 5l-3-3m0 5v-5h5"/></symbol><symbol id="i-size" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m7 15 10-6m-4 0h4v4M7 11v4h4"/></symbol><symbol id="i-gear" viewBox="0 0 24 24"><path d="m9.5 3-.5 2-2 .9-1.8-.6-2 3.4 1.5 1.4v2.8l-1.5 1.4 2 3.4 1.8-.6 2 .9.5 2h4l.5-2 2-.9 1.8.6 2-3.4-1.5-1.4v-2.8l1.5-1.4-2-3.4-1.8.6-2-.9-.5-2z"/><circle cx="11.5" cy="11.5" r="3"/></symbol><symbol id="i-layout" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 9v12"/></symbol><symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.1" stroke-width="2"/></symbol></defs></svg>
+<header class="top"><div class="brand"><div class="brand-mark"><svg class="icon"><use href="#i-zoom"/></svg></div>Magnifier<small>두 스타일 · 앱 전체 설정</small></div><div class="top-right"><span>실제 화면 제어 없이 디자인만 비교합니다</span><button class="circle" id="theme" title="비교 페이지의 밝기 변경" aria-label="비교 페이지의 밝기 변경"><svg class="icon"><use href="#i-moon"/></svg></button></div></header>
+<main>
+<div class="intro"><div><h1>화면은 크게, 도구는 가볍게.</h1><p>원본 영역은 실시간으로. 크기와 비율은 원하는 대로.</p></div><span class="pill">버튼 그림은 작게 · 누르는 면적은 넉넉하게</span></div>
+<nav class="options" id="options" aria-label="시안 선택"></nav>
+<div class="control-choice"><div><strong>자주 쓰는 조절은 빠르게, 앱 설정은 한곳에.</strong><p>슬라이더는 크기·비율, 톱니바퀴는 스타일과 앱 전체 설정을 엽니다.</p></div><button class="app-settings-open" data-action="app-settings"><svg class="icon"><use href="#i-gear"/></svg>앱 설정 열기</button></div>
+<div class="preview-head"><div class="preview-name" id="previewName"></div><div class="segments" id="phases" aria-label="미리볼 화면"><button data-phase="start">시작 화면</button><button data-phase="select">영역 지정</button><button data-phase="zoom" class="active">확대 화면</button></div></div>
+<div class="stage style-a" id="stage" data-phase="zoom">
+<div class="desktop-label"><svg class="icon"><use href="#i-image"/></svg>비교용 샘플 화면</div>
+<div class="sample-app"><div class="sample-head"><div class="dots"><i></i><i></i><i></i></div>도형 편집<span class="right">구름과 산</span></div><div class="sample-sidebar"><svg class="icon"><use href="#i-cursor"/></svg><svg class="icon"><use href="#i-area"/></svg><svg class="icon"><use href="#i-image"/></svg></div><div class="source-art" id="sourceArt"></div></div>
+<div class="source-frame" id="sourceFrame"><div class="frame-controls"><div class="frame-grip" id="sourceGrip" title="원본 영역 이동"><svg class="icon"><use href="#i-grip"/></svg><small>원본 영역</small></div><button class="ib" data-action="app-settings" aria-label="앱 설정" title="앱 설정"><svg class="icon"><use href="#i-gear"/></svg></button><button class="ib confirm" data-action="confirm" title="이 영역 확대"><svg class="icon"><use href="#i-check"/></svg>확대</button><button class="ib" data-action="return" title="영역 선택 취소 · 원래 화면" aria-label="영역 선택 취소 · 원래 화면"><svg class="icon"><use href="#i-close"/></svg></button></div><button class="handle nw" data-handle="nw" title="영역 크기 조절" aria-label="왼쪽 위 크기 조절"></button><button class="handle ne" data-handle="ne" title="영역 크기 조절" aria-label="오른쪽 위 크기 조절"></button><button class="handle sw" data-handle="sw" title="영역 크기 조절" aria-label="왼쪽 아래 크기 조절"></button><button class="handle se" data-handle="se" title="영역 크기 조절" aria-label="오른쪽 아래 크기 조절"></button><div class="source-tag">확대할 원본 영역</div></div>
+<div class="lens" id="lens"><div class="lens-bar" id="lensBar"></div><div class="size-controls" id="sizeControls"></div><div class="lens-body" id="lensBody"><div id="lensArt" style="position:absolute;inset:0"></div><div class="lens-caption">구름과 산<span>작은 지점도 편안하게</span></div></div></div>
+<div class="launcher"><button class="ib launcher-close" data-action="close" title="돋보기 닫기" aria-label="돋보기 닫기"><svg class="icon"><use href="#i-close"/></svg></button><div class="launch-icon"><svg class="icon"><use href="#i-zoom"/></svg></div><h2>어디를 크게 볼까요?</h2><p>원하는 곳을 확대해서 편하게 조작하세요.</p><button class="primary" data-action="select"><svg class="icon"><use href="#i-area"/></svg>영역 지정</button><button class="launch-settings" data-action="app-settings"><svg class="icon"><use href="#i-gear"/></svg>앱 설정</button></div>
+<div class="select-sizes" id="selectSizes"></div>
+<div class="selection-hint">테두리를 옮기고 크기를 맞춘 뒤, <strong>확대</strong>를 누르세요.</div>
+<div class="closed-state"><p>원래 화면으로 돌아왔습니다.</p><button data-action="start">돋보기 다시 열기</button></div>
+</div>
+<div class="under"><div class="hint"><svg class="icon"><use href="#i-cursor"/></svg><span id="interactionHint">배율을 바꾸거나, 확대 화면의 파란 점을 드래그해 보세요. 복귀 버튼으로 처음 화면에 돌아갈 수 있습니다.</span></div><span class="current-region" id="currentRegion"></span><button class="reset" id="reset"><svg class="icon"><use href="#i-reset"/></svg>배치 초기화</button></div>
+<div class="notes"><div><small>도구 배치</small><strong id="layoutNote"></strong></div><div><small>이런 느낌을 원할 때</small><p id="moodNote"></p></div><div><small>이번 시안의 변경 범위 · 중간</small><p class="fine">크기·비율은 버튼으로 엽니다. 앱 전체 설정에는 화면, 영역·배율, 앱 정보 메뉴를 담았습니다. 1번·3번 스타일은 설정 안에서 전환합니다.</p></div></div>
+<details><summary>개발 연결 메모</summary><p>이 파일은 WPF 변경 전 디자인 비교용 HTML 목업입니다. 채택한 두 스타일은 기존 SelectionOverlayWindow와 SelectionPreviewWindow 구조를 유지합니다. 아이콘 버튼 목표 크기는 44~48 DIP이며, 실제 WPF에서는 Fluent 리소스와 공통 ControlTemplate에 매핑할 수 있습니다. 샘플 SVG 안의 점 이동과 확대만 동작하며 화면 캡처·Win32 입력 전달은 하지 않습니다. 영역 이동은 샘플 화면의 좌표에 연결됩니다. 프리셋은 원본 영역의 픽셀 크기이며 목업은 2560×1440의 가상 화면 크기로 표시합니다. 프리셋 선택은 해당 크기와 비율을 적용하며 잠금 상태는 유지합니다. 비율 선택은 고정을 켜고 가로를 기준으로 세로를 맞춥니다. 방향 전환은 가로·세로를 바꾸며 가상 화면에 맞지 않으면 비율을 유지한 채 줄입니다. 화면보다 큰 프리셋은 비활성화합니다. 잠금 해제 시 자유롭게 조절합니다. 빠른 설정 패널은 바깥 클릭으로 자동으로 닫지 않습니다. 앱 전체 설정은 왼쪽 사이드바가 있는 별도 모달이며 화면·영역/배율·앱 정보로 구성합니다. 변경 사항은 즉시 반영하고 닫기 또는 Esc로 닫습니다. 브라우저 목업 전용 저장소에 스타일·테마·시작값과 마지막 영역 크기/비율/배율을 저장하며 실제 앱 설정 파일은 변경하지 않습니다. 실제 WPF 연결 시 앱 정보에 제품 버전과 진단 로그 접근을 추가할 수 있습니다. 실제 앱의 오류 시 release 정책은 별도 유지합니다.</p></details>
+<footer><span>1번·3번 모두 채택 · 원본 테두리 + 독립 확대 창</span><span>앱 설정의 왼쪽 메뉴와 두 스타일 전환을 확인해 보세요.</span></footer>
+</main>
+
+<dialog class="app-dialog" id="appSettings" aria-labelledby="appSettingsTitle">
+<div class="dialog-titlebar"><h2 id="appSettingsTitle"><svg class="icon"><use href="#i-gear"/></svg>앱 설정</h2><button class="dialog-close" data-dialog-close title="설정 닫기" aria-label="설정 닫기"><svg class="icon"><use href="#i-close"/></svg></button></div>
+<div class="dialog-middle"><nav class="settings-nav" id="settingsNav" aria-label="설정 메뉴"></nav><section class="settings-content" id="settingsContent" tabindex="-1" aria-labelledby="settingsPageTitle"></section></div>
+<div class="dialog-footer"><span>변경 사항은 바로 반영됩니다.</span><button class="dialog-done" data-dialog-close>닫기</button></div>
+</dialog>
+
+<script>
+const SCENE_TEMPLATE="<svg class=\"scene\" id=\"__ID__\" viewBox=\"0 0 1200 400\" preserveAspectRatio=\"none\"><defs><pattern id=\"__ID__-grid\" width=\"20\" height=\"20\" patternUnits=\"userSpaceOnUse\"><circle cx=\"1\" cy=\"1\" r=\".8\" fill=\"#c7d3e4\"/></pattern><linearGradient id=\"__ID__-mountain\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop stop-color=\"#dbe7f8\"/><stop offset=\"1\" stop-color=\"#c2d5f2\"/></linearGradient></defs><rect width=\"1200\" height=\"400\" fill=\"#f0f4fa\"/><rect width=\"1200\" height=\"400\" fill=\"url(#__ID__-grid)\"/><rect x=\"154\" y=\"88\" width=\"321\" height=\"250\" rx=\"4\" fill=\"#f9fbff\" stroke=\"#d6e1f0\"/><circle cx=\"393\" cy=\"142\" r=\"25\" fill=\"#f2d7a3\"/><path d=\"M165 270 248 188 300 235 358 173 465 283V328H165Z\" fill=\"#e2eaf5\"/><path d=\"M165 280 244 243 319 184 393 268 465 286V328H165Z\" fill=\"url(#__ID__-mountain)\"/><path class=\"edit-path\" fill=\"none\" stroke=\"#518bea\" stroke-width=\"2\"/><path d=\"M223 246h114\" stroke=\"#7aa1e0\" stroke-width=\"1\" stroke-dasharray=\"4 4\"/><g class=\"target\" role=\"button\" aria-label=\"드래그할 수 있는 샘플 점\" tabindex=\"0\"><circle class=\"target-halo\" r=\"15\" fill=\"#286be819\"/><circle class=\"target-dot\" r=\"7\" fill=\"#286be8\"/></g><circle cx=\"223\" cy=\"246\" r=\"4\" fill=\"white\" stroke=\"#518bea\" stroke-width=\"2\"/><circle cx=\"337\" cy=\"246\" r=\"4\" fill=\"white\" stroke=\"#518bea\" stroke-width=\"2\"/><path d=\"M525 111h107m-107 16h62M525 162h130m-130 16h99m-99 16h111\" stroke=\"#d3ddeb\" stroke-width=\"7\" stroke-linecap=\"round\"/><rect x=\"525\" y=\"247\" width=\"98\" height=\"27\" rx=\"5\" fill=\"#dfe8f5\"/></svg>";
+"use strict";
+const DESIGNS=[
+{id:"a",number:"01",title:"밝고 편안하게",sub:"상단 도구막대 · 채택",layout:"상단에 도구와 원본 크기",mood:"창 위쪽에서 크기와 배율을 함께 확인합니다."},
+{id:"c",number:"03",title:"화면을 더 넓게",sub:"아래쪽 도구막대 · 채택",layout:"아래쪽에 모아 두는 도구",mood:"확대 화면 아래에 도구를 모아 둡니다. 자동 숨김은 없습니다."}
+];
+const PRESETS=[
+{w:320,h:180},{w:640,h:360},{w:960,h:540},{w:1280,h:720},{w:1600,h:900},{w:1920,h:1080},
+{w:640,h:480},{w:800,h:600},{w:1024,h:768},{w:480,h:480},{w:720,h:720},{w:1080,h:1080}
+];
+const RATIOS={"16:9":16/9,"4:3":4/3,"1:1":1};
+const $=s=>document.querySelector(s),stage=$("#stage"),lens=$("#lens"),frame=$("#sourceFrame");
+const state={design:"a",phase:"zoom",zoom:2,point:{x:280,y:167},settings:"panel",panel:false,selectionPanel:false,ratio:"16:9",portrait:false,locked:false,size:{w:960,h:540}};
+function icon(name){return '<svg class="icon" aria-hidden="true"><use href="#i-'+name+'"/></svg>';}
+function ib(action,label,name,extra){return '<button class="ib '+(extra||"")+'" data-action="'+action+'" aria-label="'+label+'" title="'+label+'">'+icon(name)+'</button>';}
+function zoomTools(){return ib("minus","배율 낮추기","minus")+'<span class="zoom-value" aria-live="polite">'+state.zoom.toFixed(1).replace(".0","")+'×</span>'+ib("plus","배율 높이기","plus");}
+function sizeLabel(){return state.size.w+" × "+state.size.h;}
+function ratioValue(){const r=RATIOS[state.ratio];return state.portrait?1/r:r;}
+function statusLabel(){return state.locked?state.ratio+" "+(state.ratio==="1:1"?"정사각":state.portrait?"세로":"가로")+" 고정":"자유 조절";}
+function pixelScale(){return Math.min((stage.clientWidth-32)/2560,(stage.clientHeight-100)/1440);}
+function frameBounds(){return {left:parseFloat(frame.style.left)||frame.offsetLeft,top:parseFloat(frame.style.top)||frame.offsetTop,width:frame.offsetWidth,height:frame.offsetHeight};}
+function paintFrame(){
+if(state.phase==="start"||state.phase==="closed")return;
+const scale=pixelScale(),b=frameBounds(),w=state.size.w*scale,h=state.size.h*scale;
+Object.assign(frame.style,{width:w+"px",height:h+"px",left:Math.max(12,Math.min(stage.clientWidth-w-12,b.left))+"px",top:Math.max(70,Math.min(stage.clientHeight-h-32,b.top))+"px"});
+updateView();
+}
+function setSize(w,h){
+const fit=Math.min(Math.max(1,135/w,135/h),2400/w,1320/h);
+state.size={w:Math.round(w*fit),h:Math.round(h*fit)};paintFrame();syncSizeReadout();
+}
+function applyRatio(){
+let w=state.size.w,h=w/ratioValue();
+if(h>1320){h=1320;w=h*ratioValue();}
+if(h<135){h=135;w=h*ratioValue();}
+setSize(w,h);
+}
+function renderDesign(){
+const d=DESIGNS.find(x=>x.id===state.design);
+$("#options").innerHTML=DESIGNS.map(x=>'<button class="option '+(x.id===d.id?"active":"")+'" data-design="'+x.id+'" aria-pressed="'+(x.id===d.id)+'"><span class="thumb '+(x.id==="c"?"compact":"")+'" aria-hidden="true"></span><span><strong>'+x.number+' '+x.title+'</strong><em>채택</em><small>'+x.sub+'</small></span></button>').join("");
+stage.className="stage style-"+d.id;stage.dataset.settings=state.settings;
+$("#previewName").innerHTML=d.number+" · "+d.title+'<span>두 스타일 모두 선택해서 사용할 수 있습니다</span>';
+$("#layoutNote").textContent=d.layout;$("#moodNote").textContent=d.mood;
+renderToolbar();renderPhase();requestAnimationFrame(paintFrame);
+}
+function renderToolbar(){
+const grip='<div class="lens-grip" id="lensGrip" title="확대 창 이동">'+icon("grip")+'<strong>돋보기</strong></div>';
+const ret='<button class="return" data-action="return" title="원래 화면으로 복귀">'+icon("back")+'<span>복귀</span></button>';
+const gear=ib("settings","크기·비율","settings",state.panel?"accent":"")+ib("app-settings","앱 설정","gear");
+$("#lensBar").innerHTML=grip+'<div class="zoom-tools">'+zoomTools()+'</div><span class="sep"></span>'+gear+ret;
+document.querySelectorAll('[data-action="minus"]').forEach(b=>b.disabled=state.zoom<=1);
+document.querySelectorAll('[data-action="plus"]').forEach(b=>b.disabled=state.zoom>=4);
+const gearButton=$('[data-action="settings"]');if(gearButton)gearButton.setAttribute("aria-expanded",String(state.panel));
+bindWindowDrag($("#lensGrip"),lens);renderSettings();
+}
+function renderSettings(){
+const current=PRESETS.some(p=>Math.max(p.w,p.h)===Math.max(state.size.w,state.size.h)&&Math.min(p.w,p.h)===Math.min(state.size.w,state.size.h));
+const presetOptions=(current?"":'<option value="custom">직접 조절 · '+sizeLabel()+'</option>')+PRESETS.map(p=>{
+const w=state.portrait&&p.w!==p.h?p.h:p.w,h=state.portrait&&p.w!==p.h?p.w:p.h;
+const fits=w<=2400&&h<=1320;
+return '<option value="'+p.w+'x'+p.h+'" '+(w===state.size.w&&h===state.size.h?"selected":"")+(fits?"":" disabled")+'>'+w+' × '+h+(fits?"":" · 화면보다 큼")+'</option>';
+}).join("");
+const ratios=Object.keys(RATIOS).map(r=>'<option value="'+r+'" '+(r===state.ratio?"selected":"")+'>'+r+'</option>').join("");
+const shared='<label class="size-field"><span>원본 영역 크기</span><select id="preset" aria-label="원본 영역 크기 프리셋">'+presetOptions+'</select></label><label class="size-field"><span>고정할 비율</span><select id="ratio" aria-label="고정할 가로 세로 비율">'+ratios+'</select></label><button class="direction" data-action="direction" title="가로와 세로 바꾸기" aria-label="가로와 세로 바꾸기" '+(state.ratio==="1:1"?"disabled":"")+'>'+icon("rotate")+'<span>'+ (state.ratio==="1:1"?"정사각":state.portrait?"세로":"가로")+'</span></button><button class="ratio-lock '+(state.locked?"on":"")+'" data-action="lock" aria-pressed="'+state.locked+'" title="비율 고정을 켜거나 끄기">'+icon(state.locked?"lock":"unlock")+'<span>'+(state.locked?"비율 고정":"자유 조절")+'</span></button>';
+$("#sizeControls").innerHTML=(state.settings==="panel"?'<div class="settings-title"><strong>원본 크기와 비율</strong>'+ib("settings","크기 설정 닫기","close")+'</div>':"")+shared;
+$("#sizeControls").hidden=state.settings==="panel"&&!state.panel;
+const selectionOpen=state.settings==="always"||state.selectionPanel;
+const selectionTag=state.settings==="panel"?'button data-action="selection-settings" aria-controls="selectionSizePanel" aria-expanded="'+selectionOpen+'"':'div';
+$("#selectSizes").innerHTML='<'+selectionTag+' class="select-size-button">'+icon("size")+'<span>'+sizeLabel()+'</span>'+icon(state.locked?"lock":"unlock")+'<small>'+statusLabel()+'</small></'+(state.settings==="panel"?"button":"div")+'><div class="select-size-panel" id="selectionSizePanel" '+(selectionOpen?"":"hidden")+'>'+shared.replace('id="preset"','id="selectionPreset"').replace('id="ratio"','id="selectionRatio"')+'</div>';
+$("#preset").addEventListener("change",presetChanged);$("#ratio").addEventListener("change",ratioChanged);
+$("#selectionPreset").addEventListener("change",presetChanged);$("#selectionRatio").addEventListener("change",ratioChanged);
+syncSizeReadout();
+}
+function presetChanged(e){
+if(e.target.value==="custom")return;const values=e.target.value.split("x").map(Number),w=values[0],h=values[1];
+state.ratio=Math.abs(w/h-16/9)<.01?"16:9":Math.abs(w/h-4/3)<.01?"4:3":"1:1";
+setSize(state.portrait?h:w,state.portrait?w:h);renderSettings();
+}
+function ratioChanged(e){state.ratio=e.target.value;state.locked=true;if(state.ratio==="1:1")state.portrait=false;applyRatio();renderSettings();}
+function syncSizeReadout(){
+$(".source-tag").textContent=sizeLabel()+" · "+statusLabel();
+$("#currentRegion").textContent="현재 "+sizeLabel()+" · "+statusLabel();
+["#preset","#selectionPreset"].forEach(id=>{const select=$(id);if(!select)return;
+const matched=[...select.options].find(o=>o.textContent===sizeLabel());if(matched){select.value=matched.value;return;}
+let custom=select.querySelector('[value="custom"]');if(!custom){custom=document.createElement("option");custom.value="custom";select.prepend(custom);}custom.textContent="직접 조절 · "+sizeLabel();select.value="custom";
+});
+const label=$("#selectSizes .select-size-button span");if(label)label.textContent=sizeLabel();
+const note=$("#selectSizes .select-size-button small");if(note)note.textContent=statusLabel();
+}
+function renderPhase(){
+stage.dataset.phase=state.phase;$("#phases").querySelectorAll("button").forEach(b=>{b.classList.toggle("active",b.dataset.phase===state.phase);b.setAttribute("aria-pressed",String(b.dataset.phase===state.phase));});
+$("#interactionHint").textContent=state.phase==="select"?"테두리를 바로 옮기거나 크기를 바꾸세요. 크기 표시를 누르면 선택 중에도 프리셋과 비율을 조절할 수 있습니다.":state.phase==="start"?"영역 지정으로 시작합니다. 확대 후에는 별도 재지정 없이 테두리를 계속 조절할 수 있습니다.":state.phase==="closed"?"목업 안에서만 닫았습니다. 다시 열면 영역을 지정할 수 있습니다.":"원본 테두리를 바로 조절하세요. 프리셋·가로/세로·비율 고정은 즉시 반영되고, 복귀 버튼은 항상 남습니다.";
+requestAnimationFrame(paintFrame);
+}
+function setPhase(phase){if(state.phase==="zoom"&&phase!=="zoom")captureArea();if(phase==="select"&&(state.phase==="start"||state.phase==="closed")){prepareArea();renderToolbar();}state.phase=phase;renderPhase();}
+function reset(){frame.removeAttribute("style");lens.removeAttribute("style");state.point={x:280,y:167};state.zoom=2;state.size={w:960,h:540};state.ratio="16:9";state.portrait=false;state.locked=false;state.panel=false;state.selectionPanel=false;renderToolbar();updateScene();requestAnimationFrame(paintFrame);}
+function sceneMarkup(id){return SCENE_TEMPLATE.replaceAll("__ID__",id);}
+$("#sourceArt").innerHTML=sceneMarkup("sourceScene");$("#lensArt").innerHTML=sceneMarkup("lensScene");
+function updateScene(){document.querySelectorAll(".target").forEach(t=>t.setAttribute("transform","translate("+state.point.x+" "+state.point.y+")"));document.querySelectorAll(".edit-path").forEach(p=>p.setAttribute("d","M223 246 Q "+state.point.x+" "+state.point.y+" 337 246"));}
+function updateView(){
+if(state.phase!=="zoom")return;const source=$("#sourceScene").getBoundingClientRect(),r=frame.getBoundingClientRect(),body=$("#lensBody").getBoundingClientRect();
+if(!source.width||!body.width)return;
+const x=(r.left-source.left)/source.width*1200,y=(r.top-source.top)/source.height*400,w=r.width/source.width*1200,h=r.height/source.height*400;
+const svg=$("#lensScene");svg.setAttribute("viewBox",x+" "+y+" "+w+" "+h);
+Object.assign(svg.style,{width:r.width*state.zoom+"px",height:r.height*state.zoom+"px",left:(body.width-r.width*state.zoom)/2+"px",top:(body.height-r.height*state.zoom)/2+"px"});
+}
+function bindPointerDrag(handle,onMove){
+handle.addEventListener("pointerdown",e=>{
+if(e.button!==0)return;e.preventDefault();handle.setPointerCapture(e.pointerId);const move=onMove(e);
+const end=()=>{handle.removeEventListener("pointermove",move);handle.removeEventListener("pointerup",end);handle.removeEventListener("pointercancel",end);handle.removeEventListener("lostpointercapture",end);};
+handle.addEventListener("pointermove",move);handle.addEventListener("pointerup",end);handle.addEventListener("pointercancel",end);handle.addEventListener("lostpointercapture",end);
+});
+}
+function bindWindowDrag(handle,element){
+bindPointerDrag(handle,e=>{const area=stage.getBoundingClientRect(),box=element.getBoundingClientRect(),start={x:e.clientX,y:e.clientY,left:box.left-area.left,top:box.top-area.top};
+return ev=>{element.style.left=Math.max(8,Math.min(stage.clientWidth-element.offsetWidth-8,start.left+ev.clientX-start.x))+"px";element.style.top=Math.max(element===frame?70:9,Math.min(stage.clientHeight-element.offsetHeight-30,start.top+ev.clientY-start.y))+"px";updateView();};});
+}
+bindWindowDrag($("#sourceGrip"),frame);
+document.querySelectorAll(".handle").forEach(handle=>bindPointerDrag(handle,e=>{
+const b=frameBounds(),scale=pixelScale(),sx=e.clientX,sy=e.clientY,kind=handle.dataset.handle,west=kind.includes("w"),north=kind.includes("n");
+const ax=west?b.left+b.width:b.left,ay=north?b.top+b.height:b.top,minW=135*scale,minH=135*scale;
+const maxW=Math.min(2400*scale,west?ax-12:stage.clientWidth-ax-12),maxH=Math.min(1320*scale,north?ay-70:stage.clientHeight-ay-32);
+return ev=>{
+let w=b.width+(ev.clientX-sx)*(west?-1:1),h=b.height+(ev.clientY-sy)*(north?-1:1);
+if(state.locked){
+const ratio=ratioValue();if(Math.abs(w-b.width)/b.width>=Math.abs(h-b.height)/b.height)h=w/ratio;else w=h*ratio;
+const minimum=Math.max(minW,minH*ratio),maximum=Math.min(maxW,maxH*ratio);w=Math.max(Math.min(minimum,maximum),Math.min(maximum,w));h=w/ratio;
+}else{w=Math.max(minW,Math.min(maxW,w));h=Math.max(minH,Math.min(maxH,h));}
+state.size={w:Math.round(w/scale),h:Math.round(h/scale)};
+Object.assign(frame.style,{left:(west?ax-w:ax)+"px",top:(north?ay-h:ay)+"px",width:w+"px",height:h+"px"});syncSizeReadout();updateView();
+};}));
+document.querySelectorAll(".target").forEach(target=>{
+bindPointerDrag(target,e=>{e.stopPropagation();const svg=target.ownerSVGElement;return ev=>{const matrix=svg.getScreenCTM();if(!matrix)return;const p=new DOMPoint(ev.clientX,ev.clientY).matrixTransform(matrix.inverse());state.point={x:Math.max(170,Math.min(460,p.x)),y:Math.max(100,Math.min(312,p.y))};updateScene();};});
+target.addEventListener("keydown",e=>{const d={ArrowLeft:[-2,0],ArrowRight:[2,0],ArrowUp:[0,-2],ArrowDown:[0,2]}[e.key];if(!d)return;e.preventDefault();state.point.x=Math.max(170,Math.min(460,state.point.x+d[0]));state.point.y=Math.max(100,Math.min(312,state.point.y+d[1]));updateScene();});
+});
+$("#options").addEventListener("click",e=>{const b=e.target.closest("[data-design]");if(b){state.design=b.dataset.design;appPrefs.design=state.design;saveAppPrefs();renderDesign();}});
+$("#phases").addEventListener("click",e=>{const b=e.target.closest("[data-phase]");if(b)setPhase(b.dataset.phase);});
+stage.addEventListener("click",e=>{const b=e.target.closest("[data-action]");if(!b)return;switch(b.dataset.action){
+case "plus":case "minus":state.zoom=Math.max(1,Math.min(4,state.zoom+(b.dataset.action==="plus" ? 0.5 : -0.5)));renderToolbar();updateView();break;
+case "confirm":setPhase("zoom");break;case "select":setPhase("select");break;case "return":case "start":setPhase("start");break;case "close":setPhase("closed");break;
+case "settings":state.panel=!state.panel;renderToolbar();updateView();break;
+case "lock":state.locked=!state.locked;if(state.locked)applyRatio();renderSettings();break;
+case "direction":state.portrait=!state.portrait;setSize(state.size.h,state.size.w);renderSettings();break;
+case "selection-settings":state.selectionPanel=!state.selectionPanel;renderSettings();break;
+}});
+document.addEventListener("keydown",e=>{if(settingsDialog.open)return;if(e.key==="Escape"){if(state.panel){state.panel=false;renderToolbar();}else if(state.selectionPanel){state.selectionPanel=false;renderSettings();}else setPhase("start");}});
+$("#reset").addEventListener("click",reset);
+$("#theme").addEventListener("click",()=>{const dark=document.documentElement.dataset.theme!=="dark";document.documentElement.dataset.theme=dark?"dark":"light";$("#theme").innerHTML=icon(dark?"sun":"moon");});
+new ResizeObserver(paintFrame).observe(stage);new ResizeObserver(updateView).observe($("#lensBody"));
+
+const APP_SETTINGS_PAGES=[
+{id:"appearance",label:"화면",icon:"layout",description:"익숙한 배치와 편안한 색상을 선택하세요."},
+{id:"defaults",label:"영역·배율",icon:"area",description:"다음에 확대를 시작할 때 사용할 값을 정합니다."},
+{id:"about",label:"앱 정보",icon:"info",description:"원하는 곳을 크게 보고, 마우스로 편하게 조작하세요."}
+];
+const PREFS_KEY="magnifier-ui-mock-settings-v3";
+const appPrefs={design:"a",theme:"system",remember:true,startZoom:2,startPreset:"960x540"};
+const settingsDialog=$("#appSettings");
+let settingsPage="appearance",settingsOpener=null,lastArea=null;
+function loadAppPrefs(){
+try{
+const saved=JSON.parse(localStorage.getItem(PREFS_KEY)||"null");if(!saved)return;
+const p=saved.prefs||{};
+if(DESIGNS.some(d=>d.id===p.design))appPrefs.design=p.design;
+if(["system","light","dark"].includes(p.theme))appPrefs.theme=p.theme;
+if(typeof p.remember==="boolean")appPrefs.remember=p.remember;
+if([1,1.5,2,2.5,3,3.5,4].includes(p.startZoom))appPrefs.startZoom=p.startZoom;
+if(PRESETS.some(preset=>preset.w+"x"+preset.h===p.startPreset))appPrefs.startPreset=p.startPreset;
+const a=saved.last;
+if(a&&Number.isFinite(a.w)&&a.w>=135&&a.w<=2400&&Number.isFinite(a.h)&&a.h>=135&&a.h<=1320&&Number.isFinite(a.zoom)&&a.zoom>=1&&a.zoom<=4&&Object.hasOwn(RATIOS,a.ratio)&&typeof a.locked==="boolean"&&typeof a.portrait==="boolean")lastArea=a;
+}catch{}
+}
+function saveAppPrefs(){try{localStorage.setItem(PREFS_KEY,JSON.stringify({prefs:appPrefs,last:appPrefs.remember?lastArea:null}));}catch{}}
+function captureArea(){
+lastArea={w:state.size.w,h:state.size.h,zoom:state.zoom,ratio:state.ratio,portrait:state.portrait,locked:state.locked};
+saveAppPrefs();
+}
+function prepareArea(){
+const values=appPrefs.startPreset.split("x").map(Number);
+const a=appPrefs.remember&&lastArea?lastArea:{w:values[0],h:values[1],zoom:appPrefs.startZoom,ratio:Math.abs(values[0]/values[1]-16/9)<.01?"16:9":Math.abs(values[0]/values[1]-4/3)<.01?"4:3":"1:1",portrait:false,locked:false};
+state.size={w:a.w,h:a.h};state.zoom=a.zoom;state.ratio=a.ratio;state.portrait=a.portrait;state.locked=a.locked;
+}
+function applyAppTheme(){
+const theme=appPrefs.theme==="system"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):appPrefs.theme;
+stage.dataset.appTheme=theme;settingsDialog.dataset.appTheme=theme;
+}
+function renderAppSettings(){
+const focused=document.activeElement?.id;
+const p=APP_SETTINGS_PAGES.find(page=>page.id===settingsPage);
+$("#settingsNav").innerHTML='<div class="nav-heading">MAGNIFIER</div>'+APP_SETTINGS_PAGES.map(page=>'<button id="app-page-'+page.id+'" class="'+(page.id===p.id?"active":"")+'" data-settings-page="'+page.id+'" '+(page.id===p.id?'aria-current="page"':'')+'>'+icon(page.icon)+page.label+'</button>').join("")+'<div class="nav-bottom">도구는 가볍게.<br>화면은 편안하게.</div>';
+let content='<h3 id="settingsPageTitle">'+p.label+'</h3><p class="page-description">'+p.description+'</p>';
+if(p.id==="appearance"){
+content+='<h4>도구막대 배치</h4><div class="layout-choices">'+DESIGNS.map(d=>'<button id="app-style-'+d.id+'" class="layout-choice" data-app-design="'+d.id+'" aria-pressed="'+(state.design===d.id)+'"><div class="layout-preview '+(d.id==="c"?"bottom":"")+'" aria-hidden="true"></div>'+(state.design===d.id?'<span class="selected-mark">'+icon("check")+'</span>':'')+'<strong>'+d.number+' · '+(d.id==="a"?"상단 도구막대":"하단 도구막대")+'</strong><small>'+d.title+'</small></button>').join("")+'</div>';
+content+='<div class="pref-row"><div><label for="prefTheme">테마</label><p>창과 도구막대의 밝기를 바꿉니다.</p></div><select class="pref-select" id="prefTheme" data-pref="theme">'+[["system","시스템 설정"],["light","밝게"],["dark","어둡게"]].map(([value,label])=>'<option value="'+value+'" '+(appPrefs.theme===value?"selected":"")+'>'+label+'</option>').join("")+'</select></div><p class="small-note">두 배치에서 크기·비율, 배율, 복귀는 같은 방식으로 사용합니다.</p>';
+}else if(p.id==="defaults"){
+content+='<div class="pref-row"><div><label for="prefRemember">이전 영역과 배율 기억</label><p>마지막 크기·비율·고정 상태와 배율로 다시 시작합니다.</p></div><label class="pref-toggle"><input id="prefRemember" type="checkbox" data-pref="remember" '+(appPrefs.remember?"checked":"")+'><span aria-hidden="true"></span></label></div>';
+content+='<h4>기본 시작값</h4><div class="pref-row"><div><label for="prefPreset">원본 영역 크기</label><p>확대를 시작할 때 사용할 크기입니다.</p></div><select class="pref-select" id="prefPreset" data-pref="startPreset" '+(appPrefs.remember?"disabled":"")+'>'+PRESETS.map(preset=>'<option value="'+preset.w+'x'+preset.h+'" '+(appPrefs.startPreset===preset.w+"x"+preset.h?"selected":"")+'>'+preset.w+' × '+preset.h+'</option>').join("")+'</select></div>';
+content+='<div class="pref-row"><div><label for="prefZoom">확대 배율</label><p>원본 크기와 별도로 적용됩니다.</p></div><select class="pref-select" id="prefZoom" data-pref="startZoom" '+(appPrefs.remember?"disabled":"")+'>'+[1,1.5,2,2.5,3,3.5,4].map(value=>'<option value="'+value+'" '+(appPrefs.startZoom===value?"selected":"")+'>'+value+'배</option>').join("")+'</select></div><p class="small-note">'+(appPrefs.remember?"이전 값 기억을 끄면 기본 시작값을 선택할 수 있습니다.":"설정한 시작값은 다음에 영역을 지정할 때 적용됩니다.")+' 현재 영역은 크기·비율 버튼으로 바로 조절하세요.</p>';
+}else{
+content='<div class="about-logo">'+icon("zoom")+'</div><h3 class="about-name" id="settingsPageTitle">Magnifier</h3><p class="page-description">'+p.description+'</p><h4>간단한 사용법</h4><ol class="help-list"><li><div>영역을 지정하세요.<br><span>원본 테두리를 옮기고 모서리를 늘려 크기를 맞춥니다.</span></div></li><li><div>확대해서 조작하세요.<br><span>확대 화면에서 평소처럼 클릭하고 드래그합니다.</span></div></li><li><div>복귀로 돌아오세요.<br><span>도구막대의 복귀 버튼은 항상 같은 자리에 있습니다.</span></div></li></ol><p class="small-note">슬라이더 아이콘은 현재 영역의 크기·비율, 톱니바퀴는 앱 전체 설정을 엽니다.</p>';
+}
+$("#settingsContent").innerHTML=content;
+if(focused&&settingsDialog.open)document.getElementById(focused)?.focus({preventScroll:true});
+}
+function openAppSettings(opener){
+settingsOpener=opener;renderAppSettings();applyAppTheme();if(!settingsDialog.open)settingsDialog.showModal();$("#app-page-"+settingsPage).focus({preventScroll:true});
+}
+settingsDialog.addEventListener("click",e=>{
+if(e.target.closest("[data-dialog-close]")){settingsDialog.close();return;}
+const page=e.target.closest("[data-settings-page]");if(page){settingsPage=page.dataset.settingsPage;renderAppSettings();$("#settingsContent").scrollTop=0;return;}
+const design=e.target.closest("[data-app-design]");if(design){state.design=design.dataset.appDesign;appPrefs.design=state.design;saveAppPrefs();renderDesign();renderAppSettings();}
+});
+settingsDialog.addEventListener("change",e=>{
+const key=e.target.dataset.pref;if(!key)return;
+appPrefs[key]=key==="remember"?e.target.checked:key==="startZoom"?Number(e.target.value):e.target.value;
+if(key==="remember"&&appPrefs.remember)captureArea();saveAppPrefs();applyAppTheme();renderAppSettings();
+});
+settingsDialog.addEventListener("cancel",e=>{e.preventDefault();settingsDialog.close();});
+settingsDialog.addEventListener("close",()=>{
+const fallback=state.phase==="zoom"?$("#lensBar [data-action=app-settings]"):state.phase==="select"?$("#sourceFrame [data-action=app-settings]"):$(".launcher [data-action=app-settings]");
+const target=settingsOpener?.isConnected?settingsOpener:fallback;target?.focus({preventScroll:true});
+});
+document.addEventListener("click",e=>{const opener=e.target.closest("[data-action=app-settings]");if(opener)openAppSettings(opener);});
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",applyAppTheme);
+window.addEventListener("pagehide",captureArea);
+loadAppPrefs();state.design=appPrefs.design;prepareArea();applyAppTheme();
+
+updateScene();renderDesign();
+
+</script>
+</body>
+</html>

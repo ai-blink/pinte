@@ -16,6 +16,7 @@ public partial class SelectionPreviewWindow
     private async void AuxiliaryTools_OnExpanded(object sender, RoutedEventArgs e)
     {
         if (!IsInitialized) return;
+        if (_handToolEnabled) await SetPanModeAsync(false);
         var resume = _relayStatus is { InputRequested: true };
         try { await StopAsync("A/B 보조 도구 · 직접 조작 꺼짐"); _resumeAfterAuxiliary = resume; }
         catch { }

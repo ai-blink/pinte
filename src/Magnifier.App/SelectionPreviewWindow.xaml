@@ -6,97 +6,160 @@
         ResizeMode="NoResize" Topmost="True" ShowInTaskbar="False"
         PreviewKeyDown="SelectionPreviewWindow_OnPreviewKeyDown">
     <Window.Resources>
-        <Style TargetType="Button">
-            <Setter Property="MinHeight" Value="42" />
-            <Setter Property="Padding" Value="13,6" />
-            <Setter Property="Margin" Value="3" />
-            <Setter Property="FontSize" Value="15" />
-            <Setter Property="FontWeight" Value="SemiBold" />
+        <Style TargetType="Button" BasedOn="{StaticResource AppButtonStyle}">
+            <Setter Property="MinHeight" Value="40" />
+            <Setter Property="Padding" Value="11,5" />
+            <Setter Property="FontSize" Value="13" />
         </Style>
     </Window.Resources>
-    <Border BorderBrush="#4798FF" BorderThickness="2" Background="#F3F6FC" CornerRadius="10">
+    <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" Background="{DynamicResource AppPanelBrush}" CornerRadius="14">
+        <Border.Effect><DropShadowEffect BlurRadius="24" ShadowDepth="8" Opacity="0.18" Color="#17232F" /></Border.Effect>
         <Grid x:Name="LensLayout">
             <Grid.RowDefinitions>
-                <RowDefinition Height="40" />
-                <RowDefinition Height="Auto" />
+                <RowDefinition Height="52" />
+                <RowDefinition x:Name="TopToolbarRow" Height="Auto" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition x:Name="BottomToolbarRow" Height="0" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <Grid x:Name="TitleBar" Background="#183456">
-                <Thumb x:Name="TitleThumb" Cursor="SizeAll" DragStarted="TitleThumb_OnDragStarted"
+
+            <Grid x:Name="TitleBar">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Border Grid.ColumnSpan="2" Background="{DynamicResource AppToolbarBrush}" BorderBrush="{DynamicResource AppBorderBrush}"
+                        BorderThickness="0,0,0,1" CornerRadius="14,14,0,0" />
+                <Thumb x:Name="TitleThumb" Grid.Column="0" Cursor="SizeAll" DragStarted="TitleThumb_OnDragStarted"
                        DragDelta="TitleThumb_OnDragDelta" DragCompleted="TitleThumb_OnDragCompleted"
                        LostMouseCapture="TitleThumb_OnLostMouseCapture"
                        AutomationProperties.Name="확대 렌즈 이동 손잡이">
-                    <Thumb.Template><ControlTemplate TargetType="Thumb"><Border Background="Transparent" /></ControlTemplate></Thumb.Template>
+                    <Thumb.Template>
+                        <ControlTemplate TargetType="Thumb">
+                            <Border Background="Transparent" Padding="14,0">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="⠿" FontSize="19" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,8,0" />
+                                    <StackPanel>
+                                        <TextBlock Foreground="{DynamicResource AppTextBrush}" FontSize="13" FontWeight="SemiBold" Text="확대 렌즈" />
+                                        <TextBlock Foreground="{DynamicResource AppMutedTextBrush}" FontSize="10" Text="제목부를 잡아 독립적으로 이동" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </ControlTemplate>
+                    </Thumb.Template>
                 </Thumb>
-                <TextBlock Margin="14,0" VerticalAlignment="Center" Foreground="White" FontSize="15"
-                           IsHitTestVisible="False" Text="확대 렌즈 · 이 제목부를 잡아 이동" />
+                <Button Grid.Column="1" Style="{StaticResource IconButtonStyle}" Width="40" MinWidth="40" MinHeight="40" Margin="0,6,8,6"
+                        Content="×" Click="CloseLens_OnClick" ToolTip="확대를 끝내고 원래 화면으로"
+                        AutomationProperties.Name="확대를 끝내고 원래 화면으로" />
             </Grid>
-            <WrapPanel x:Name="Toolbar" Grid.Row="1" Margin="5">
-                <Button x:Name="StartInputButton" Content="조작 재개" Click="StartInput_OnClick" Background="#D9EAFE" />
-                <Button x:Name="StopInputButton" Content="조작 중지" Click="StopInput_OnClick" />
-                <Button Content="원래 화면" Click="Return_OnClick" Background="#FFE8BC"
-                        AutomationProperties.Name="입력을 해제하고 원래 화면으로 복귀" />
-                <Button x:Name="ZoomDecreaseButton" Content="−" Click="ZoomDecrease_OnClick" MinWidth="42"
-                        AutomationProperties.Name="배율 낮추기" />
-                <TextBlock x:Name="ZoomText" MinWidth="62" VerticalAlignment="Center" TextAlignment="Center"
-                           FontSize="16" FontWeight="SemiBold" Text="2×" />
-                <Button x:Name="ZoomIncreaseButton" Content="+" Click="ZoomIncrease_OnClick" MinWidth="42"
-                        AutomationProperties.Name="배율 높이기" />
-            </WrapPanel>
-            <Border x:Name="ImageBorder" Grid.Row="2" Margin="6,0" Background="#132033"
-                    BorderBrush="#738DAE" BorderThickness="1" ClipToBounds="True">
+
+            <Border x:Name="Toolbar" Grid.Row="1" Margin="8,7,8,5" Padding="4" Background="{DynamicResource AppCanvasBrush}"
+                    BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="10">
+                <WrapPanel VerticalAlignment="Center">
+                    <Button x:Name="RegionSettingsButton" Content="영역 크기" Click="RegionSettings_OnClick"
+                            ToolTip="원본 크기와 비율" AutomationProperties.Name="원본 크기와 비율" />
+                    <Button x:Name="AppSettingsButton" Style="{StaticResource IconButtonStyle}" Content="⚙" Click="AppSettings_OnClick" MinWidth="40" Width="40" MinHeight="40"
+                            ToolTip="앱 설정" AutomationProperties.Name="앱 설정" Margin="4,0,0,0" />
+                    <Border Width="1" Height="24" Background="{DynamicResource AppBorderBrush}" Margin="8,0" VerticalAlignment="Center" />
+                    <Button Content="↩  원래 화면" Style="{StaticResource SoftAccentButtonStyle}" Click="Return_OnClick"
+                            AutomationProperties.Name="입력을 해제하고 원래 화면으로 복귀" />
+                    <Border Width="1" Height="24" Background="{DynamicResource AppBorderBrush}" Margin="8,0" VerticalAlignment="Center" />
+                    <Button x:Name="ZoomDecreaseButton" Style="{StaticResource IconButtonStyle}" Content="−" Click="ZoomDecrease_OnClick" MinWidth="40" Width="40" MinHeight="40"
+                            AutomationProperties.Name="배율 낮추기" />
+                    <TextBlock x:Name="ZoomText" MinWidth="54" VerticalAlignment="Center" TextAlignment="Center"
+                               FontSize="14" FontWeight="SemiBold" Text="2×" />
+                    <Button x:Name="ZoomIncreaseButton" Style="{StaticResource IconButtonStyle}" Content="+" Click="ZoomIncrease_OnClick" MinWidth="40" Width="40" MinHeight="40"
+                            AutomationProperties.Name="배율 높이기" />
+                    <Border Width="1" Height="24" Background="{DynamicResource AppBorderBrush}" Margin="8,0" VerticalAlignment="Center" />
+                    <Button x:Name="PanModeButton" Content="✋ 이동" Style="{StaticResource SoftAccentButtonStyle}" Click="PanMode_OnClick"
+                            ToolTip="손 도구: 렌즈 안을 끌어 확대된 위치를 이동합니다" AutomationProperties.Name="손 도구 켜기" />
+                </WrapPanel>
+            </Border>
+
+            <Border x:Name="ImageBorder" Grid.Row="2" Margin="8,0" Background="{DynamicResource AppCanvasBrush}"
+                    BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="10" ClipToBounds="True">
                 <Grid>
-                    <Image x:Name="CapturedImage" Stretch="Uniform" Cursor="Arrow"
-                           RenderOptions.BitmapScalingMode="NearestNeighbor"
-                           MouseLeftButtonDown="CapturedImage_OnMouseLeftButtonDown"
-                           SizeChanged="CapturedImage_OnSizeChanged" />
-                    <Canvas x:Name="PointMarkerLayer" IsHitTestVisible="False" ClipToBounds="True">
-                        <Line x:Name="StraightStrokePreview" Stroke="#FDE047" StrokeThickness="3"
-                              StrokeDashArray="5,3" Visibility="Collapsed" />
-                        <Border x:Name="PointAMarker" Width="28" Height="28" Background="#D91D4ED8"
-                                BorderBrush="White" BorderThickness="2" CornerRadius="14" Visibility="Collapsed">
-                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold" Foreground="White" Text="A" />
-                        </Border>
-                        <Border x:Name="PointBMarker" Width="28" Height="28" Background="#D904749C"
-                                BorderBrush="White" BorderThickness="2" CornerRadius="14" Visibility="Collapsed">
-                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold" Foreground="White" Text="B" />
-                        </Border>
-                        <Grid x:Name="VirtualCursor" Width="26" Height="26" Visibility="Collapsed">
-                            <Ellipse Margin="3" Stroke="#10243D" StrokeThickness="5" />
-                            <Ellipse Margin="3" Stroke="#FDE047" StrokeThickness="2" />
-                            <Line X1="13" X2="13" Y1="0" Y2="26" Stroke="White" StrokeThickness="1" />
-                            <Line X1="0" X2="26" Y1="13" Y2="13" Stroke="White" StrokeThickness="1" />
-                        </Grid>
-                    </Canvas>
-                    <TextBlock x:Name="EmptyImageText" Margin="16" HorizontalAlignment="Center" VerticalAlignment="Center"
-                               TextWrapping="Wrap" Foreground="White" Text="원본 화면을 기다리는 중입니다" IsHitTestVisible="False" />
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid x:Name="ImageViewport" Grid.Row="0" Grid.Column="0" ClipToBounds="True"
+                          PreviewMouseLeftButtonDown="ImageViewport_OnPreviewMouseLeftButtonDown"
+                          PreviewMouseMove="ImageViewport_OnPreviewMouseMove"
+                          PreviewMouseLeftButtonUp="ImageViewport_OnPreviewMouseLeftButtonUp"
+                          LostMouseCapture="ImageViewport_OnLostMouseCapture">
+                        <ScrollViewer x:Name="ImageScroller" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"
+                                      CanContentScroll="False" PanningMode="None" ScrollChanged="ImageScroller_OnScrollChanged">
+                            <Grid x:Name="ZoomedContent" HorizontalAlignment="Left" VerticalAlignment="Top">
+                                <Image x:Name="CapturedImage" Stretch="Fill" Cursor="Arrow"
+                                       HorizontalAlignment="Left" VerticalAlignment="Top"
+                                       RenderOptions.BitmapScalingMode="NearestNeighbor"
+                                       MouseLeftButtonDown="CapturedImage_OnMouseLeftButtonDown"
+                                       SizeChanged="CapturedImage_OnSizeChanged" />
+                                <TextBlock Margin="14" HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="10" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource AppMutedTextBrush}" IsHitTestVisible="False" Text="실시간 확대 · 원본 좌표와 연결됨" />
+                                <Canvas x:Name="PointMarkerLayer" IsHitTestVisible="False" ClipToBounds="True">
+                                    <Line x:Name="StraightStrokePreview" Stroke="#F0B429" StrokeThickness="3"
+                                          StrokeDashArray="5,3" Visibility="Collapsed" />
+                                    <Border x:Name="PointAMarker" Width="28" Height="28" Background="#D91D4ED8"
+                                            BorderBrush="White" BorderThickness="2" CornerRadius="14" Visibility="Collapsed">
+                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold" Foreground="White" Text="A" />
+                                    </Border>
+                                    <Border x:Name="PointBMarker" Width="28" Height="28" Background="#D904749C"
+                                            BorderBrush="White" BorderThickness="2" CornerRadius="14" Visibility="Collapsed">
+                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold" Foreground="White" Text="B" />
+                                    </Border>
+                                    <Grid x:Name="VirtualCursor" Width="26" Height="26" Visibility="Collapsed">
+                                        <Ellipse Margin="3" Stroke="#17232F" StrokeThickness="5" />
+                                        <Ellipse Margin="3" Stroke="#F0B429" StrokeThickness="2" />
+                                        <Line X1="13" X2="13" Y1="0" Y2="26" Stroke="White" StrokeThickness="1" />
+                                        <Line X1="0" X2="26" Y1="13" Y2="13" Stroke="White" StrokeThickness="1" />
+                                    </Grid>
+                                </Canvas>
+                                <TextBlock x:Name="EmptyImageText" Margin="16" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           TextWrapping="Wrap" Foreground="{DynamicResource AppMutedTextBrush}" Text="원본 화면을 기다리는 중입니다" IsHitTestVisible="False" />
+                            </Grid>
+                        </ScrollViewer>
+                    </Grid>
+                    <ScrollBar x:Name="VerticalPanBar" Grid.Row="0" Grid.Column="1" Width="24" Minimum="0" Visibility="Collapsed"
+                               ValueChanged="VerticalPanBar_OnValueChanged" ToolTip="세로로 이동" />
+                    <ScrollBar x:Name="HorizontalPanBar" Grid.Row="1" Grid.Column="0" Height="24" Minimum="0" Orientation="Horizontal" Visibility="Collapsed"
+                               ValueChanged="HorizontalPanBar_OnValueChanged" ToolTip="가로로 이동" />
+                    <Border Grid.Row="1" Grid.Column="1" Width="24" Height="24" Background="{DynamicResource AppCanvasBrush}" />
                 </Grid>
             </Border>
-            <StackPanel x:Name="StatusPanel" Grid.Row="3" Margin="12,6">
-                <TextBlock x:Name="InputStatusText" FontSize="14" Foreground="#754000"
-                           Text="화면 준비 후 바로 조작할 수 있습니다" TextTrimming="CharacterEllipsis" />
-                <TextBlock x:Name="CaptureStatusText" FontSize="12" Foreground="#40516A"
-                           Text="조작 중 가장자리를 벗어나면 입력을 해제합니다" TextTrimming="CharacterEllipsis" />
-                <TextBlock x:Name="SelectionBoundsText" FontSize="11" Foreground="#40516A" TextTrimming="CharacterEllipsis" />
+
+            <StackPanel x:Name="StatusPanel" Grid.Row="3" Visibility="Collapsed">
+                <StackPanel>
+                    <TextBlock x:Name="InputStatusText" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource AppTextBrush}"
+                               Text="화면 준비 후 바로 조작할 수 있습니다" TextTrimming="CharacterEllipsis" />
+                    <TextBlock x:Name="CaptureStatusText" Margin="0,3,0,0" FontSize="11" Foreground="{DynamicResource AppMutedTextBrush}"
+                               Text="조작 중 가장자리를 벗어나면 입력을 해제합니다" TextTrimming="CharacterEllipsis" />
+                    <TextBlock x:Name="SelectionBoundsText" Margin="0,2,0,0" FontSize="10" Foreground="{DynamicResource AppMutedTextBrush}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
             </StackPanel>
-            <Expander x:Name="AuxiliaryTools" Grid.Row="4" Margin="10,0,10,8"
+
+            <Expander x:Name="AuxiliaryTools" Grid.Row="5" Margin="12,3,12,10"
                       Header="보조 도구 · A/B 직선" IsExpanded="False"
                       Expanded="AuxiliaryTools_OnExpanded" Collapsed="AuxiliaryTools_OnCollapsed">
-                <StackPanel>
+                <StackPanel Margin="0,5,0,0">
                     <WrapPanel x:Name="AuxiliaryControls">
                         <CheckBox x:Name="PreviewInputEnabledCheckBox" Margin="4" VerticalAlignment="Center"
                                   Checked="PreviewInputEnabledCheckBox_OnChanged" Unchecked="PreviewInputEnabledCheckBox_OnChanged"
                                   Content="A/B 실제 입력 허용" />
-                        <Button Content="A 지정" Click="SelectPointA_OnClick" />
-                        <Button Content="B 지정" Click="SelectPointB_OnClick" />
-                        <Button Content="−" Click="CountdownDecrease_OnClick" AutomationProperties.Name="카운트다운 감소" />
-                        <TextBlock x:Name="CountdownText" Text="3초" VerticalAlignment="Center" />
-                        <Button Content="+" Click="CountdownIncrease_OnClick" AutomationProperties.Name="카운트다운 증가" />
-                        <Button x:Name="RunStraightStrokeButton" Content="실제 A → B 실행" Click="RunStraightStroke_OnClick" />
+                        <Button Content="A 지정" Click="SelectPointA_OnClick" Margin="4" />
+                        <Button Content="B 지정" Click="SelectPointB_OnClick" Margin="4" />
+                        <Button Content="−" Click="CountdownDecrease_OnClick" AutomationProperties.Name="카운트다운 감소" Margin="4" />
+                        <TextBlock x:Name="CountdownText" Text="3초" VerticalAlignment="Center" Margin="4" />
+                        <Button Content="+" Click="CountdownIncrease_OnClick" AutomationProperties.Name="카운트다운 증가" Margin="4" />
+                        <Button x:Name="RunStraightStrokeButton" Style="{StaticResource SoftAccentButtonStyle}" Content="실제 A → B 실행" Click="RunStraightStroke_OnClick" Margin="4" />
                     </WrapPanel>
-                    <TextBlock x:Name="PointStatusText" Margin="4" FontSize="12" Text="A와 B를 지정하세요" />
+                    <TextBlock x:Name="PointStatusText" Margin="4" FontSize="12" Foreground="{DynamicResource AppMutedTextBrush}" Text="A와 B를 지정하세요" />
                 </StackPanel>
             </Expander>
         </Grid>

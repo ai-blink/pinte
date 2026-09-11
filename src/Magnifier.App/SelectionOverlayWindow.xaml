@@ -10,12 +10,15 @@
         PreviewKeyDown="Window_OnPreviewKeyDown">
     <Window.Resources>
         <Style x:Key="ResizeHandle" TargetType="Thumb">
-            <Setter Property="Background" Value="#FAEEB855" />
+            <Setter Property="Background" Value="Transparent" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Thumb">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="#FF392B11" BorderThickness="1" CornerRadius="3" />
+                        <Grid Background="Transparent">
+                            <Border Width="18" Height="18" Background="{DynamicResource AppPanelBrush}"
+                                    BorderBrush="{DynamicResource AppAccentBrush}" BorderThickness="3" CornerRadius="4"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -24,51 +27,66 @@
             <EventSetter Event="DragCompleted" Handler="Handle_OnDragCompleted" />
         </Style>
     </Window.Resources>
-    <!-- Only the opaque frame and controls intercept the pointer. The fully transparent
-         aperture is neither painted nor hit-testable, so the source application stays visible. -->
+    <!-- The aperture remains transparent and click-through; only the frame chrome consumes input. -->
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="40" />
-            <RowDefinition Height="20" />
+            <RowDefinition Height="52" />
+            <RowDefinition Height="28" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="20" />
+            <RowDefinition Height="28" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="20" />
+            <ColumnDefinition Width="28" />
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="20" />
+            <ColumnDefinition Width="28" />
         </Grid.ColumnDefinitions>
 
-        <Grid Grid.ColumnSpan="3" Background="#FF312B20">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="90" />
-            </Grid.ColumnDefinitions>
-            <Thumb x:Name="MoveHandle" Cursor="SizeAll"
-                   DragStarted="Handle_OnDragStarted" DragDelta="MoveHandle_OnDragDelta"
-                   DragCompleted="Handle_OnDragCompleted">
-                <Thumb.Template>
-                    <ControlTemplate TargetType="Thumb">
-                        <Border Background="#FF312B20" Padding="12,0">
-                            <TextBlock VerticalAlignment="Center"
-                                       Foreground="#FFFFDB92" FontSize="15" FontWeight="SemiBold"
-                                       TextTrimming="CharacterEllipsis"
-                                       Text="✥ 원본 영역 이동" />
-                        </Border>
-                    </ControlTemplate>
-                </Thumb.Template>
-            </Thumb>
-            <Button x:Name="ConfirmRegionButton" Grid.Column="1" Margin="2,4" Padding="8,0" FontSize="14"
-                    Visibility="Collapsed" Background="#FF1769E0" Foreground="White"
-                    Content="이 영역 확대" Click="ConfirmRegionButton_OnClick" />
-            <Button Grid.Column="2" Margin="2,4,5,4" FontSize="14"
-                    Background="#FFFFDC8C" Foreground="#FF24201A"
-                    Content="원래 화면" Click="ReturnButton_OnClick" />
-        </Grid>
+        <Border Grid.ColumnSpan="3" Margin="12,0,12,0" Background="{DynamicResource AppPanelBrush}"
+                BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="10,10,6,6">
+            <Grid Margin="4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Thumb x:Name="MoveHandle" Cursor="SizeAll"
+                       DragStarted="Handle_OnDragStarted" DragDelta="MoveHandle_OnDragDelta"
+                       DragCompleted="Handle_OnDragCompleted">
+                    <Thumb.Template>
+                        <ControlTemplate TargetType="Thumb">
+                            <Border Background="Transparent" Padding="10,0" CornerRadius="7">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="⠿" FontSize="18" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,7,0" />
+                                    <StackPanel>
+                                        <TextBlock Foreground="{DynamicResource AppTextBrush}" FontSize="12" FontWeight="SemiBold" Text="원본 영역" />
+                                        <TextBlock Foreground="{DynamicResource AppMutedTextBrush}" FontSize="10" Text="끌어서 이동" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </ControlTemplate>
+                    </Thumb.Template>
+                </Thumb>
+                <Button x:Name="ConfirmRegionButton" Grid.Column="1" Style="{StaticResource AccentButtonStyle}" MinHeight="40" Margin="2,0"
+                        Visibility="Collapsed" Content="이 영역 확대" Click="ConfirmRegionButton_OnClick" />
+                <Button Grid.Column="2" Style="{StaticResource IconButtonStyle}" Width="40" MinWidth="40" MinHeight="40" Margin="2,0"
+                        ToolTip="원본 크기와 비율" AutomationProperties.Name="원본 크기와 비율"
+                        Content="크기" FontSize="12" Click="RegionSettingsButton_OnClick" />
+                <Button Grid.Column="3" Style="{StaticResource IconButtonStyle}" Width="40" MinWidth="40" MinHeight="40" Margin="2,0"
+                        ToolTip="앱 설정" AutomationProperties.Name="앱 설정"
+                        Content="⚙" Click="AppSettingsButton_OnClick" />
+                <Button Grid.Column="4" Style="{StaticResource SoftAccentButtonStyle}" MinHeight="40" Margin="2,0"
+                        Content="↩ 원래 화면" Click="ReturnButton_OnClick" />
+                <Button Grid.Column="5" Style="{StaticResource IconButtonStyle}" Width="40" MinWidth="40" MinHeight="40" Margin="2,0"
+                        Content="×" Click="CloseButton_OnClick" ToolTip="확대를 끝내고 원래 화면으로"
+                        AutomationProperties.Name="확대를 끝내고 원래 화면으로" />
+            </Grid>
+        </Border>
 
-        <Border Grid.Row="2" Grid.Column="1" Margin="-3"
-                BorderBrush="#FFF3C767" BorderThickness="3" IsHitTestVisible="False" />
+        <Border Grid.Row="2" Grid.Column="1" Margin="-2" BorderBrush="{DynamicResource AppAccentBrush}"
+                BorderThickness="3" CornerRadius="6" IsHitTestVisible="False" />
         <Border x:Name="ContentAperture" Grid.Row="2" Grid.Column="1"
                 Background="{x:Null}" IsHitTestVisible="False" />
 

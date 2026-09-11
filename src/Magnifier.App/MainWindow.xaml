@@ -1,17 +1,32 @@
 <Window x:Class="Magnifier.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Magnifier" Width="410" Height="350" ResizeMode="NoResize"
-        WindowStartupLocation="CenterScreen" Background="#F3F6FA">
-    <StackPanel Margin="24">
-        <TextBlock Text="필요한 곳을 크게" FontSize="26" FontWeight="SemiBold" Foreground="#182235" />
-        <TextBlock Margin="0,8,0,18" Text="먼저 테두리로 영역을 정한 뒤, 확대해서 조작하세요."
-                   TextWrapping="Wrap" FontSize="15" Foreground="#40516A" />
-        <Button x:Name="SelectRegionButton" Content="화면 영역 지정" Height="64" FontSize="23"
-                Foreground="White" Background="#1769E0" Click="SelectRegionButton_OnClick" />
-        <Button x:Name="LowerPlacementButton" Content="아래쪽에서 영역 지정" Height="48" Margin="0,8,0,0"
-                FontSize="18" Click="LowerPlacementButton_OnClick" />
-        <TextBlock x:Name="SelectionStatusText" Margin="0,16,0,0" FontSize="14" Foreground="#40516A"
-                   TextWrapping="Wrap" Text="테두리를 옮기고 크기를 맞춘 다음 ‘이 영역 확대’를 누르세요." />
-    </StackPanel>
+        Title="Magnifier" Width="430" Height="390" ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen" Background="{DynamicResource AppSurfaceBrush}"
+        Foreground="{DynamicResource AppTextBrush}">
+    <Grid Margin="24">
+        <Border Background="{DynamicResource AppPanelBrush}" BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="1" CornerRadius="16" Padding="24">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="40" Height="40" CornerRadius="12" Background="{DynamicResource AppAccentBrush}" Margin="0,0,12,0">
+                        <TextBlock Text="⌕" Foreground="White" FontSize="27" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="MAGNIFIER" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource AppAccentBrush}" />
+                        <TextBlock Text="필요한 곳을 크게" FontSize="24" FontWeight="SemiBold" />
+                    </StackPanel>
+                </StackPanel>
+                <TextBlock Margin="0,20,0,0" TextWrapping="Wrap" FontSize="15" LineHeight="22"
+                           Foreground="{DynamicResource AppMutedTextBrush}"
+                           Text="테두리로 원본 영역을 맞춘 뒤, 확대 렌즈 안에서 평소처럼 클릭하고 드래그하세요." />
+                <Button x:Name="SelectRegionButton" Style="{StaticResource AccentButtonStyle}" Height="56" FontSize="17" Margin="0,24,0,0"
+                        Content="화면 영역 지정" Click="SelectRegionButton_OnClick" />
+                <TextBlock x:Name="SelectionStatusText" Margin="0,14,0,0" FontSize="12"
+                           Foreground="{DynamicResource AppMutedTextBrush}" TextWrapping="Wrap"
+                           Text="원래 화면 · 입력 꺼짐" />
+            </StackPanel>
+        </Border>
+    </Grid>
 </Window>

@@ -1,5 +1,6 @@
 # 개발 진행
 
+- 2026-09-12: UI·설정·시각 정비 — 승인 목업 토큰·카드·도구막대와 화면 피드백(라벨, 넓은 hit area, 고정 렌즈/crop)을 반영했다. 두 창 `×`, 24 DIP 스크롤바, relay를 중단하는 `✋ 이동`을 추가했다. build 0/0·Core41/Infra11, 52 PASS. UI 확인은 `NEEDS_USER_UI_CHECK`. [기록](../notes/runs/2026-09-12-magnifier-visual-refinement.md). 사용자 요청으로 로컬 커밋.
 - 2026-09-08: Git 작업공간, .NET 9 WPF 솔루션, 프로젝트 라이브 문서와 템플릿을 초기화하고 `644e343`으로 커밋했다. `dotnet build Magnifier.slnx --nologo`는 경고·오류 없이 통과했다.
 - 2026-09-08: M1 영역 선택 오버레이와 확대 미리보기를 완료했다. `dotnet build Magnifier.slnx --nologo`는 경고·오류 0으로 통과했고, 사용자가 실제 UI 동작이 정상임을 확인했다. 실행 기록은 `notes/runs/2026-09-08-m1-region-selection.md`에 남겼다.
 - 2026-09-08: M2 Core·Infrastructure·App 연결과 Core 단위 테스트를 구현했다. `dotnet build Magnifier.slnx --nologo`는 경고·오류 0, `dotnet test Magnifier.slnx --nologo`는 3개 통과했고, 사용자가 실제 화면 캡처 성공을 확인했다.

@@ -18,8 +18,8 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
     private LensViewport? _viewport;
     private nint[] _windows = [];
     private uint _threadId;
-    private long _frameTimestamp;
-    private bool _relaying, _leftHeld, _draining, _disposed, _intercepting, _inputPostFailed;
+    private readonly FrameFreshnessGate _frames = new();
+    private bool _relaying, _leftHeld, _draining, _disposed, _intercepting, _inputPostFailed, _suspended;
     private int _hookButtons;
     private int _otherButtonsHeld;
     private bool OtherHeld => _otherButtonsHeld != 0;
@@ -43,7 +43,7 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         if (_viewport == viewport && _windows.SequenceEqual(overlayWindows)) return;
         StopInternal("배치 변경 · 조작 자동 재개 대기", resume: true);
         EnsureReleased();
-        Interlocked.Exchange(ref _frameTimestamp, 0);
+        _frames.RequireNextFrame();
         _viewport = viewport;
         _windows = overlayWindows.Where(x => x != 0).Distinct().ToArray();
     });
@@ -65,15 +65,32 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
     public Task PauseAsync(string reason) => Dispatch(() =>
     {
         StopInternal(reason, resume: true);
-        Interlocked.Exchange(ref _frameTimestamp, 0);
+        _frames.RequireNextFrame();
         EnsureReleased();
+    });
+    public Task SetSuspendedAsync(bool suspended, string reason) => Dispatch(() =>
+    {
+        if (_suspended == suspended) return;
+        _suspended = suspended;
+        if (suspended)
+        {
+            StopInternal(reason, resume: true);
+            EnsureReleased();
+            return;
+        }
+
+        // A modal close is an input boundary. Do not trust a frame captured while
+        // it was visible; the App invalidates its matching capture revision too.
+        _frames.RequireNextFrame();
+        TryResumeInput();
+        Publish(_state.IsEnabled ? "조작 켜짐 · 렌즈 안으로 이동하세요" : "버튼 해제와 최신 화면을 기다린 뒤 조작을 재개합니다");
     });
     private void EnsureReleased()
     {
         if (_state.IsPressed) throw new InvalidOperationException("Windows가 버튼 해제를 수락하지 않았습니다. 중지를 다시 눌러 해제를 재시도하세요.");
     }
-    public void RefreshFrame() => Interlocked.Exchange(ref _frameTimestamp, Environment.TickCount64);
-    private bool FrameIsFresh() => Environment.TickCount64 - Interlocked.Read(ref _frameTimestamp) < 750;
+    public void RefreshFrame() => _frames.RecordFrame(Environment.TickCount64);
+    private bool FrameIsFresh() => _frames.IsFresh(Environment.TickCount64, 750);
 
     private async Task Dispatch(Action action)
     {
@@ -258,7 +275,7 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         {
             if (_inputPostFailed) { _inputPostFailed = false; StopInternal("입력 큐 전달 실패 · 조작 중지"); return; }
             if (_state.IsPressed && !_state.IsEnabled) { _state.Stop(); Publish(_message); }
-            if (!_state.IsRequested) return;
+            if (!_state.IsRequested || _suspended) return;
             if ((GetAsyncKeyState(0x1B) & 0x8000) != 0) { StopInternal("Esc · 보기로 전환"); return; }
             var desktop = OpenInputDesktop(0, false, 1);
             if (desktop == 0) { StopInternal("입력 화면 변경 · 조작 중지"); return; }
@@ -295,7 +312,7 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
 
     private void TryResumeInput()
     {
-        if (_viewport is null || !FrameIsFresh() || _draining || _intercepting) return;
+        if (_viewport is null || !FrameIsFresh() || _draining || _intercepting || _suspended) return;
         // Hook-observed release must drain first. Sampling cannot skip a queued physical Up.
         var held = _hookButtons != 0 || _leftHeld || OtherHeld
             || (GetAsyncKeyState(1) & 0x8000) != 0 || ReadOtherButtons() != 0;
