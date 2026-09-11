@@ -2,12 +2,14 @@
 
 ## 현재 구조
 
-- `src/Magnifier.App`: Main은 composition root·진입/복귀·비중첩 캡처와 배치 저장을 소유한다. SelectionOverlayWindow는 상시 투명 원본 테두리·8개 크기 손잡이, SelectionPreviewWindow는 독립 렌즈·배율·고정 제어·가상 포인터와 선택형 A/B를 소유한다. 직접 조작에 WPF mouse capture를 사용하지 않는다.
-- `src/Magnifier.Core`: ScreenRegion/LensViewport는 독립된 원본·렌즈 물리 좌표를 보관한다. WindowPairPlacement는 초기/명시적 재배치 시 전체 창의 물리 크기로 아래쪽 배치를 계산한다. LensInputState는 조작 요청을 일시 정지와 분리하고, PointerInputSession은 Down/Move/Up과 release 재시도를 관리한다. ILivePointerRelay의 Start/Pause/Stop과 IWindowEnvironment는 App이 사용하는 계약이다.
+- `src/Magnifier.App`: Main은 composition root·영역 지정/확대/복귀·비중첩 캡처와 배치 저장을 소유한다. 먼저 SelectionOverlayWindow의 원본 테두리·8개 손잡이로 영역을 정하고 `이 영역 확대`로 렌즈·입력을 연다. 선택 취소는 대기 중인 확대 작업도 무효화한다. SelectionPreviewWindow는 독립 렌즈·배율·고정 제어·가상 포인터와 선택형 A/B를 소유한다. 직접 조작에 WPF mouse capture를 사용하지 않는다.
+- `src/Magnifier.Core`: ScreenRegion/LensViewport는 독립된 원본·렌즈 물리 좌표를 보관한다. 기존 WindowPairPlacement 계산은 보존하지만 현재 진입은 테두리만 배치하고 확대 확정 시 원본을 옮기지 않는다. LensInputState는 조작 요청을 일시 정지와 분리하고, PointerInputSession은 Down/Move/Up과 release 재시도를 관리한다. ILivePointerRelay의 Start/Pause/Stop과 IWindowEnvironment는 App이 사용하는 계약이다.
 - `src/Magnifier.Infrastructure`: GDI 캡처, 태그 SendInput, 전용 hook 스레드의 논리 포인터·layered 입력 통과·freshness/capture 감시, 물리 창 배치를 구현한다. hook 반환 뒤 FIFO 큐에서 전달·스타일을 변경한다. 요청이 남아 있고 버튼 해제·최신 프레임을 확인하면 재개한다. native 프로브 6개 통과, 제품 전체 실사용은 검증 중이다. HWND 고정·앱별 분기·권한 상승은 없다. WindowsInputTransformDiagnostic은 별도 CLI 진단에서만 토큰·OS 항등 입력 변환을 검사하며 제품 중계 엔진으로 사용하지 않는다.
 - `src/Magnifier.Core.Tests`: Core 좌표 환산·프레임 불변 조건·입력 gate와 release 전이를 단위 테스트한다.
 - `src/Magnifier.Infrastructure.Tests`: RelayCommandPump의 FIFO·pending Up과 Core 입력 해제 전이를 OS 입력 없이 검사한다. 입력 스레드는 감시 timer 전에 큐를 처리하고, capture 조회 중 관찰한 Up도 완료 우선으로 둔다. 취소 사유 로그는 별도 비동기 기록이며 입력 정책을 바꾸지 않는다.
-- PointerCaptureMonitor는 매 Down의 원본 thread/root로 capture 감시만 제한한다. 같은 root 인계는 유지하고, 관찰 뒤 0/다른 root 전환 또는 조회 실패는 해제한다. 전달 목적지는 계속 물리 좌표다. **알려진 결함:** 2026-09-11 사용자 로그에서 다른 root의 비영 capture 전환이 누름 중 중지를 유발했다. 정상 인계인지 실제 손실인지 미확정이며 현재 회귀 테스트의 손실 가정도 재검토해야 한다. 최신 인계는 `notes/runs/2026-09-11-drag-blocked-handoff.md`다.
+- PointerCaptureMonitor는 매 Down의 원본 thread/root를 감시에만 쓴다. 2026-09-12 수정은 같은 thread의 다른 root 인계를 유지하며, capture=0만으로 해제하지 않는다. 원본이 닫히거나 조회가 실패하면 중지한다. capture 관찰 뒤 외부 thread가 이를 소유하거나, capture=0과 무관한 전면 창 전환이 함께 확인되면 해제한다. 전면 창은 보조 근거이며 capture는 원본 thread에서 조회한다. 전달 목적지는 물리 좌표다. 새 trace에 capture thread·원본 생존·외부 전면 전환을 남긴다. 수정 후 사용자 “아주 잘됨” 확인을 받았다. 앱별 전체 호환성까지 확인된 것은 아니다.
+
+[Windows DragDetect](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-dragdetect)는 버튼을 누른 채 감지 범위 밖으로 움직여도 감지를 마친다. [WM_CAPTURECHANGED](https://learn.microsoft.com/en-us/windows/win32/inputdev/wm-capturechanged)는 앱 자체 해제에도 발생한다. 이를 근거로 capture 값만으로 물리 드래그 취소를 추론하던 조건을 좁혔다. 과거 사용자의 OLE/보조 창 인계 여부까지 입증된 것은 아니다.
 
 ## 의존성 규칙
 

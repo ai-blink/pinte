@@ -47,11 +47,20 @@ public partial class SelectionOverlayWindow : Window
 
     public event Action? ReturnRequested;
 
+    public event Action? RegionConfirmed;
+
     public event Action? AdjustmentStarted;
 
     public ScreenRegion Region => _region;
 
     public nint WindowHandle { get; private set; }
+
+    public void SetSelectionMode(bool selecting)
+    {
+        ConfirmRegionButton.Visibility = selecting ? Visibility.Visible : Visibility.Collapsed;
+        ConfirmRegionButton.IsEnabled = selecting;
+        Title = selecting ? "화면 영역 지정 · 테두리를 맞춘 뒤 이 영역 확대" : "확대할 원본 영역";
+    }
 
     public void SetRegion(ScreenRegion region)
     {
@@ -208,6 +217,13 @@ public partial class SelectionOverlayWindow : Window
     private void ReturnButton_OnClick(object sender, RoutedEventArgs e)
     {
         ReturnRequested?.Invoke();
+        e.Handled = true;
+    }
+
+    private void ConfirmRegionButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        ConfirmRegionButton.IsEnabled = false;
+        RegionConfirmed?.Invoke();
         e.Handled = true;
     }
 

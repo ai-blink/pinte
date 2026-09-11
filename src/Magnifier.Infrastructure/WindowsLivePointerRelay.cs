@@ -278,11 +278,19 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         _captureMonitor.Begin(thread, window == 0 ? 0 : GetAncestor(window, 2));
     }
 
-    private static CaptureSample ReadTargetCapture(uint thread)
+    private static CaptureSample ReadTargetCapture(uint thread, nint root)
     {
         var info = new GuiThreadInfo { Size = (uint)Marshal.SizeOf<GuiThreadInfo>() };
         var success = GetGUIThreadInfo(thread, ref info);
-        return new(success, info.Capture, info.Capture == 0 ? 0 : GetAncestor(info.Capture, 2));
+        var captureThread = info.Capture == 0 ? 0 : GetWindowThreadProcessId(info.Capture, out _);
+        var foreground = GetForegroundWindow();
+        // Foreground is corroborating evidence only, never the capture query target.
+        // Owned dialogs and helper windows in the source thread remain related.
+        var focusMovedAway = foreground != 0
+            && GetWindowThreadProcessId(foreground, out _) != thread
+            && GetAncestor(foreground, 3) != GetAncestor(root, 3);
+        return new(success, info.Capture, info.Capture == 0 ? 0 : GetAncestor(info.Capture, 2),
+            captureThread, IsWindow(root), focusMovedAway);
     }
 
     private void TryResumeInput()

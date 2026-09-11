@@ -42,7 +42,8 @@
         <Grid Grid.ColumnSpan="3" Background="#FF312B20">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="112" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="90" />
             </Grid.ColumnDefinitions>
             <Thumb x:Name="MoveHandle" Cursor="SizeAll"
                    DragStarted="Handle_OnDragStarted" DragDelta="MoveHandle_OnDragDelta"
@@ -52,12 +53,16 @@
                         <Border Background="#FF312B20" Padding="12,0">
                             <TextBlock VerticalAlignment="Center"
                                        Foreground="#FFFFDB92" FontSize="15" FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis"
                                        Text="✥ 원본 영역 이동" />
                         </Border>
                     </ControlTemplate>
                 </Thumb.Template>
             </Thumb>
-            <Button Grid.Column="1" Margin="2,4,5,4" FontSize="14"
+            <Button x:Name="ConfirmRegionButton" Grid.Column="1" Margin="2,4" Padding="8,0" FontSize="14"
+                    Visibility="Collapsed" Background="#FF1769E0" Foreground="White"
+                    Content="이 영역 확대" Click="ConfirmRegionButton_OnClick" />
+            <Button Grid.Column="2" Margin="2,4,5,4" FontSize="14"
                     Background="#FFFFDC8C" Foreground="#FF24201A"
                     Content="원래 화면" Click="ReturnButton_OnClick" />
         </Grid>

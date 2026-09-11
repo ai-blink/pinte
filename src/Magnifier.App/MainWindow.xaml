@@ -5,13 +5,13 @@
         WindowStartupLocation="CenterScreen" Background="#F3F6FA">
     <StackPanel Margin="24">
         <TextBlock Text="필요한 곳을 크게" FontSize="26" FontWeight="SemiBold" Foreground="#182235" />
-        <TextBlock Margin="0,8,0,18" Text="테두리로 영역을 정하고, 렌즈에서 조작하세요."
+        <TextBlock Margin="0,8,0,18" Text="먼저 테두리로 영역을 정한 뒤, 확대해서 조작하세요."
                    TextWrapping="Wrap" FontSize="15" Foreground="#40516A" />
-        <Button x:Name="SelectRegionButton" Content="확대 시작" Height="64" FontSize="23"
+        <Button x:Name="SelectRegionButton" Content="화면 영역 지정" Height="64" FontSize="23"
                 Foreground="White" Background="#1769E0" Click="SelectRegionButton_OnClick" />
-        <Button x:Name="LowerPlacementButton" Content="두 창 아래쪽에 배치" Height="48" Margin="0,8,0,0"
+        <Button x:Name="LowerPlacementButton" Content="아래쪽에서 영역 지정" Height="48" Margin="0,8,0,0"
                 FontSize="18" Click="LowerPlacementButton_OnClick" />
         <TextBlock x:Name="SelectionStatusText" Margin="0,16,0,0" FontSize="14" Foreground="#40516A"
-                   TextWrapping="Wrap" Text="확대하면 바로 조작됩니다. 창을 옮겨도 조작 상태가 유지됩니다." />
+                   TextWrapping="Wrap" Text="테두리를 옮기고 크기를 맞춘 다음 ‘이 영역 확대’를 누르세요." />
     </StackPanel>
 </Window>
