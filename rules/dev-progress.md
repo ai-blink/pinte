@@ -1,10 +1,8 @@
 # 개발 진행
 
-- 2026-09-12 후속: 설정 모달 생성 중 초기 Checked가 미생성 패널을 참조하는 오류를 수정했다. 초기 메뉴 선택을 컨트롤 생성 뒤로 이동했다. 표준 build 0/0, 회귀4사례 컴파일·실행 안 함, NEEDS_USER_UI_CHECK. [기록](../notes/runs/2026-09-12-settings-modal-init-fix.md).
+- 2026-09-13: **Pinte v0.1.0-beta.1 공개 pre-release**를 main `83074e5`·태그 `v0.1.0-beta.1`으로 게시했다. 영어/한국어/중국어(간체)/일본어 README와 Windows x64 자체 포함 ZIP을 제공한다. 표준 build는 경고0/오류0, 전체 자동 테스트 116개가 통과했다. 공개 배포본은 코드 서명되지 않았고 실제 UI·대상 앱 호환성은 여전히 `NEEDS_USER_UI_CHECK`다. [릴리즈](https://github.com/ai-blink/pinte/releases/tag/v0.1.0-beta.1).
 
-- 2026-09-12 후속: `원본 화면을 기다리는 중` 무한 대기 수정. 첫 비트맵 표시와 relay freshness를 분리했다. 표준 build 0/0, 새 회귀3사례 컴파일만 수행. 실제 UI 재확인 대기. [기록](../notes/runs/2026-09-12-first-frame-wait-fix.md).
-
-- 2026-09-12: 컴팩트 렌즈·원본 표시 정책 구현 완료, 최종 표준 build 경고0/오류0. 신규 App34·Core19사례 컴파일, 실행 안 함. 설정 호환, 별도 passive 윤곽선, 재편집 보류·완료, 실제 8방향 렌즈 리사이즈와 crop 회귀를 반영한다. 이번 테스트는 사용자 실행이며 UI는 NEEDS_USER_UI_CHECK. [이번 기록](../notes/runs/2026-09-12-compact-lens-source-indicator.md). 기존 dirty 보존, 커밋·스테이징 없음.
+- 2026-09-13: 일시 캡처 실패는 relay 요청을 취소하지 않고 release·일시 정지 후 자동 재시도한다. 새 캡처 프레임을 받은 뒤에만 조작을 재개한다. 손 도구의 켜짐/꺼짐 상태를 구분하고, 리사이즈 중 렌즈 여백을 44 DIP에서 24 DIP로 줄였다. [컴팩트 렌즈 수동 시나리오](../doc/compact-lens-validation.md)와 기존 실행 기록은 세부 확인 근거로 보존한다.
 - M0~M4 초기화·영역 선택·캡처·입력 gate·보조 A/B 이력은 각 notes/runs/2026-09-08-* 기록과 dev-roadmap의 완료 항목을 따른다. 이전 수락은 이번 기능의 통과 근거가 아니다.
 - 2026-09-12: UI·설정·시각 정비 — 승인 목업 토큰·카드·도구막대와 화면 피드백(라벨, 넓은 hit area, 고정 렌즈/crop)을 반영했다. 두 창 `×`, 24 DIP 스크롤바, relay를 중단하는 `✋ 이동`을 추가했다. build 0/0·Core41/Infra11, 52 PASS. UI 확인은 `NEEDS_USER_UI_CHECK`. [기록](../notes/runs/2026-09-12-magnifier-visual-refinement.md). 사용자 요청으로 로컬 커밋.
 - 2026-09-08~09: M5에서 보고된 미리보기 크기 변경·Blender 빈 프레임 차단 문제를 수정했다. 선택 오버레이·미리보기의 항상 위를 제거하고, 10fps 캡처마다 미리보기를 강제 활성화하던 호출을 제거했다. 미리보기는 처음 선택 영역 밖에 배치되고, 이후 원본 영역과 겹치면 마지막 정상 프레임을 유지하며 갱신을 보류한다. 솔루션 build 경고·오류 0, Core 테스트 7개 통과, 사용자가 Blender 5.2 미리보기의 정상 표시를 확인했다. 활성 입력 검증은 `NEEDS_USER_UI_CHECK`다. 실행 기록은 `notes/runs/2026-09-08-m5-window-layering.md`에 남겼다.
