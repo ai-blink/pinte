@@ -16,21 +16,24 @@ public partial class SettingsWindow : Window
     private static readonly double[] Zooms = [1, 1.5, 2, 2.5, 3, 3.5, 4];
     private MagnifierSettings _settings;
     private readonly IScreenCapture _capture;
-    private bool _syncing;
+    private bool _syncing = true;
 
-    public SettingsWindow(MagnifierSettings settings, IScreenCapture capture)
+    public SettingsWindow(MagnifierSettings settings, IScreenCapture capture, bool canResizeLens = false)
     {
-        InitializeComponent();
         _settings = settings;
         _capture = capture;
+        InitializeComponent();
+        ResizeLensButton.IsEnabled = canResizeLens;
         DefaultSizeBox.ItemsSource = Sizes;
         DefaultZoomBox.ItemsSource = Zooms;
-        VersionText.Text = $"버전 {Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "개발 빌드"}";
+        VersionText.Text = $"버전 {GetDisplayVersion()}";
         RefreshControls();
-        ShowPage(AppearancePanel);
+        // Checked 이벤트는 모든 페이지의 XAML 필드가 연결된 뒤에 발생해야 한다.
+        AppearancePageButton.IsChecked = true;
     }
 
     public event Action<MagnifierSettings>? SettingsChanged;
+    public bool ResizeLensRequested { get; private set; }
 
     protected override void OnSourceInitialized(EventArgs e)
     {
@@ -53,12 +56,24 @@ public partial class SettingsWindow : Window
             TopToolbarButton.IsChecked = _settings.ToolbarPlacement == ToolbarPlacement.Top;
             BottomToolbarButton.IsChecked = _settings.ToolbarPlacement == ToolbarPlacement.Bottom;
             ThemeBox.SelectedIndex = (int)_settings.Theme;
+            LensDisplayModeBox.SelectedIndex = (int)_settings.LensDisplayMode;
+            SourceIndicatorBox.SelectedIndex = (int)_settings.SourceIndicatorPreference;
             RememberLayoutBox.IsChecked = _settings.RememberLayout;
             DefaultSizeBox.SelectedItem = Sizes.FirstOrDefault(x => x.Width == _settings.DefaultSourceWidth && x.Height == _settings.DefaultSourceHeight);
             DefaultZoomBox.SelectedItem = Zooms.OrderBy(x => Math.Abs(x - _settings.DefaultZoom)).First();
             DefaultSizeBox.IsEnabled = DefaultZoomBox.IsEnabled = !_settings.RememberLayout;
         }
         finally { _syncing = false; }
+    }
+
+    private static string GetDisplayVersion()
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        var informationalVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        if (!string.IsNullOrWhiteSpace(informationalVersion))
+            return informationalVersion.Split('+', 2)[0];
+
+        return assembly.GetName().Version?.ToString(3) ?? "개발 빌드";
     }
 
     private void ToolbarPlacement_OnChanged(object sender, RoutedEventArgs e)
@@ -71,6 +86,24 @@ public partial class SettingsWindow : Window
     {
         if (_syncing || ThemeBox.SelectedIndex < 0) return;
         Update(_settings with { Theme = (ThemePreference)ThemeBox.SelectedIndex });
+    }
+
+    private void LensDisplayMode_OnChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_syncing || LensDisplayModeBox.SelectedIndex < 0) return;
+        Update(_settings with { LensDisplayMode = (LensDisplayMode)LensDisplayModeBox.SelectedIndex });
+    }
+
+    private void SourceIndicator_OnChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_syncing || SourceIndicatorBox.SelectedIndex < 0) return;
+        Update(_settings with { SourceIndicatorPreference = (SourceIndicatorPreference)SourceIndicatorBox.SelectedIndex });
+    }
+
+    private void ResizeLens_OnClick(object sender, RoutedEventArgs e)
+    {
+        ResizeLensRequested = true;
+        Close();
     }
 
     private void RememberLayout_OnChanged(object sender, RoutedEventArgs e)

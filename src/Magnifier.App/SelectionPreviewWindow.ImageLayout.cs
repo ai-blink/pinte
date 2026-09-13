@@ -11,7 +11,8 @@ public partial class SelectionPreviewWindow
     private readonly SemaphoreSlim _configurationLock = new(1, 1);
     private LensViewport? _configuredViewport;
     private nint _configuredFrameHandle;
-    private bool _geometryQueued, _sizing;
+    private bool _geometryQueued, _sizing, _geometryPending;
+    private int _geometryRevision;
     private double _requestedZoom = 2;
 
     public void SetZoom(double zoom)
@@ -51,6 +52,7 @@ public partial class SelectionPreviewWindow
             CapturedImage.Width = Math.Max(1, region.Width * Zoom / dpi.DpiScaleX);
             CapturedImage.Height = Math.Max(1, region.Height * Zoom / dpi.DpiScaleY);
             ZoomText.Text = $"{Zoom:0.##}×";
+            CompactZoomText.Text = ZoomText.Text;
             ZoomText.ToolTip = "원본 물리 픽셀 대비 표시 배율 · 렌즈 창 크기는 유지합니다";
             UpdatePanSurface(CapturedImage.Width, CapturedImage.Height);
             UpdatePointMarkers();
@@ -60,20 +62,51 @@ public partial class SelectionPreviewWindow
 
     private void QueueGeometryUpdate()
     {
-        if (_geometryQueued || _closed || !IsLoaded || _sizing) return;
+        if (_closed || !IsLoaded || _sizing) return;
+        InvalidateGeometry();
+        if (_geometryQueued) return;
         _geometryQueued = true;
+        var pause = PauseAsync("렌즈 배치 변경 · 최신 화면 확인 대기");
         Dispatcher.BeginInvoke(async () =>
         {
             _geometryQueued = false;
-            if (_closed || !IsVisible) return;
             try
             {
+                await pause;
+                if (_closed || !IsVisible) return;
                 if (!_isMoving && _editingAllowed) ResizeLens();
                 await ConfigureGeometryAsync();
                 PlacementChanged?.Invoke();
             }
             catch (Exception exception) { PublishInputStatus($"렌즈 배치 설정 실패: {exception.Message}"); }
         }, DispatcherPriority.Loaded);
+    }
+
+    private void InvalidateGeometry()
+    {
+        if (_closed || !IsLoaded) return;
+        _geometryPending = true;
+        ++_geometryRevision;
+        GeometryInvalidated?.Invoke();
+    }
+
+    public async Task RefreshGeometryAsync()
+    {
+        if (_closed || !IsLoaded) return;
+        InvalidateGeometry();
+        await PauseAsync("렌즈 좌표 갱신 · 최신 화면 확인 대기");
+        ResizeLens();
+        UpdateLayout();
+        await Dispatcher.Yield(DispatcherPriority.Loaded);
+        await ConfigureGeometryAsync();
+        PlacementChanged?.Invoke();
+    }
+
+    private void ImageViewport_OnSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        UpdatePanBars();
+        UpdatePointMarkers();
+        QueueGeometryUpdate();
     }
 
     private void KeepLensOnScreen()
@@ -97,10 +130,15 @@ public partial class SelectionPreviewWindow
         {
             if (_closed || _currentRegion is not ScreenRegion region ||
                 !TryGetVisibleViewport(region, out var viewport)) return;
-            if (_configuredViewport == viewport && _configuredFrameHandle == _frameHandle) return;
-            await _relay.ConfigureAsync(viewport, WindowHandle, _frameHandle);
+            var revision = _geometryRevision;
+            if (_configuredViewport != viewport || _configuredFrameHandle != _frameHandle)
+            {
+                GeometryInvalidated?.Invoke();
+                await _relay.ConfigureAsync(viewport, WindowHandle, _frameHandle);
+            }
             _configuredViewport = viewport;
             _configuredFrameHandle = _frameHandle;
+            if (revision == _geometryRevision) _geometryPending = false;
         }
         finally { _configurationLock.Release(); }
     }
@@ -109,6 +147,7 @@ public partial class SelectionPreviewWindow
     {
         base.OnDpiChanged(oldDpi, newDpi);
         if (!IsLoaded || _closed) return;
+        InvalidateGeometry();
         try
         {
             await PauseAsync("화면 DPI 변경 · 조작 자동 재개 대기");
@@ -136,50 +175,22 @@ public partial class SelectionPreviewWindow
     private bool TryGetVisibleViewport(ScreenRegion source, out LensViewport viewport)
     {
         viewport = default!;
-        if (!TryGetScreenBounds(CapturedImage, out var image) ||
-            !TryGetScreenBounds(ImageViewport, out var canvas)) return false;
-
-        var left = Math.Max(image.X, canvas.X);
-        var top = Math.Max(image.Y, canvas.Y);
-        var right = Math.Min(image.X + image.Width, canvas.X + canvas.Width);
-        var bottom = Math.Min(image.Y + image.Height, canvas.Y + canvas.Height);
-        if (right <= left || bottom <= top) return false;
-
-        var destination = new ScreenRegion(left, top, right - left, bottom - top);
-        var sourceLeft = source.X + ScaleOffset(destination.X - image.X, image.Width, source.Width, roundUp: false);
-        var sourceTop = source.Y + ScaleOffset(destination.Y - image.Y, image.Height, source.Height, roundUp: false);
-        var sourceRight = source.X + ScaleOffset(destination.X + destination.Width - image.X,
-            image.Width, source.Width, roundUp: true);
-        var sourceBottom = source.Y + ScaleOffset(destination.Y + destination.Height - image.Y,
-            image.Height, source.Height, roundUp: true);
-        var sourceCrop = new ScreenRegion(sourceLeft, sourceTop,
-            Math.Max(1, sourceRight - sourceLeft), Math.Max(1, sourceBottom - sourceTop));
-        viewport = new LensViewport(sourceCrop, destination);
-        return true;
+        if (!TryGetPhysicalBounds(CapturedImage, out var imageOrigin, out var imageSize) ||
+            !TryGetPhysicalBounds(ImageViewport, out var canvasOrigin, out var canvasSize)) return false;
+        return LensViewport.TryCreate(source, imageOrigin, imageSize, canvasOrigin, canvasSize, out viewport);
     }
 
-    private static int ScaleOffset(int value, int inputLength, int outputLength, bool roundUp)
+    private static bool TryGetPhysicalBounds(FrameworkElement element, out PreviewPoint origin, out PreviewSize size)
     {
-        var scaled = Math.Clamp((double)value / inputLength * outputLength, 0, outputLength);
-        var offset = roundUp ? (int)Math.Ceiling(scaled) : (int)Math.Floor(scaled);
-        return Math.Clamp(offset, roundUp ? 1 : 0, outputLength);
-    }
-
-    private static bool TryGetScreenBounds(FrameworkElement element, out ScreenRegion bounds)
-    {
-        bounds = default;
+        origin = default;
+        size = default;
         if (element.ActualWidth <= 0 || element.ActualHeight <= 0) return false;
         var start = element.PointToScreen(new Point(0, 0));
         var end = element.PointToScreen(new Point(element.ActualWidth, element.ActualHeight));
-        var left = (int)Math.Floor(Math.Min(start.X, end.X));
-        var top = (int)Math.Floor(Math.Min(start.Y, end.Y));
-        var right = (int)Math.Ceiling(Math.Max(start.X, end.X));
-        var bottom = (int)Math.Ceiling(Math.Max(start.Y, end.Y));
-        if (right <= left || bottom <= top) return false;
-        bounds = new ScreenRegion(left, top, right - left, bottom - top);
-        return true;
+        origin = new PreviewPoint(Math.Min(start.X, end.X), Math.Min(start.Y, end.Y));
+        size = new PreviewSize(Math.Abs(end.X - start.X), Math.Abs(end.Y - start.Y));
+        return size.IsValid;
     }
-
     private bool TryMapToScreen(Point point, out ScreenPoint screenPoint, out PreviewPoint visualPoint)
     {
         screenPoint = default;

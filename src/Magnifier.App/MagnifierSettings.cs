@@ -18,10 +18,15 @@ public enum ThemePreference
     Dark
 }
 
+public enum SourceIndicatorPreference { Hidden = 0, Brief = 1, Always = 2 }
+public enum LensDisplayMode { Normal = 0, Compact = 1 }
+
 public sealed record MagnifierSettings
 {
     public ToolbarPlacement ToolbarPlacement { get; init; } = ToolbarPlacement.Top;
     public ThemePreference Theme { get; init; } = ThemePreference.System;
+    public SourceIndicatorPreference SourceIndicatorPreference { get; init; } = SourceIndicatorPreference.Hidden;
+    public LensDisplayMode LensDisplayMode { get; init; } = LensDisplayMode.Normal;
     public bool RememberLayout { get; init; } = true;
     public int DefaultSourceWidth { get; init; } = 960;
     public int DefaultSourceHeight { get; init; } = 540;
@@ -31,6 +36,8 @@ public sealed record MagnifierSettings
 
     public bool IsValid() => Enum.IsDefined(typeof(ToolbarPlacement), ToolbarPlacement)
         && Enum.IsDefined(typeof(ThemePreference), Theme)
+        && Enum.IsDefined(SourceIndicatorPreference)
+        && Enum.IsDefined(LensDisplayMode)
         && DefaultSourceWidth is >= 80 and <= 7680
         && DefaultSourceHeight is >= 60 and <= 4320
         && double.IsFinite(DefaultZoom) && DefaultZoom is >= 0.25 and <= 8;
@@ -46,13 +53,31 @@ internal static class MagnifierSettingsStore
         try
         {
             if (!File.Exists(FilePath)) return MagnifierSettings.Default;
-            var settings = JsonSerializer.Deserialize<MagnifierSettings>(File.ReadAllText(FilePath));
-            return settings is { } value && value.IsValid() ? value : MagnifierSettings.Default;
+            return ReadJson(File.ReadAllText(FilePath));
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or ArgumentException)
         {
             return MagnifierSettings.Default;
         }
+    }
+
+    internal static MagnifierSettings ReadJson(string json)
+    {
+        try
+        {
+            var settings = JsonSerializer.Deserialize<MagnifierSettings>(json);
+            if (settings is null) return MagnifierSettings.Default;
+            // 새 enum만 필드별로 복구해 기존 배치·테마·배율 선택을 보존한다.
+            settings = settings with
+            {
+                SourceIndicatorPreference = Enum.IsDefined(settings.SourceIndicatorPreference)
+                    ? settings.SourceIndicatorPreference : SourceIndicatorPreference.Hidden,
+                LensDisplayMode = Enum.IsDefined(settings.LensDisplayMode)
+                    ? settings.LensDisplayMode : LensDisplayMode.Normal
+            };
+            return settings.IsValid() ? settings : MagnifierSettings.Default;
+        }
+        catch (JsonException) { return MagnifierSettings.Default; }
     }
 
     public static bool Save(MagnifierSettings settings)

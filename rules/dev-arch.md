@@ -2,6 +2,10 @@
 
 ## 현재 구조
 
+- 이번 기능: MainWindow.SourceEditing은 원본 편집/완료와 표시 수명, MainWindow.Settings는 모달과 편집 보류 합산을 맡는다. SourceIndicatorWindow는 편집창과 별개인 표시창이며 SourceIndicatorLifetime은 5초 기한/취소를 맡는다. SelectionPreviewWindow.Chrome/Resize는 일반·컴팩트와 실제 창 리사이즈를 맡는다. 프레임은 source/session/geometry 경계 이전에 시작된 결과를 폐기한다.
+- IWindowEnvironment.SetPassiveOverlay는 표시창의 영구 클릭 통과·비활성화를 Infrastructure에 위임한다. 표시창 HWND는 relay Configure 목록에서 제외해 스타일 복원 충돌을 피한다. 편집창 ContentAperture는 접거나 좌표 의미를 바꾸지 않는다.
+- Magnifier.App.Tests는 fake 계약·STA에서 설정 호환, 표시 수명과 입력 보류 회귀를 확인한다. 이번 작업에서는 테스트를 추가·컴파일하고 실행은 사용자에게 맡긴다. 실제 좌표·클릭 통과·대상 반응은 사용자 확인 전 통과로 기록하지 않는다.
+
 - `src/Magnifier.App`: Main은 composition root·영역 지정/확대/복귀·비중첩 캡처와 배치 저장을 소유한다. 먼저 SelectionOverlayWindow의 원본 테두리·8개 손잡이로 영역을 정하고 `이 영역 확대`로 렌즈·입력을 연다. 선택 취소는 대기 중인 확대 작업도 무효화한다. SelectionPreviewWindow는 독립 렌즈·배율·고정 제어·가상 포인터와 선택형 A/B를 소유한다. 직접 조작에 WPF mouse capture를 사용하지 않는다.
 - `src/Magnifier.Core`: ScreenRegion/LensViewport는 독립된 원본·렌즈 물리 좌표를 보관한다. 기존 WindowPairPlacement 계산은 보존하지만 현재 진입은 테두리만 배치하고 확대 확정 시 원본을 옮기지 않는다. LensInputState는 조작 요청을 일시 정지와 분리하고, PointerInputSession은 Down/Move/Up과 release 재시도를 관리한다. ILivePointerRelay의 Start/Pause/Stop과 IWindowEnvironment는 App이 사용하는 계약이다.
 - `src/Magnifier.Infrastructure`: GDI 캡처, 태그 SendInput, 전용 hook 스레드의 논리 포인터·layered 입력 통과·freshness/capture 감시, 물리 창 배치를 구현한다. hook 반환 뒤 FIFO 큐에서 전달·스타일을 변경한다. 요청이 남아 있고 버튼 해제·최신 프레임을 확인하면 재개한다. native 프로브 6개 통과, 제품 전체 실사용은 검증 중이다. HWND 고정·앱별 분기·권한 상승은 없다. WindowsInputTransformDiagnostic은 별도 CLI 진단에서만 토큰·OS 항등 입력 변환을 검사하며 제품 중계 엔진으로 사용하지 않는다.

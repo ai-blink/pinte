@@ -11,6 +11,7 @@ public sealed class WindowsScreenCapture : IScreenCapture
     private const uint CaptureLayeredWindows = 0x40000000;
     private const uint WdaNone = 0x00000000;
     private const uint WdaExcludeFromCapture = 0x00000011;
+    private byte[]? _pixels;
 
     public void SetWindowCaptureExclusion(nint windowHandle, bool excludeFromCapture)
     {
@@ -70,10 +71,12 @@ public sealed class WindowsScreenCapture : IScreenCapture
                 throw CreateCaptureException("선택한 화면 영역을 복사할 수 없습니다.");
             }
 
-            var bytes = new byte[checked(region.Width * region.Height * 4)];
-            Marshal.Copy(pixels, bytes, 0, bytes.Length);
-            SetOpaqueAlpha(bytes);
-            return new CapturedFrame(region, bytes);
+            var byteCount = checked(region.Width * region.Height * 4);
+            // MainWindow은 WritePixels가 끝난 뒤에만 다음 Capture를 시작한다.
+            // 따라서 마지막 캡처 버퍼를 재사용해 30fps에서 발생하던 LOH 할당을 없앤다.
+            if (_pixels is null || _pixels.Length != byteCount) _pixels = new byte[byteCount];
+            Marshal.Copy(pixels, _pixels, 0, byteCount);
+            return new CapturedFrame(region, _pixels);
         }
         finally
         {
@@ -110,14 +113,6 @@ public sealed class WindowsScreenCapture : IScreenCapture
                 Compression = Bgr32
             }
         };
-    }
-
-    private static void SetOpaqueAlpha(byte[] bytes)
-    {
-        for (var index = 3; index < bytes.Length; index += 4)
-        {
-            bytes[index] = byte.MaxValue;
-        }
     }
 
     private static Win32Exception CreateCaptureException(string message)

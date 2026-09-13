@@ -7,6 +7,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\Pinte.ico</ApplicationIcon>
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionSuffix>beta.1</VersionSuffix>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <InformationalVersion>0.1.0-beta.1</InformationalVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(InputTransformTrial)' == 'true'">
@@ -15,6 +21,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Resource Include="Assets\Pinte.png" />
     <ProjectReference Include="..\Magnifier.Core\Magnifier.Core.csproj" />
     <ProjectReference Include="..\Magnifier.Infrastructure\Magnifier.Infrastructure.csproj" />
   </ItemGroup>

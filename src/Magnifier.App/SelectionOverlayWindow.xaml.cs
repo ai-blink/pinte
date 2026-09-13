@@ -26,7 +26,6 @@ public partial class SelectionOverlayWindow : Window
         SourceInitialized += (_, _) =>
         {
             WindowHandle = new WindowInteropHelper(this).Handle;
-            _capture.SetWindowCaptureExclusion(WindowHandle, true);
         };
         Loaded += (_, _) =>
         {
@@ -64,11 +63,28 @@ public partial class SelectionOverlayWindow : Window
 
     public nint WindowHandle { get; private set; }
 
+    public void ShowEditor()
+    {
+        WindowHandle = new WindowInteropHelper(this).EnsureHandle();
+        // 재편집 때도 제외를 다시 확인한다. 첫 표시 실패 뒤의 재시도를 정상으로 오인하지 않는다.
+        _capture.SetWindowCaptureExclusion(WindowHandle, true);
+        Show();
+    }
+
     public void SetSelectionMode(bool selecting)
     {
+        ConfirmRegionButton.Content = "이 영역 확대";
         ConfirmRegionButton.Visibility = selecting ? Visibility.Visible : Visibility.Collapsed;
         ConfirmRegionButton.IsEnabled = selecting;
         Title = selecting ? "화면 영역 지정 · 테두리를 맞춘 뒤 이 영역 확대" : "확대할 원본 영역";
+    }
+
+    public void SetSourceEditingMode()
+    {
+        ConfirmRegionButton.Content = "완료";
+        ConfirmRegionButton.Visibility = Visibility.Visible;
+        ConfirmRegionButton.IsEnabled = true;
+        Title = "원본 영역 편집 · 테두리를 맞춘 뒤 완료";
     }
 
     public void SetRegion(ScreenRegion region) => ApplyRegion(region, force: false);
@@ -125,6 +141,7 @@ public partial class SelectionOverlayWindow : Window
     public void SetEditingEnabled(bool enabled)
     {
         _editingEnabled = enabled;
+        ConfirmRegionButton.IsEnabled = enabled;
         Thumb[] handles = [MoveHandle, NorthWestHandle, NorthHandle, NorthEastHandle,
             WestHandle, EastHandle, SouthWestHandle, SouthHandle, SouthEastHandle];
         foreach (var handle in handles)

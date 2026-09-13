@@ -1,12 +1,12 @@
 # 개발 진행
 
+- 2026-09-12 후속: 설정 모달 생성 중 초기 Checked가 미생성 패널을 참조하는 오류를 수정했다. 초기 메뉴 선택을 컨트롤 생성 뒤로 이동했다. 표준 build 0/0, 회귀4사례 컴파일·실행 안 함, NEEDS_USER_UI_CHECK. [기록](../notes/runs/2026-09-12-settings-modal-init-fix.md).
+
+- 2026-09-12 후속: `원본 화면을 기다리는 중` 무한 대기 수정. 첫 비트맵 표시와 relay freshness를 분리했다. 표준 build 0/0, 새 회귀3사례 컴파일만 수행. 실제 UI 재확인 대기. [기록](../notes/runs/2026-09-12-first-frame-wait-fix.md).
+
+- 2026-09-12: 컴팩트 렌즈·원본 표시 정책 구현 완료, 최종 표준 build 경고0/오류0. 신규 App34·Core19사례 컴파일, 실행 안 함. 설정 호환, 별도 passive 윤곽선, 재편집 보류·완료, 실제 8방향 렌즈 리사이즈와 crop 회귀를 반영한다. 이번 테스트는 사용자 실행이며 UI는 NEEDS_USER_UI_CHECK. [이번 기록](../notes/runs/2026-09-12-compact-lens-source-indicator.md). 기존 dirty 보존, 커밋·스테이징 없음.
+- M0~M4 초기화·영역 선택·캡처·입력 gate·보조 A/B 이력은 각 notes/runs/2026-09-08-* 기록과 dev-roadmap의 완료 항목을 따른다. 이전 수락은 이번 기능의 통과 근거가 아니다.
 - 2026-09-12: UI·설정·시각 정비 — 승인 목업 토큰·카드·도구막대와 화면 피드백(라벨, 넓은 hit area, 고정 렌즈/crop)을 반영했다. 두 창 `×`, 24 DIP 스크롤바, relay를 중단하는 `✋ 이동`을 추가했다. build 0/0·Core41/Infra11, 52 PASS. UI 확인은 `NEEDS_USER_UI_CHECK`. [기록](../notes/runs/2026-09-12-magnifier-visual-refinement.md). 사용자 요청으로 로컬 커밋.
-- 2026-09-08: Git 작업공간, .NET 9 WPF 솔루션, 프로젝트 라이브 문서와 템플릿을 초기화하고 `644e343`으로 커밋했다. `dotnet build Magnifier.slnx --nologo`는 경고·오류 없이 통과했다.
-- 2026-09-08: M1 영역 선택 오버레이와 확대 미리보기를 완료했다. `dotnet build Magnifier.slnx --nologo`는 경고·오류 0으로 통과했고, 사용자가 실제 UI 동작이 정상임을 확인했다. 실행 기록은 `notes/runs/2026-09-08-m1-region-selection.md`에 남겼다.
-- 2026-09-08: M2 Core·Infrastructure·App 연결과 Core 단위 테스트를 구현했다. `dotnet build Magnifier.slnx --nologo`는 경고·오류 0, `dotnet test Magnifier.slnx --nologo`는 3개 통과했고, 사용자가 실제 화면 캡처 성공을 확인했다.
-- 2026-09-08: M2.1 실시간 미리보기를 완료했다. App이 최대 10fps의 비중첩 백그라운드 캡처를 미리보기에 적용하며, 새 선택·창 닫기·실패 시 갱신을 멈춘다. 솔루션 build 경고·오류 0, Core 테스트 3개 통과, 사용자가 실제 화면 변화 반영을 확인했다. 실행 기록은 `notes/runs/2026-09-08-m2-capture-live-preview.md`에 남겼다.
-- 2026-09-08: M3 입력 gate·release 경로를 완료했다. Core는 기본 비활성·정상 Down→Move→Up·gate 해제·오류 release를 테스트하고, App은 기본 해제 checkbox와 capture 손실·Esc·창 닫기 취소를 연결했다. 솔루션 build 경고·오류 0, Core 테스트 7개 통과, 사용자가 비활성 드래그 안내가 유지됨을 확인했다. 실행 기록은 `notes/runs/2026-09-08-m3-input-gate.md`에 남겼다.
-- 2026-09-08: M4를 완료했다. App 미리보기 창에 1~10초 `RepeatButton` 카운트다운, A/B 좌표 지정, 기본 비활성 실행 차단과 Esc 취소를 연결했다. 상단은 한 줄 상태 Grid, 캡처 상태는 이미지 오버레이, 하단은 얇은 툴바로 재구성했다. 솔루션 build 경고·오류 0, Core 테스트 7개 통과, 사용자가 A/B 제어와 미리보기 우선 비율을 확인했다. 실행 기록은 `notes/runs/2026-09-08-m4-straight-stroke.md`에 남겼다.
 - 2026-09-08~09: M5에서 보고된 미리보기 크기 변경·Blender 빈 프레임 차단 문제를 수정했다. 선택 오버레이·미리보기의 항상 위를 제거하고, 10fps 캡처마다 미리보기를 강제 활성화하던 호출을 제거했다. 미리보기는 처음 선택 영역 밖에 배치되고, 이후 원본 영역과 겹치면 마지막 정상 프레임을 유지하며 갱신을 보류한다. 솔루션 build 경고·오류 0, Core 테스트 7개 통과, 사용자가 Blender 5.2 미리보기의 정상 표시를 확인했다. 활성 입력 검증은 `NEEDS_USER_UI_CHECK`다. 실행 기록은 `notes/runs/2026-09-08-m5-window-layering.md`에 남겼다.
 - 2026-09-09: 위 M5의 원본 영역 밖 배치·겹침 갱신 보류는 미니맵 요구와 모순돼 교체했다. 미리보기 창은 Windows 캡처에서 제외하고 겹쳐도 선택 영역을 계속 갱신한다. A/B 표식은 정수 입력 좌표와 분리한 정규화 좌표로 고정하고, 두 지점 사이에 점선 계획을 표시한다. 솔루션 build 경고·오류 0, Core 테스트 7개 통과, 사용자가 A/B 표식 중심과 클릭 위치의 일치를 확인했다. 실행 기록은 `notes/runs/2026-09-09-m5-minimap-ab-preview.md`에 남겼다.
 - 2026-09-09: 사용자 피드백으로 M5의 정본 목표를 전면 교체했다. 선택한 보이는 화면 좌표가 유일한 전달 대상이며, A/B 표식과 입력 지점은 같은 클릭 의미를 가져야 한다. 브라우저·Blender는 대상 창 제한이 아닌 호환성 검증 표면이다. 기존 실행본에는 없는 UI를 있다고 말하지 않는 것을 검증 규율로 명시했다. 새 계획은 `notes/plans/2026-09-08-magnifier-m5.md`다.

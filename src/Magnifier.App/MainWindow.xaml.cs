@@ -10,10 +10,10 @@ namespace Magnifier.App;
 // Composition root: windows below this boundary consume Core contracts only.
 public partial class MainWindow : Window
 {
-    private readonly IScreenCapture _capture = new WindowsScreenCapture();
-    private readonly IWindowEnvironment _windows = new WindowsWindowEnvironment();
-    private readonly IPointerInput _pointer = new WindowsPointerInput();
-    private readonly ILivePointerRelay _relay = new WindowsLivePointerRelay();
+    private readonly IScreenCapture _capture;
+    private readonly IWindowEnvironment _windows;
+    private readonly IPointerInput _pointer;
+    private readonly ILivePointerRelay _relay;
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(33) };
     private SelectionOverlayWindow? _frame;
     private SelectionPreviewWindow? _lens;
@@ -21,16 +21,27 @@ public partial class MainWindow : Window
     private bool _capturing, _returning, _shuttingDown, _closed;
     private bool _selecting, _openingLens;
     private int _captureVersion, _sessionVersion;
+    private TaskCompletionSource? _captureFinished;
     private LensLayout? _layout;
     private MagnifierSettings _settings;
 
-    public MainWindow()
+    public MainWindow() : this(new WindowsScreenCapture(), new WindowsWindowEnvironment(),
+        new WindowsPointerInput(), new WindowsLivePointerRelay(), MagnifierSettingsStore.Load()) { }
+
+    internal MainWindow(IScreenCapture capture, IWindowEnvironment windows, IPointerInput pointer,
+        ILivePointerRelay relay, MagnifierSettings settings, TimeProvider? clock = null)
     {
+        _capture = capture;
+        _windows = windows;
+        _pointer = pointer;
+        _relay = relay;
+        _indicatorLifetime = new SourceIndicatorLifetime(clock ?? TimeProvider.System);
         InitializeComponent();
-        _settings = MagnifierSettingsStore.Load();
+        _settings = settings;
         MagnifierTheme.Apply(_settings.Theme);
         _layout = LensLayoutStore.Load();
         _timer.Tick += CaptureTick;
+        _indicatorTimer.Tick += (_, _) => UpdateIndicatorExpiry();
         Closing += MainClosing;
         SourceInitialized += (_, _) => HwndSource.FromHwnd(new WindowInteropHelper(this).Handle)?.AddHook(WindowMessage);
     }
@@ -48,14 +59,19 @@ public partial class MainWindow : Window
         try
         {
             _timer.Stop();
+            HideSourceIndicator();
             if (_lens is not null) await _lens.StopAsync("영역 지정 · 입력 꺼짐");
             else await _relay.StopAsync("영역 지정 · 입력 꺼짐");
             if (version != _sessionVersion || _returning || _shuttingDown) return;
             EnsureWindows();
+            _editingSource = false;
+            _lens!.SetSourceEditing(false);
+            await _lens.SetInputSuspendedAsync(false, "새 영역 지정 · 이전 보류 해제");
+            if (version != _sessionVersion || _returning || _shuttingDown) return;
             _lens!.Hide();
             _frame!.SetEditingEnabled(true);
             _frame.SetSelectionMode(true);
-            _frame!.Show();
+            _frame!.ShowEditor();
             var work = _windows.GetWindowWorkArea(new WindowInteropHelper(this).Handle);
             var source = _settings.RememberLayout ? savedLayout?.Source : null;
             if (source is null || !_windows.IsRegionVisible(source.Value))
@@ -92,8 +108,10 @@ public partial class MainWindow : Window
         _frame.SetSelectionMode(false);
         try
         {
-            _lens.Show();
+            var selectedRegion = _frame.Region;
             var work = _windows.GetWindowWorkArea(_frame.WindowHandle);
+            _frame.Hide();
+            _lens.Show();
             if (_settings.RememberLayout && savedLayout is { } layout && _windows.IsRegionVisible(layout.Lens))
                 _windows.PlaceWindow(_lens.WindowHandle, layout.Lens);
             else
@@ -101,12 +119,17 @@ public partial class MainWindow : Window
                     work.Y + work.Height / 3, Math.Min(800, work.Width * 2 / 3), Math.Min(640, work.Height - 60)));
             _lens.SetZoom(_settings.RememberLayout ? savedLayout?.Zoom ?? _settings.DefaultZoom : _settings.DefaultZoom);
             // The confirmed source stays exactly where the user placed it.
-            await ChangeSourceAsync(_frame.Region);
+            await ChangeSourceAsync(selectedRegion);
             if (version != _sessionVersion || _returning || _shuttingDown) return;
-            _timer.Start();
+            ApplySourceIndicatorPolicy();
+            await _lens.RefreshGeometryAsync();
+            if (version != _sessionVersion || _returning || _shuttingDown) return;
+            if (_captureFinished is { } pending) await pending.Task;
+            if (version != _sessionVersion || _returning || _shuttingDown) return;
             await CaptureOnceAsync();
             if (version != _sessionVersion || _returning || _shuttingDown) return;
             await _lens.StartInputAsync();
+            if (version == _sessionVersion && !_returning && !_shuttingDown) _timer.Start();
         }
         catch (Exception ex)
         {
@@ -132,7 +155,9 @@ public partial class MainWindow : Window
         _frame = new SelectionOverlayWindow(_capture, _windows);
         _lens = new SelectionPreviewWindow(_relay, _capture, _windows, _pointer);
         _lens.SetToolbarPlacement(_settings.ToolbarPlacement);
-        _frame.RegionChanged += async region =>
+        _lens.SetDisplayMode(_settings.LensDisplayMode);
+        _indicator = new SourceIndicatorWindow(_capture, _windows);
+        _frame.RegionChanged += region =>
         {
             if (_returning || _shuttingDown || _frame.IsVisible != true) return;
             if (_selecting)
@@ -141,8 +166,7 @@ public partial class MainWindow : Window
                 _captureVersion++;
                 return;
             }
-            try { await ChangeSourceAsync(region); }
-            catch (Exception ex) { SelectionStatusText.Text = ex.Message; }
+            // 재편집의 초안은 편집창만 소유한다. 완료 전 캡처 원본을 바꾸지 않는다.
         };
         _frame.AdjustmentStarted += async () =>
         {
@@ -150,14 +174,20 @@ public partial class MainWindow : Window
             try { await _lens.PauseAsync("원본 영역 조절 · 버튼 해제 후 자동 재개"); }
             catch (Exception ex) { SelectionStatusText.Text = ex.Message; }
         };
-        _frame.RegionConfirmed += async () => await OpenSelectedRegionAsync();
+        _frame.RegionConfirmed += async () =>
+        {
+            if (_editingSource) await CompleteSourceEditingAsync();
+            else await OpenSelectedRegionAsync();
+        };
         _frame.ReturnRequested += async () => await ReturnToScreenAsync();
         _frame.RegionSettingsRequested += async () => await ShowRegionSettingsAsync(_frame);
         _frame.AppSettingsRequested += async () => await ShowAppSettingsAsync(_frame);
         _lens.ReturnRequested += async () => await ReturnToScreenAsync();
         _lens.RegionSettingsRequested += async () => await ShowRegionSettingsAsync(_lens);
         _lens.AppSettingsRequested += async () => await ShowAppSettingsAsync(_lens);
-        _lens.EditingAllowedChanged += allowed => _frame.SetEditingEnabled(_selecting || allowed);
+        _lens.SourceEditRequested += async () => await BeginSourceEditingAsync();
+        _lens.GeometryInvalidated += () => _captureVersion++;
+        _lens.EditingAllowedChanged += _ => UpdateSourceEditorEnabled();
         _lens.InputStatusChanged += text => SelectionStatusText.Text = text;
         _lens.PlacementChanged += RememberLayout;
         _frame.Closing += PreventSecondaryClose;
@@ -183,9 +213,10 @@ public partial class MainWindow : Window
 
     private async Task CaptureOnceAsync()
     {
-        if (_capturing || _region is not { } region || _lens?.IsVisible != true || _returning) return;
+        if (_capturing || _region is not { } region || _lens?.IsVisible != true || _returning || _editingSource || _modalOpen) return;
         var version = _captureVersion;
         _capturing = true;
+        var finished = _captureFinished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         try
         {
             if (!_windows.IsRegionVisible(region)) throw new InvalidOperationException("원본 테두리를 연결된 화면 안으로 옮기세요.");
@@ -196,100 +227,16 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             if (version == _captureVersion && !_returning && _lens is not null)
-                _lens.ShowCaptureFailure(region, ex.Message);
+                await _lens.ShowCaptureFailureAsync(region, ex.Message);
         }
-        finally { _capturing = false; }
+        finally { _capturing = false; _captureFinished = null; finished.TrySetResult(); }
     }
 
     private void RememberLayout()
     {
-        if (_selecting || _openingLens || _lens?.IsVisible != true) return;
+        if (_selecting || _openingLens || _editingSource || _lens?.IsVisible != true) return;
         if (_region is not { } region || _lens?.WindowHandle is not { } handle || handle == 0) return;
         _layout = new(region, _windows.GetWindowBounds(handle), _lens.Zoom, _frame?.LockedAspectRatio);
-    }
-
-    private async Task ShowRegionSettingsAsync(Window owner)
-    {
-        if (_returning || _shuttingDown || _frame is null || _lens?.IsInteractionLocked == true) return;
-        var lensVisible = _lens?.IsVisible == true;
-        _lens?.SetInteractionLocked(true);
-        _frame.SetEditingEnabled(false);
-        try
-        {
-            if (lensVisible) await _lens!.SetInputSuspendedAsync(true, "크기·비율 설정 · 조작 일시 중지");
-            var settings = new QuickRegionSettingsWindow(_capture, _windows.DesktopBounds, _frame.Region, _frame.LockedAspectRatio) { Owner = owner };
-            settings.SizingChanged += options => _frame.ApplySizing(options.Width, options.Height, options.LockedAspectRatio);
-            settings.ShowDialog();
-            RememberLayout();
-        }
-        catch (Exception ex)
-        {
-            SelectionStatusText.Text = $"크기·비율 설정 실패: {ex.Message}";
-        }
-        finally
-        {
-            _lens?.SetInteractionLocked(false);
-            if (_lens is null || !lensVisible) _frame.SetEditingEnabled(true);
-            if (lensVisible && !_returning && !_shuttingDown)
-            {
-                await ResumeInputAfterModalAsync("크기·비율 설정 닫기 · 새 화면 확인 뒤 조작 자동 재개");
-            }
-        }
-    }
-
-    private async Task ShowAppSettingsAsync(Window owner)
-    {
-        if (_returning || _shuttingDown || _lens?.IsInteractionLocked == true) return;
-        var lensVisible = _lens?.IsVisible == true;
-        _lens?.SetInteractionLocked(true);
-        _frame?.SetEditingEnabled(false);
-        try
-        {
-            if (lensVisible) await _lens!.SetInputSuspendedAsync(true, "앱 설정 · 조작 일시 중지");
-            var settings = new SettingsWindow(_settings, _capture) { Owner = owner };
-            settings.SettingsChanged += ApplySettings;
-            settings.ShowDialog();
-        }
-        catch (Exception ex)
-        {
-            SelectionStatusText.Text = $"앱 설정 실패: {ex.Message}";
-        }
-        finally
-        {
-            _lens?.SetInteractionLocked(false);
-            if (_lens is null || !lensVisible) _frame?.SetEditingEnabled(true);
-            if (lensVisible && !_returning && !_shuttingDown)
-            {
-                await ResumeInputAfterModalAsync("앱 설정 닫기 · 새 화면 확인 뒤 조작 자동 재개");
-            }
-        }
-    }
-
-    private void ApplySettings(MagnifierSettings settings)
-    {
-        _settings = settings;
-        MagnifierTheme.Apply(settings.Theme);
-        _lens?.SetToolbarPlacement(settings.ToolbarPlacement);
-        if (!MagnifierSettingsStore.Save(settings))
-            SelectionStatusText.Text = "설정 저장에 실패해 이번 실행에만 적용합니다.";
-    }
-
-    private async Task ResumeInputAfterModalAsync(string reason)
-    {
-        if (_lens is null) return;
-        // Capture begun before the modal closed must not refresh the relay's new-frame gate.
-        _captureVersion++;
-        try { await _lens.SetInputSuspendedAsync(false, reason); }
-        catch (Exception exception)
-        {
-            try { await _lens.StopAsync("설정 종료 뒤 조작 재개 실패 · 입력 해제"); }
-            catch (Exception releaseException)
-            {
-                SelectionStatusText.Text = $"입력 해제 재시도 필요: {releaseException.Message}";
-                return;
-            }
-            SelectionStatusText.Text = $"조작 재개 준비 실패 · 입력을 껐습니다: {exception.Message}";
-        }
     }
 
     private async Task<bool> ReturnToScreenAsync()
@@ -298,6 +245,7 @@ public partial class MainWindow : Window
         _returning = true;
         _sessionVersion++;
         _timer.Stop();
+        HideSourceIndicator();
         _captureVersion++;
         try
         {
@@ -307,6 +255,8 @@ public partial class MainWindow : Window
             RememberLayout();
             _selecting = false;
             _openingLens = false;
+            _editingSource = false;
+            _lens?.SetSourceEditing(false);
             _frame?.Hide();
             _lens?.Hide();
             Show();
@@ -350,6 +300,7 @@ public partial class MainWindow : Window
             await _relay.DisposeAsync();
             _frame?.Close();
             _lens?.Close();
+            _indicator?.Close();
             _closed = true;
             Close();
         }

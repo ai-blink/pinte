@@ -46,6 +46,8 @@ public partial class SelectionPreviewWindow : Window
         _relay.StatusChanged += Relay_OnStatusChanged;
         Loaded += (_, _) => QueueGeometryUpdate();
         LocationChanged += (_, _) => { if (IsLoaded && !_sizing) QueueGeometryUpdate(); };
+        SizeChanged += (_, _) => QueueGeometryUpdate();
+        InitializeResizeControls();
         UpdateControls();
     }
 
@@ -55,6 +57,8 @@ public partial class SelectionPreviewWindow : Window
     public event Action? PlacementChanged;
     public event Action? RegionSettingsRequested;
     public event Action? AppSettingsRequested;
+    public event Action? SourceEditRequested;
+    public event Action? GeometryInvalidated;
     public nint WindowHandle { get; private set; }
     public ScreenRegion? CurrentRegion => _currentRegion;
     public double Zoom { get; private set; } = 2;
@@ -85,9 +89,10 @@ public partial class SelectionPreviewWindow : Window
 
     public void UpdateCapture(CapturedFrame frame, bool isLivePreview)
     {
-        if (_closed || _captureStopPending || (_currentRegion is null && _relayStatus is { IsPressed: true })) return;
-        _captureFailureReason = null;
-        // Frame recovery permits the relay to resume a preserved request after button release.
+        if (_closed || _captureStopPending ||
+            (_currentRegion is null && _relayStatus is { IsPressed: true })) return;
+        // 이미지 표시가 먼저 있어야 WPF Image의 실제 크기를 측정할 수 있다.
+        // 좌표 대기는 표시를 막지 않고, relay의 새 프레임 인정만 보류한다.
         if (_currentRegion is null)
         {
             _currentRegion = frame.Region;
@@ -97,17 +102,21 @@ public partial class SelectionPreviewWindow : Window
             QueueGeometryUpdate();
         }
         if (_currentRegion != frame.Region) return;
+        _captureFailureReason = null;
         if (_bitmap is null || _bitmap.PixelWidth != frame.Region.Width || _bitmap.PixelHeight != frame.Region.Height)
         {
-            _bitmap = new WriteableBitmap(frame.Region.Width, frame.Region.Height, 96, 96, PixelFormats.Bgra32, null);
+            // BitBlt의 BI_RGB 32비트 출력은 BGRX다. Bgr32로 표시하면 매 프레임
+            // 알파 채널을 따로 채울 필요가 없어 장시간 캡처의 CPU 부하를 줄인다.
+            _bitmap = new WriteableBitmap(frame.Region.Width, frame.Region.Height, 96, 96, PixelFormats.Bgr32, null);
             CapturedImage.Source = _bitmap;
+            QueueGeometryUpdate();
         }
         var pixels = MemoryMarshal.TryGetArray(frame.Bgra32Pixels, out ArraySegment<byte> buffer)
             ? buffer : new ArraySegment<byte>(frame.Bgra32Pixels.ToArray());
         _bitmap.WritePixels(new Int32Rect(0, 0, frame.Region.Width, frame.Region.Height),
             pixels.Array!, frame.Stride, pixels.Offset);
         EmptyImageText.Visibility = Visibility.Collapsed;
-        _relay.RefreshFrame();
+        if (!_geometryPending) _relay.RefreshFrame();
         CaptureStatusText.Text = isLivePreview
             ? "실시간 화면 · 가장자리를 벗어나면 해제 · 대상 반응을 확인하세요"
             : "화면 캡처 · 실제 입력 꺼짐";
@@ -125,6 +134,14 @@ public partial class SelectionPreviewWindow : Window
         SetPreviewInputToggle(false);
         try { await _relay.StopAsync(reason); }
         catch (Exception exception) { PublishInputStatus($"입력 중지 실패: {exception.Message}"); throw; }
+        _handToolEnabled = false;
+        EndPan();
+        _isMoving = _moveReady = _isResizing = _resizeReady = false;
+        ++_resizeRevision;
+        if (Mouse.Captured is Thumb thumb &&
+            (thumb == TitleThumb || thumb == CompactMoveThumb || ResizeLayer.Children.Contains(thumb))) thumb.CancelDrag();
+        ApplyPanModeUi();
+        await ApplyInputSuspensionAsync(reason);
         UpdateControls();
         if (auxiliaryFailure is not null) throw new InvalidOperationException(reason, auxiliaryFailure);
     }
@@ -137,7 +154,8 @@ public partial class SelectionPreviewWindow : Window
 
     public async Task SetInputSuspendedAsync(bool suspended, string reason)
     {
-        await _relay.SetSuspendedAsync(suspended, reason);
+        _externalInputSuspended = suspended;
+        await ApplyInputSuspensionAsync(reason);
     }
 
     public void SetInteractionLocked(bool locked)
@@ -158,14 +176,16 @@ public partial class SelectionPreviewWindow : Window
 
     public async Task StartInputAsync()
     {
-        if (_closed || !IsVisible || !_captureExcluded || AuxiliaryTools.IsExpanded || _handToolEnabled) return;
+        if (_closed || !IsVisible || !_captureExcluded || AuxiliaryTools.IsExpanded || _handToolEnabled ||
+            _sourceEditing || _isResizing || _currentRegion is null || _captureFailureReason is not null) return;
         var revision = ++_inputRequestRevision;
         await ConfigureGeometryAsync();
-        if (revision != _inputRequestRevision || _closed || !IsVisible || AuxiliaryTools.IsExpanded) return;
+        if (revision != _inputRequestRevision || _closed || !IsVisible || AuxiliaryTools.IsExpanded ||
+            _sourceEditing || _handToolEnabled || _isResizing || _currentRegion is null || _captureFailureReason is not null) return;
         await _relay.StartAsync();
     }
 
-    public async void ShowCaptureFailure(ScreenRegion region, string reason)
+    public async Task ShowCaptureFailureAsync(ScreenRegion region, string reason)
     {
         if (_currentRegion is null && _captureFailureReason == reason) return;
         _captureFailureReason = reason;
@@ -176,10 +196,10 @@ public partial class SelectionPreviewWindow : Window
         EmptyImageText.Text = $"캡처 실패: {reason}";
         EmptyImageText.Visibility = Visibility.Visible;
         UpdateBoundsText(region);
-        CaptureStatusText.Text = "화면 갱신을 기다립니다 · 복구되면 조작을 자동 재개합니다";
+        CaptureStatusText.Text = "캡처를 자동 재시도합니다 · 새 화면을 받으면 조작을 자동 재개합니다";
         UpdateControls();
         _captureStopPending = true;
-        try { await PauseAsync($"캡처 대기 · 복구 후 자동 재개: {reason}"); }
+        try { await PauseAsync($"캡처 일시 실패 · 새 화면 대기: {reason}"); }
         catch { /* A release failure cancels the pending request in the relay. */ }
         finally { _captureStopPending = false; }
     }
@@ -241,13 +261,15 @@ public partial class SelectionPreviewWindow : Window
         var manipulationLocked = _externalInteractionLocked || _relayStatus is { IsPressed: true } or { WaitingForRelease: true }
             || _straightStrokeCancellation is not null;
         var locked = manipulationLocked;
-        var editingAllowed = !manipulationLocked;
+        var editingAllowed = !manipulationLocked && !_sourceEditing;
         TitleThumb.IsEnabled = editingAllowed;
         ZoomDecreaseButton.IsEnabled = editingAllowed && _currentRegion.HasValue;
         ZoomIncreaseButton.IsEnabled = ZoomDecreaseButton.IsEnabled;
         PanModeButton.IsEnabled = editingAllowed && _currentRegion.HasValue && !AuxiliaryTools.IsExpanded;
         RegionSettingsButton.IsEnabled = editingAllowed && _currentRegion.HasValue;
-        AppSettingsButton.IsEnabled = editingAllowed;
+        AppSettingsButton.IsEnabled = !manipulationLocked;
+        SourceEditButton.IsEnabled = editingAllowed && _currentRegion.HasValue;
+        UpdateCompactControls();
         AuxiliaryTools.IsEnabled = editingAllowed || AuxiliaryTools.IsExpanded;
         AuxiliaryControls.IsEnabled = !locked;
         if (_editingAllowed != editingAllowed)
@@ -255,6 +277,7 @@ public partial class SelectionPreviewWindow : Window
             _editingAllowed = editingAllowed;
             EditingAllowedChanged?.Invoke(editingAllowed);
         }
+        UpdateResizeControlState();
         UpdateStrokeControls();
     }
 
@@ -276,21 +299,19 @@ public partial class SelectionPreviewWindow : Window
             : _relayStatus is { InputRequested: true } ? "버튼 해제와 최신 화면을 기다린 뒤 자동 재개합니다" : "원래 화면으로 돌아간 뒤 다시 확대하세요");
     }
 
-    private async void RegionSettings_OnClick(object sender, RoutedEventArgs e)
+    private void RegionSettings_OnClick(object sender, RoutedEventArgs e)
     {
         if (_editingAllowed)
         {
-            if (_handToolEnabled) await SetPanModeAsync(false);
             RegionSettingsRequested?.Invoke();
         }
         e.Handled = true;
     }
 
-    private async void AppSettings_OnClick(object sender, RoutedEventArgs e)
+    private void AppSettings_OnClick(object sender, RoutedEventArgs e)
     {
-        if (_editingAllowed)
+        if (AppSettingsButton.IsEnabled)
         {
-            if (_handToolEnabled) await SetPanModeAsync(false);
             AppSettingsRequested?.Invoke();
         }
         e.Handled = true;
@@ -306,27 +327,24 @@ public partial class SelectionPreviewWindow : Window
     {
         _isMoving = _editingAllowed;
         if (!_isMoving) return;
-        try { await PauseAsync("렌즈 이동 · 버튼 해제 후 자동 재개"); }
-        catch { _isMoving = false; TitleThumb.CancelDrag(); }
+        _moveReady = false;
+        try { await ApplyInputSuspensionAsync("렌즈 이동 · 버튼 해제 후 자동 재개"); _moveReady = _isMoving; }
+        catch { _isMoving = false; ((Thumb)sender).CancelDrag(); }
     }
     private void TitleThumb_OnDragDelta(object sender, DragDeltaEventArgs e)
     {
-        if (!_isMoving || !_editingAllowed) return;
+        if (!_isMoving || !_moveReady || !_editingAllowed) return;
         Left += e.HorizontalChange;
         Top += e.VerticalChange;
     }
-    private void TitleThumb_OnDragCompleted(object sender, DragCompletedEventArgs e)
+    private async void TitleThumb_OnDragCompleted(object sender, DragCompletedEventArgs e)
     {
-        _isMoving = false;
-        KeepLensOnScreen();
-        QueueGeometryUpdate();
+        await FinishMoveAsync();
     }
     private async void TitleThumb_OnLostMouseCapture(object sender, MouseEventArgs e)
     {
         if (!_isMoving) return;
-        _isMoving = false;
-        try { await PauseAsync("이동 손잡이 해제 · 조작 자동 재개 대기"); }
-        catch { }
+        await FinishMoveAsync();
     }
 
     private async void SelectionPreviewWindow_OnPreviewKeyDown(object sender, KeyEventArgs e)

@@ -1,5 +1,12 @@
 # 재개 컨텍스트
 
+- 설정 모달 초기화 오류 수정·표준 build 0/0. 회귀4사례 컴파일만 수행, NEEDS_USER_UI_CHECK. [최신 기록](../notes/runs/2026-09-12-settings-modal-init-fix.md).
+
+- 최신 후속: 첫 원본 화면 무한 대기 사용자 보고. Image.Source 없는 상태에서 geometry를 먼저 기다리던 순환 대기를 수정했다. 첫 비트맵은 표시하고 relay 새 프레임 인정만 좌표 확정까지 보류한다. 표준 build 0/0, 회귀3사례 컴파일·실행 안 함, NEEDS_USER_UI_CHECK. [수정 기록](../notes/runs/2026-09-12-first-frame-wait-fix.md).
+
+- 2026-09-12 컴팩트 렌즈·원본 표시 기능: Hidden 기본/Brief 5초/Always 별도 윤곽선, 영역 편집→완료, 일반·컴팩트 공통 상하단 도구막대, 실제 8방향 렌즈 리사이즈를 구현했다. 최종 표준 build 경고0/오류0, 신규 App34·Core19사례 컴파일(실행 안 함). 최신 검증 결과와 남은 항목은 [이번 run report](../notes/runs/2026-09-12-compact-lens-source-indicator.md), [수동 시나리오](../doc/compact-lens-validation.md)를 따른다. 테스트 실행·실제 UI는 사용자 담당, NEEDS_USER_UI_CHECK.
+- 이번 delivery workspace는 C:/ai/projects/magnifier 하나다. 기존 dirty/Pinte 브랜딩/미추적 계획서를 보존하고 커밋·스테이징·푸시·브랜치 생성은 하지 않는다. 아래 이전 커밋 지시는 이번 작업에 적용하지 않는다.
+- 이전 드래그 감시 재실패·수정·사용자 확인의 상세는 notes/runs/2026-09-12-region-selection-drag-confirmed.md와 2026-09-11-drag-blocked-handoff.md에 보존한다. 이번 기능 확인과 혼합하지 않는다.
 - 2026-09-12 UI·안전·시각 정비: P0 stale-frame·프리셋·Esc·경계, 목업 토큰, 라벨/28 DIP 손잡이, 고정 렌즈+중앙 crop·하단 상태 숨김을 반영했다. 후속으로 두 창 `×`, 24 DIP 스크롤바, relay를 중단하는 `✋ 이동`을 추가했다. 최신 build 0/0·Core41/Infra11, 52 PASS. [시각 기록](../notes/runs/2026-09-12-magnifier-visual-refinement.md). 실제 UI·대상 앱 반응은 `NEEDS_USER_UI_CHECK`다.
 - delivery workspace: `C:/ai/projects/magnifier`, main. 이번 delivery 소스·문서·테스트는 사용자 요청으로 로컬 커밋한다. `notes/transfers/`와 도구 산출물은 수정·삭제·스테이징 금지이며 푸시는 하지 않는다.
 - 2026-09-12 최신 요구: 단순한 핵심 기능·화면에 집중하고 테스트는 사용자가 직접 한다. `화면 영역 지정` → 원본 테두리 이동/크기 조절 → `이 영역 확대` → 렌즈 조작으로 수정했다. 선택 중 입력은 꺼지고 취소하면 진입 창으로 돌아온다. 확정한 원본은 렌즈를 열 때 이동하지 않는다.
@@ -8,7 +15,6 @@
 - 최신 요구: “항상 조작 시작된 상태이어야해 근데 자꾸 풀려”. 확대 열기 자체가 조작 요청이다. 창·영역·배율·경계·화면 갱신 일시 정지는 요청을 유지하고 버튼 해제·최신 화면 뒤 재개한다. 명시적 중지·Esc·복귀·닫기·대상 capture 손실·입력/해제 실패는 자동 재개하지 않는다. 이전의 별도 조작 시작·재진입 보기 기본값은 D-020으로 대체했다.
 - 구현: SelectionOverlayWindow의 투명 내부/8개 손잡이, SelectionPreviewWindow의 독립 제목·고정 중지/원래 화면·배율·가상 포인터. Main은 캡처·진입/복귀·배치 저장을 관리한다. 설정에 입력 허용은 저장하지 않으며, 재진입할 때 새 조작 요청을 만든다.
 - 엔진: WindowsLivePointerRelay 전용 WH_MOUSE_LL 스레드 + 자기 태그 SendInput. hook 안 동기 주입의 중복 Down/Up을 재현해 실제 전달·창 스타일 변경을 hook 반환 뒤 FIFO 큐로 옮겼다. 분리/겹침 곡선·왕복, 경계 마지막 위치 Up·재무장 차단을 실제 native 수신으로 확인했다. 합성 절대 입력 프로브 결과이며 실제 상대 장치 검증은 남았다. UI는 Win32 입력/캡처를 직접 호출하지 않는다.
-- 앞선 검증: hover 커서 수정까지 표준 build 경고 0/오류 0, 솔루션 test Core 34개 통과. native 6개에 클릭 전·Up 후 실제 커서 좌표 일치를 추가해 통과했다. 별도 `RelayProbe.exe --cursor-diagnostic`은 진단 완료지만 `Fixed=false`다. 당시 engine MVID는 `7657f0fb-a4ae-4f37-9c3c-d5d530956387`.
 - 표준 실행본: `C:/ai/projects/magnifier/src/Magnifier.App/bin/Debug/net9.0-windows/Magnifier.App.exe`. 원본 main에서 재빌드·실행했다. 메인 Hide가 보조 창도 숨기는 Owner 관계를 제거했다. 사용자가 두 창 모두 보임을 확인했다.
 - UI 상태: `화면 영역 지정`이 테두리 선택 단계로 진입하고 `이 영역 확대`가 렌즈를 연다. 기본 조작 시작/중지 버튼은 제거했으며, 확대 자체가 조작 요청이다. 크기·비율과 앱 설정은 설정창이 닫힐 때까지 중계의 자동 재개를 보류한다.
 - 사용자 확인: **“두 창 모두 아래에 있고 이동됨”**, 조작 유지 수정 후 **“조작이 유지되고 클릭·드래그됨”**. 두 번째 답변은 별도 재개 없이 렌즈 제목부를 옮긴 뒤 조작하는 흐름에 대한 확인이다. 대상 앱 이름·곡선/왕복 경로·정밀 좌표·복귀까지 확인한 것으로 확대하지 않는다. 보조 창은 자동화 목록에 반환되지 않아 사용자 확인으로 검증한다.
@@ -17,6 +23,3 @@
 - OS 변환: 사용자 go 승인 뒤 전용 인증서/Program Files 설치를 적용했다. UIAccess=true·Elevated=false에서 API 수락/해제 성공. WPF 수동 검사는 원본 전달 0/렌즈 Down 4, native 합성 검사는 원본 Down/Up 0/0·렌즈 Down 1로 BLOCKED다. 전후 해제 확인. 일반 제품의 OS 엔진 연결은 보류했고 전용 설치/인증서는 유지 중이다.
 - 남은 범위: 실제 상대 마우스·보조 절대 입력·모니터 끝 탈출, 재귀/겹침, 혼합 DPI/음수 좌표/다중 모니터, 브라우저 마커/Blender/Windows 앱. 렌즈를 놓을 때 화면 안 보정, 모니터 변경 시 입력 해제·진입 창 복원을 구현했으며 R2 실측 대상이다. 우클릭·스크롤 등 R3는 핵심 검증 뒤 진행한다.
 - 최신 지시: 사용자가 관리자 모드로 직접 검증한다. 자동 UI 검사는 중단했다. `Start-Magnifier-Admin.cmd`는 표준 앱의 사용자 RunAs 진입점, `Start-InputTransform-Manual.cmd`는 별도 UIAccess 수동 검사다. `doc/manual-validation.md` 참조. 관리자 실행은 UIAccess나 커서 문제 해결을 뜻하지 않는다.
-- 2026-09-11 재실패: FIFO 수정 뒤 relay-stop-28180에서 누름 중 중지 3회. 원본 thread/root 감시로 재수정한 뒤에도 relay-stop-32236에서 03:04:52·56 KST에 2회 중지했다. PhysicalLeftHeld=true, PendingLeftRelease=false, ReadSucceeded=true이며 원본 root 17045840에서 현재 capture/root 3214510으로 바뀌었다. capture=0이나 조회 실패가 아닌 다른 root 전환이 중지 분기를 실행했다. 정상 인계인지 실제 손실인지는 미확정이다.
-- 2026-09-12 수정: 최신 로그에 00:07:45 KST capture=0 중지 1회도 추가됐다. 같은 source thread의 다른 root 인계, 원본 전면 유지 중 capture=0만으로 Up을 만들던 조건을 수정했다. 조회 실패·원본 닫힘·관찰한 capture의 외부 thread 전환 또는 capture 해제와 외부 전면 전환이 함께 확인되면 중지한다. 새 로그는 CaptureThread/TargetAvailable/FocusMovedAway를 포함한다. 과거 전환이 실제로 정상 인계였는지는 미확정이다.
-- 최신 검증: 2026-09-12 같은 main 소스의 표준 build 경고 0/오류 0, 사용자 “아주 잘됨”. 회귀 테스트는 수정·컴파일했으나 실행하지 않았다. 문서·커밋 시 앱 PID 29252 실행 중이며 종료·재빌드·UI 조작 없이 유지했다. 로그에는 명시적 원래 화면 복귀 1회가 있으며 드래그 성공 자체의 근거는 사용자 확인이다. 위 44개 테스트·PID 32236은 이전 이력이다. 최신 기록: `notes/runs/2026-09-12-region-selection-drag-confirmed.md`. 이후 작업도 핵심 기능·화면 중심으로, UI 테스트는 사용자가 직접 한다.

@@ -24,24 +24,39 @@ public partial class SelectionPreviewWindow
     private async Task SetPanModeAsync(bool enabled)
     {
         if (_handToolEnabled == enabled) return;
-        await SetInputSuspendedAsync(enabled,
-            enabled ? "손 도구 · 실제 입력 일시 중지" : "손 도구 종료 · 새 화면 확인 뒤 조작 자동 재개");
+        if (!enabled)
+        {
+            EndPan();
+            await RefreshGeometryAsync();
+        }
         _handToolEnabled = enabled;
-        if (!enabled) EndPan();
+        await ApplyInputSuspensionAsync(enabled
+            ? "손 도구 · 실제 입력 일시 중지" : "손 도구 종료 · 새 화면 확인 뒤 조작 자동 재개");
         ApplyPanModeUi();
         UpdateControls();
     }
 
+    public Task EndPanModeAsync() => SetPanModeAsync(false);
+
     private void ApplyPanModeUi()
     {
         if (!IsInitialized) return;
-        PanModeButton.Content = _handToolEnabled ? "✋ 이동 중" : "✋ 이동";
+        PanModeButton.Content = _handToolEnabled ? "✋ 손 도구 · 켜짐" : "✋ 손 도구 · 꺼짐";
         PanModeButton.ToolTip = _handToolEnabled
             ? "손 도구 켜짐: 렌즈 안을 끌어 확대된 위치를 이동합니다"
-            : "손 도구: 렌즈 안을 끌어 확대된 위치를 이동합니다";
+            : "손 도구 꺼짐: 켜면 렌즈 안을 끌어 확대된 위치를 이동합니다";
         PanModeButton.Style = _handToolEnabled
             ? (Style)FindResource("AccentButtonStyle")
             : (Style)FindResource("SoftAccentButtonStyle");
+        System.Windows.Automation.AutomationProperties.SetName(PanModeButton,
+            _handToolEnabled ? "손 도구 켜짐, 누르면 끔" : "손 도구 꺼짐, 누르면 켬");
+        CompactPanModeButton.Content = _handToolEnabled ? "✋✓" : "✋○";
+        CompactPanModeButton.ToolTip = PanModeButton.ToolTip;
+        System.Windows.Automation.AutomationProperties.SetName(CompactPanModeButton,
+            _handToolEnabled ? "손 도구 켜짐, 누르면 끔" : "손 도구 꺼짐, 누르면 켬");
+        CompactPanModeButton.Style = _handToolEnabled
+            ? (Style)FindResource("CompactActiveButtonStyle")
+            : (Style)FindResource("CompactButtonStyle");
         ImageViewport.Cursor = _handToolEnabled ? Cursors.Hand : Cursors.Arrow;
     }
 
@@ -125,6 +140,10 @@ public partial class SelectionPreviewWindow
                 ImageScroller.ExtentWidth, ImageScroller.ViewportWidth);
             UpdatePanBar(VerticalPanBar, ImageScroller.VerticalOffset,
                 ImageScroller.ExtentHeight, ImageScroller.ViewportHeight);
+            if (_displayMode == LensDisplayMode.Compact)
+                HorizontalPanBar.Visibility = VerticalPanBar.Visibility = Visibility.Collapsed;
+            PanCorner.Visibility = HorizontalPanBar.Visibility == Visibility.Visible && VerticalPanBar.Visibility == Visibility.Visible
+                ? Visibility.Visible : Visibility.Collapsed;
         }
         finally { _syncingPanBars = false; }
     }

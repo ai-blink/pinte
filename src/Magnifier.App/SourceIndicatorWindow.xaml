@@ -1,0 +1,14 @@
+<Window x:Class="Magnifier.App.SourceIndicatorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="원본 영역 윤곽선"
+        Width="1" Height="1"
+        AllowsTransparency="True" Background="Transparent"
+        ShowInTaskbar="False" ShowActivated="False" Focusable="False"
+        IsHitTestVisible="False" Topmost="True"
+        WindowStyle="None" ResizeMode="NoResize"
+        WindowStartupLocation="Manual">
+    <!-- Border는 원본 영역과 같은 창의 안쪽에만 1 DIP 선을 그린다. -->
+    <Border BorderBrush="{DynamicResource AppAccentBrush}" BorderThickness="1"
+            Background="Transparent" IsHitTestVisible="False" />
+</Window>
