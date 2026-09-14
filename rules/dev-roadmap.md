@@ -2,6 +2,8 @@
 
 - 2026-09-14 공개 기준: [Pinte v0.1.0 정식 릴리즈](https://github.com/ai-blink/pinte/releases/tag/v0.1.0)를 태그 `v0.1.0`과 Windows x64 자체 포함 ZIP으로 배포한다. 표준 build 0/0·자동 테스트 120개 통과는 릴리즈 기준이며, 실제 UI와 대상 앱 호환성은 `NEEDS_USER_UI_CHECK`다.
 
+- [ ] 훅 워치독·단일 인스턴스 후속 확인: D-027 워치독이 상시 주입 커서 오탐 폭주·두 인스턴스 훅 충돌·누름 중 드래그 끊김 회귀를 냈고, 단일 인스턴스 Mutex·자기검증 재설치·진행 중 입력 보호로 수정(D-028). build 0/0·테스트 128개 통과, 두 번째 실행 거부·진입 창 재설치 0 실증, `C:\app` 교체. 실제 렌즈 드래그·클릭 전달은 `NEEDS_USER_UI_CHECK`. [기록](../notes/runs/2026-09-15-hook-watchdog-storm-regression.md).
+
 - [ ] 설정 모달 후속 확인: 초기화 순서 오류 수정은 전체 116개 자동 테스트에 포함돼 통과했다. 진입 창/일반·컴팩트 설정 열기, 메뉴 전환·변경 반영·닫은 뒤 재개는 `NEEDS_USER_UI_CHECK`다. [기록](../notes/runs/2026-09-12-settings-modal-init-fix.md).
 
 - [ ] 첫 프레임 무한 대기 후속 확인: 순환 대기 수정은 전체 116개 자동 테스트에 포함돼 통과했다. 사용자 재확인 대상은 최초 확대/영역 편집 후 첫 화면과 클릭·드래그다. [기록](../notes/runs/2026-09-12-first-frame-wait-fix.md).

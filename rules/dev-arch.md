@@ -12,6 +12,7 @@
 - `src/Magnifier.Core.Tests`: Core 좌표 환산·프레임 불변 조건·입력 gate와 release 전이를 단위 테스트한다.
 - `src/Magnifier.Infrastructure.Tests`: RelayCommandPump의 FIFO·pending Up과 Core 입력 해제 전이를 OS 입력 없이 검사한다. 입력 스레드는 감시 timer 전에 큐를 처리하고, capture 조회 중 관찰한 Up도 완료 우선으로 둔다. 취소 사유 로그는 별도 비동기 기록이며 입력 정책을 바꾸지 않는다.
 - PointerCaptureMonitor는 매 Down의 원본 thread/root를 감시에만 쓴다. 2026-09-12 수정은 같은 thread의 다른 root 인계를 유지하며, capture=0만으로 해제하지 않는다. 원본이 닫히거나 조회가 실패하면 중지한다. capture 관찰 뒤 외부 thread가 이를 소유하거나, capture=0과 무관한 전면 창 전환이 함께 확인되면 해제한다. 전면 창은 보조 근거이며 capture는 원본 thread에서 조회한다. 전달 목적지는 물리 좌표다. 새 trace에 capture thread·원본 생존·외부 전면 전환을 남긴다. 수정 후 사용자 “아주 잘됨” 확인을 받았다. 앱별 전체 호환성까지 확인된 것은 아니다.
+- HookLivenessMonitor는 훅 콜백 횟수와 OS 커서/버튼 표본만 비교하는 순수 판정기다(D-027/D-028). `Sample`은 `None/Probe/Reinstall`을 돌려주고, 재설치·프로브 주입·버튼 재동기화는 WindowsLivePointerRelay.CheckHookLiveness가 relay 스레드에서 수행하며 진행 중 입력 중에는 하지 않는다(드래그 보호). 진단 기록은 `Event` 필드로 stop과 hook-reinstall을 구분한다. App.xaml.cs는 제품 경로 단일 인스턴스 Mutex로 전역 훅 중복을 막는다(D-028).
 
 [Windows DragDetect](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-dragdetect)는 버튼을 누른 채 감지 범위 밖으로 움직여도 감지를 마친다. [WM_CAPTURECHANGED](https://learn.microsoft.com/en-us/windows/win32/inputdev/wm-capturechanged)는 앱 자체 해제에도 발생한다. 이를 근거로 capture 값만으로 물리 드래그 취소를 추론하던 조건을 좁혔다. 과거 사용자의 OLE/보조 창 인계 여부까지 입증된 것은 아니다.
 

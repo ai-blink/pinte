@@ -25,13 +25,18 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
     private bool OtherHeld => _otherButtonsHeld != 0;
     private PreviewPoint _logical;
     private readonly PointerCaptureMonitor _captureMonitor = new();
+    private readonly HookLivenessMonitor _hookLiveness = new();
+    private nint _hook;
+    private int _hookReinstallCount;
+    private bool _hookReinstallDisabled;
     private string _message = "보기 · 실제 입력 꺼짐";
 
     public WindowsLivePointerRelay()
     {
         _state = new LensInputState(_output);
         _mouseProc = MouseHook;
-        _thread = new Thread(Run) { IsBackground = true, Name = "Magnifier pointer relay" };
+        // A starved hook thread trips LowLevelHooksTimeout, after which Windows drops the hook.
+        _thread = new Thread(Run) { IsBackground = true, Name = "Magnifier pointer relay", Priority = ThreadPriority.Highest };
         _thread.SetApartmentState(ApartmentState.STA);
         _thread.Start();
     }
@@ -107,12 +112,11 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
     {
         _threadId = GetCurrentThreadId();
         PeekMessage(out _, 0, 0, 0, 0);
-        var hook = SetWindowsHookEx(14, _mouseProc, GetModuleHandle(null), 0);
-        if (hook == 0) { _ready.SetException(new Win32Exception(Marshal.GetLastWin32Error(), "마우스 중계 설치 실패")); return; }
+        if (!InstallHook(out var hookError)) { _ready.SetException(new Win32Exception(hookError, "마우스 중계 설치 실패")); return; }
         var timer = SetTimer(0, 0, 50, 0);
         if (timer == 0)
         {
-            UnhookWindowsHookEx(hook);
+            UnhookWindowsHookEx(_hook);
             _ready.SetException(new Win32Exception(Marshal.GetLastWin32Error(), "입력 해제 타이머 설치 실패"));
             return;
         }
@@ -128,12 +132,13 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         {
             try { StopInternal("입력 중계 종료"); } catch { }
             KillTimer(0, timer);
-            UnhookWindowsHookEx(hook);
+            UnhookWindowsHookEx(_hook);
         }
     }
 
     private nint MouseHook(int code, nint message, nint data)
     {
+        _hookLiveness.NoteHookActivity();
         if (code < 0) return CallNextHookEx(0, code, message, data);
         var mouse = Marshal.PtrToStructure<MouseHookData>(data);
         if (mouse.ExtraInfo == WindowsPointerInput.InjectionTag)
@@ -285,6 +290,7 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
     {
         try
         {
+            CheckHookLiveness();
             if (_inputPostFailed) { _inputPostFailed = false; StopInternal("입력 큐 전달 실패 · 조작 중지"); return; }
             if (_state.IsPressed && !_state.IsEnabled)
             {
@@ -341,6 +347,62 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         | ((GetAsyncKeyState(4) & 0x8000) != 0 ? 2 : 0)
         | ((GetAsyncKeyState(5) & 0x8000) != 0 ? 4 : 0)
         | ((GetAsyncKeyState(6) & 0x8000) != 0 ? 8 : 0);
+
+    // Hook-side layout: left 1, right 2, middle 4, X1 8, X2 16.
+    private static int ReadAllButtons() => ((GetAsyncKeyState(1) & 0x8000) != 0 ? 1 : 0) | (ReadOtherButtons() << 1);
+
+    private bool InstallHook(out int error)
+    {
+        if (_hook != 0) { UnhookWindowsHookEx(_hook); _hook = 0; }
+        _hook = SetWindowsHookEx(14, _mouseProc, GetModuleHandle(null), 0);
+        error = _hook == 0 ? Marshal.GetLastWin32Error() : 0;
+        return _hook != 0;
+    }
+
+    private const int MaxAutoReinstalls = 12;
+
+    private void CheckHookLiveness()
+    {
+        if (_hookReinstallDisabled || !GetCursorPos(out var cursor)) return;
+        var buttons = ReadAllButtons();
+        var now = Environment.TickCount64;
+        var action = _hookLiveness.Sample(now, cursor.X, cursor.Y, buttons);
+        // Never disturb a live input session. A reinstall releases the button, so tearing one
+        // down mid-drag is the very failure the watchdog must not cause. Physical hold included:
+        // suspicion during a press waits until the button is released.
+        if (action == HookLivenessMonitor.Action.None
+            || _relaying || _intercepting || _draining || _state.IsPressed || _leftHeld || OtherHeld)
+            return;
+
+        if (action == HookLivenessMonitor.Action.Probe)
+        {
+            // A tagged move to the current position is invisible and presses nothing, yet a live
+            // hook echoes it back as activity, which clears the suspicion before any reinstall.
+            try { _output.MoveTo(new ScreenPoint(cursor.X, cursor.Y)); } catch { }
+            return;
+        }
+
+        // The self-probe never echoed: the hook is confirmed dropped (LowLevelHooksTimeout).
+        // Reinstall on this thread and trust the OS for button state after the outage.
+        var strikes = _hookLiveness.Strikes;
+        var installed = InstallHook(out var error);
+        _hookLiveness.NoteReinstalled(now);
+        _hookButtons = buttons;
+        _leftHeld = (buttons & 1) != 0;
+        _otherButtonsHeld = buttons >> 1;
+        _state.ObservePhysicalButton(_leftHeld || OtherHeld);
+        if (buttons == 0) _draining = false;
+        RecordHookReinstall(installed, error, strikes, false, false, buttons);
+        if (!installed) { StopInternal($"입력 훅 재설치 실패 · 조작 중지 (Win32 {error})", failed: true); return; }
+        if (++_hookReinstallCount >= MaxAutoReinstalls)
+        {
+            // A hook that keeps dying after verified reinstalls is a different, persistent fault.
+            // Storming past this point only churns the chain; surface it instead of hiding it.
+            _hookReinstallDisabled = true;
+            RecordHookReinstall(true, 0, strikes, false, false, buttons);
+        }
+        if (_state.IsRequested) Publish("입력 훅 재설치 · 조작 자동 재개");
+    }
 
     private void SetPassthrough(bool enabled)
     {
