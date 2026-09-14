@@ -1,5 +1,7 @@
 # 개발 진행
 
+- 2026-09-14: **Pinte v0.1.0 정식 릴리즈**를 태그 `v0.1.0`과 Windows x64 자체 포함 ZIP으로 게시한다. 세밀 배율 제어, geometry 구성 재시도, stale-frame 진단과 중복 Left Down 방어를 포함한다. 표준 build는 경고0/오류0, 전체 자동 테스트 120개가 통과했다. 코드 서명과 실제 UI·대상 앱 호환성은 여전히 `NEEDS_USER_UI_CHECK`다. [릴리즈](https://github.com/ai-blink/pinte/releases/tag/v0.1.0).
+
 - 2026-09-13: **Pinte v0.1.0-beta.1 공개 pre-release**를 main `83074e5`·태그 `v0.1.0-beta.1`으로 게시했다. 영어/한국어/중국어(간체)/일본어 README와 Windows x64 자체 포함 ZIP을 제공한다. 표준 build는 경고0/오류0, 전체 자동 테스트 116개가 통과했다. 공개 배포본은 코드 서명되지 않았고 실제 UI·대상 앱 호환성은 여전히 `NEEDS_USER_UI_CHECK`다. [릴리즈](https://github.com/ai-blink/pinte/releases/tag/v0.1.0-beta.1).
 
 - 2026-09-13: 일시 캡처 실패는 relay 요청을 취소하지 않고 release·일시 정지 후 자동 재시도한다. 새 캡처 프레임을 받은 뒤에만 조작을 재개한다. 손 도구의 켜짐/꺼짐 상태를 구분하고, 리사이즈 중 렌즈 여백을 44 DIP에서 24 DIP로 줄였다. [컴팩트 렌즈 수동 시나리오](../doc/compact-lens-validation.md)와 기존 실행 기록은 세부 확인 근거로 보존한다.

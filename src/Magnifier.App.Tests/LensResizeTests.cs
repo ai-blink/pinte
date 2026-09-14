@@ -64,6 +64,30 @@ public sealed class LensResizeTests
     });
 
     [TestMethod]
+    public Task FineZoomControls_NormalizeTenthsAndCommitDirectInput() => StaTest.Run(async () =>
+    {
+        using var host = new HiddenWindows();
+        var lens = host.Lens;
+        await lens.SetSourceAsync(new ScreenRegion(20, 30, 80, 60), 0);
+
+        lens.SetZoom(2.26);
+
+        var slider = (Slider)lens.FindName("FineZoomSlider");
+        var text = (TextBox)lens.FindName("FineZoomText");
+        Assert.AreEqual(2.3, lens.Zoom, 0.001);
+        Assert.AreEqual(2.3, slider.Value, 0.001);
+        Assert.AreEqual("2.3", text.Text);
+
+        text.Text = "3.4×";
+        await PrivateAccess.CallAsync(lens, "CommitFineZoomTextAsync");
+
+        Assert.AreEqual(3.4, lens.Zoom, 0.001);
+        Assert.AreEqual(3.4, slider.Value, 0.001);
+        Assert.AreEqual("3.4", text.Text);
+        CollectionAssert.Contains(host.Relay.Calls, "pause");
+    });
+
+    [TestMethod]
     public Task ExternalResume_WhileHandToolActive_KeepsRelaySuspended() => StaTest.Run(async () =>
     {
         using var host = new HiddenWindows();

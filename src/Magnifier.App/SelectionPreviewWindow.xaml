@@ -90,6 +90,21 @@
                     <Button x:Name="ZoomIncreaseButton" Style="{StaticResource IconButtonStyle}" Content="+" Click="ZoomIncrease_OnClick" MinWidth="40" Width="40" MinHeight="40"
                             AutomationProperties.Name="배율 높이기" />
                     <Border Width="1" Height="24" Background="{DynamicResource AppBorderBrush}" Margin="8,0" VerticalAlignment="Center" />
+                    <TextBlock Text="세밀" Margin="2,0,4,0" VerticalAlignment="Center" FontSize="11"
+                               Foreground="{DynamicResource AppMutedTextBrush}" />
+                    <Slider x:Name="FineZoomSlider" Width="116" Minimum="0.25" Maximum="8" Value="2"
+                            SmallChange="0.1" LargeChange="0.5" TickFrequency="0.1"
+                            AutoToolTipPlacement="BottomRight" AutoToolTipPrecision="1"
+                            ValueChanged="FineZoomSlider_OnValueChanged"
+                            PreviewMouseLeftButtonDown="FineZoomSlider_OnPreviewMouseLeftButtonDown"
+                            PreviewMouseLeftButtonUp="FineZoomSlider_OnPreviewMouseLeftButtonUp"
+                            ToolTip="세밀 배율 조절 · 0.1× 단위" AutomationProperties.Name="세밀 배율 조절" />
+                    <TextBox x:Name="FineZoomText" Width="48" Height="32" Margin="6,0,2,0" Padding="4,0"
+                             VerticalContentAlignment="Center" TextAlignment="Center" Text="2"
+                             PreviewKeyDown="FineZoomText_OnPreviewKeyDown" LostKeyboardFocus="FineZoomText_OnLostKeyboardFocus"
+                             ToolTip="배율 직접 입력 · 0.25부터 8까지" AutomationProperties.Name="배율 직접 입력" />
+                    <TextBlock Text="×" Margin="0,0,3,0" VerticalAlignment="Center" FontWeight="SemiBold" />
+                    <Border Width="1" Height="24" Background="{DynamicResource AppBorderBrush}" Margin="8,0" VerticalAlignment="Center" />
                     <Button x:Name="PanModeButton" Content="✋ 손 도구 · 꺼짐" Style="{StaticResource SoftAccentButtonStyle}" Click="PanMode_OnClick"
                             ToolTip="손 도구 꺼짐: 켜면 렌즈 안을 끌어 확대된 위치를 이동합니다" AutomationProperties.Name="손 도구 꺼짐, 누르면 켬" />
                 </WrapPanel>

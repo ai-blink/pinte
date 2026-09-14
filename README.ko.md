@@ -13,7 +13,7 @@
   <a href="README.ja.md">日本語</a>
 </p>
 
-> **공개 프리뷰 — v0.1.0-beta.1.** 실제 사용 테스트를 시작할 수 있는 버전이지만, 모든 Windows 앱과의 호환을 아직 보장하지는 않습니다.
+> **정식 릴리즈 — v0.1.0.** 실제 사용을 위해 배포하는 버전이며, 모든 Windows 앱과의 호환성은 계속 확인이 필요합니다.
 
 Pinte는 마우스를 주로 사용하는 사람이 Windows 화면의 필요한 부분을 확대하고, 별도 렌즈 창에서 정밀하게 클릭하거나 드래그한 다음, 키보드 없이 원래 화면으로 돌아갈 수 있도록 돕습니다.
 
@@ -28,7 +28,7 @@ Pinte는 마우스를 주로 사용하는 사람이 Windows 화면의 필요한 
 
 ## 내려받기와 실행
 
-1. [v0.1.0-beta.1 릴리즈](https://github.com/ai-blink/pinte/releases/tag/v0.1.0-beta.1)에서 `Pinte-v0.1.0-beta.1-win-x64.zip`을 내려받습니다.
+1. [v0.1.0 릴리즈](https://github.com/ai-blink/pinte/releases/tag/v0.1.0)에서 `Pinte-v0.1.0-win-x64.zip`을 내려받습니다.
 2. 쓰기 가능한 폴더에 ZIP을 풉니다.
 3. `Magnifier.App.exe`를 실행합니다.
 4. **화면 영역 지정**을 누르고 원본 테두리를 맞춘 뒤 확대 렌즈를 엽니다.
@@ -55,7 +55,7 @@ dotnet test Magnifier.slnx --nologo
 
 ## 현재 상태
 
-`v0.1.0-beta.1`은 첫 공개 프리뷰입니다. 핵심 클릭·드래그 흐름에는 자동 회귀 테스트가 있지만, 실제 대상 앱 동작은 사용하는 Windows 환경에서 추가 수동 검증이 필요합니다. 재현 가능한 문제는 [GitHub Issues](https://github.com/ai-blink/pinte/issues)에 알려 주세요.
+`v0.1.0`은 Pinte의 첫 정식 릴리즈입니다. 핵심 클릭·드래그 흐름에는 자동 회귀 테스트가 있지만, 실제 대상 앱 동작은 사용하는 Windows 환경에서 계속 확인이 필요합니다. 재현 가능한 문제는 [GitHub Issues](https://github.com/ai-blink/pinte/issues)에 알려 주세요.
 
 ## 라이선스
 

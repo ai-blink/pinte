@@ -2,15 +2,15 @@
 
 **컴팩트 렌즈·원본 표시 정책의 최신 검증은 [추가 시나리오](compact-lens-validation.md)를 따른다.** 아래의 “아주 잘됨”은 이전 영역 지정·드래그 수정 확인이며 이번 기능의 통과 근거가 아니다. 현재 기능의 UI 상태는 `NEEDS_USER_UI_CHECK`다.
 
-2026-09-13 기준 공개 버전은 [Pinte v0.1.0-beta.1](https://github.com/ai-blink/pinte/releases/tag/v0.1.0-beta.1)이다. main `83074e5`에서 Windows x64 자체 포함 ZIP을 게시했고, 표준 build는 경고 0/오류 0, 전체 자동 테스트는 116개 통과했다. 이 결과는 실제 대상 앱의 입력 전달을 보증하지 않으므로 아래 수동 확인은 계속 사용자가 직접 한다.
+2026-09-14 기준 정식 버전은 [Pinte v0.1.0](https://github.com/ai-blink/pinte/releases/tag/v0.1.0)이다. Windows x64 자체 포함 ZIP을 게시하며, 표준 build는 경고 0/오류 0, 전체 자동 테스트는 120개 통과했다. 이 결과는 실제 대상 앱의 입력 전달을 보증하지 않으므로 아래 수동 확인은 계속 사용자가 직접 한다.
 
-## 공개 프리뷰 실행
+## 정식 릴리즈 실행
 
-1. [Pinte-v0.1.0-beta.1-win-x64.zip](https://github.com/ai-blink/pinte/releases/download/v0.1.0-beta.1/Pinte-v0.1.0-beta.1-win-x64.zip)을 쓰기 가능한 폴더에 푼다.
+1. [Pinte-v0.1.0-win-x64.zip](https://github.com/ai-blink/pinte/releases/download/v0.1.0/Pinte-v0.1.0-win-x64.zip)을 쓰기 가능한 폴더에 푼다.
 2. ZIP 안의 `Magnifier.App.exe`를 실행한다. 별도 .NET 런타임은 필요하지 않다.
 3. `화면 영역 지정`을 누르고 원본 테두리를 맞춘 뒤 `이 영역 확대`로 렌즈를 연다.
 
-공개 프리뷰는 코드 서명되지 않았다. 관리자 권한이 필요한 대상 앱과의 호환은 별도 확인 대상이며, 관리자 실행만으로 입력 전달 문제가 해결됐다고 판단하지 않는다.
+정식 릴리즈도 코드 서명되지 않았다. 관리자 권한이 필요한 대상 앱과의 호환은 별도 확인 대상이며, 관리자 실행만으로 입력 전달 문제가 해결됐다고 판단하지 않는다.
 
 ## 소스 작업공간에서 관리자 모드로 열기
 

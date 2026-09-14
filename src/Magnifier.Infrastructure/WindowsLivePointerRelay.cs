@@ -150,6 +150,7 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         };
         if (kind is 0x201 or 0x204 or 0x207 or 0x20B) _hookButtons |= bit;
         if (kind is 0x202 or 0x205 or 0x208 or 0x20C) _hookButtons &= ~bit;
+        var duplicateLeftDown = IsDuplicateLeftButtonDown(kind, previousButtons);
         var intercepted = _intercepting || _draining || (_state.IsEnabled && kind == 0x201 && previousButtons == 0
             && _viewport is { } view && view.Contains(new(mouse.Point.X, mouse.Point.Y)));
         if (intercepted && !_draining) _intercepting = true;
@@ -157,10 +158,16 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         var hasPrevious = GetCursorPos(out var previous);
         // Do not call SendInput/SetWindowLong from this callback. Nested input routing
         // can deliver the original button before the hook's suppression result returns.
-        _commands.Enqueue(() => ProcessMouse(kind, mouse, intercepted, previous, hasPrevious), leftRelease: kind == 0x202);
-        if (!PostThreadMessage(_threadId, CommandMessage, 0, 0)) _inputPostFailed = true;
+        if (!duplicateLeftDown)
+        {
+            _commands.Enqueue(() => ProcessMouse(kind, mouse, intercepted, previous, hasPrevious), leftRelease: kind == 0x202);
+            if (!PostThreadMessage(_threadId, CommandMessage, 0, 0)) _inputPostFailed = true;
+        }
         return intercepted && !passMove ? 1 : CallNextHookEx(0, code, message, data);
     }
+
+    internal static bool IsDuplicateLeftButtonDown(uint kind, int previousButtons) =>
+        kind == 0x201 && (previousButtons & 1) != 0;
 
     private void ProcessMouse(uint kind, MouseHookData mouse, bool intercepted, NativePoint previous, bool hasPrevious)
     {
@@ -219,6 +226,9 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
             switch (kind)
             {
                 case 0x201:
+                    // A duplicate native Down must not begin the same target press twice.
+                    // The hook normally filters it, and this keeps a queued edge harmless.
+                    if (_state.IsPressed) break;
                     BeginCaptureMonitoring(target);
                     _state.Begin(target);
                     break;
@@ -246,6 +256,7 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
     {
         var wasRequested = _state.IsRequested;
         var wasPressed = _state.IsPressed;
+        var staleFrame = reason == "화면 갱신 대기 · 조작 자동 재개 대기";
         var restore = _relaying;
         var ownsPress = restore || _intercepting || _draining || _state.IsPressed;
         _draining |= ownsPress && (_leftHeld || OtherHeld);
@@ -263,7 +274,8 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
             // Up is sent before this move, preventing a long stroke towards the toolbar.
             if (restore && !_state.IsPressed)
                 _output.MoveTo(new ScreenPoint((int)Math.Round(_logical.X), (int)Math.Round(_logical.Y)));
-            if ((wasRequested || failed) && !_state.IsRequested) RecordStop(reason, wasPressed);
+            if (((wasRequested || failed) && !_state.IsRequested) || (staleFrame && wasRequested))
+                RecordStop(reason, wasPressed, staleFrame);
             _captureMonitor.Reset();
             Publish(reason);
         }
@@ -274,7 +286,13 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         try
         {
             if (_inputPostFailed) { _inputPostFailed = false; StopInternal("입력 큐 전달 실패 · 조작 중지"); return; }
-            if (_state.IsPressed && !_state.IsEnabled) { _state.Stop(); Publish(_message); }
+            if (_state.IsPressed && !_state.IsEnabled)
+            {
+                var wasRequested = _state.IsRequested;
+                _state.Stop();
+                if (wasRequested) RecordStop("입력 상태 불일치 · 조작 중지", wasPressed: true);
+                Publish(_message);
+            }
             if (!_state.IsRequested || _suspended) return;
             if ((GetAsyncKeyState(0x1B) & 0x8000) != 0) { StopInternal("Esc · 보기로 전환"); return; }
             var desktop = OpenInputDesktop(0, false, 1);

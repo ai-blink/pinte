@@ -18,6 +18,7 @@ internal sealed class RecordingRelay : ILivePointerRelay
     public List<string> Calls { get; } = [];
     public List<LensViewport> Configurations { get; } = [];
     public Func<Task>? PauseCallback { get; set; }
+    public Exception? ConfigureFailure { get; set; }
     public Exception? SuspensionFailure { get; set; }
     public Exception? StopFailure { get; set; }
     public int StartCount { get; private set; }
@@ -28,7 +29,7 @@ internal sealed class RecordingRelay : ILivePointerRelay
     {
         Calls.Add("configure");
         Configurations.Add(viewport);
-        return Task.CompletedTask;
+        return ConfigureFailure is { } failure ? Task.FromException(failure) : Task.CompletedTask;
     }
     public Task<bool> StartAsync() { StartCount++; Calls.Add("start"); return Task.FromResult(true); }
     public Task PauseAsync(string reason)

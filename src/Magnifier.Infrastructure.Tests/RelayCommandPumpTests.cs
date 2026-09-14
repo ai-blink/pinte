@@ -7,6 +7,15 @@ namespace Magnifier.Infrastructure.Tests;
 public sealed class RelayCommandPumpTests
 {
     [TestMethod]
+    public void DuplicateLeftDown_IsFilteredBeforeRelayProcessing()
+    {
+        Assert.IsTrue(WindowsLivePointerRelay.IsDuplicateLeftButtonDown(0x201, 1));
+        Assert.IsTrue(WindowsLivePointerRelay.IsDuplicateLeftButtonDown(0x201, 3));
+        Assert.IsFalse(WindowsLivePointerRelay.IsDuplicateLeftButtonDown(0x201, 0));
+        Assert.IsFalse(WindowsLivePointerRelay.IsDuplicateLeftButtonDown(0x202, 1));
+    }
+
+    [TestMethod]
     public void ObservedUp_CompletesBeforeTimerCanCancelRequestForReleasedCapture()
     {
         var input = new RecordingInput();

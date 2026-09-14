@@ -85,7 +85,7 @@ public sealed class SettingsWindowTests
         var window = new SettingsWindow(MagnifierSettings.Default, new NoDesktopCapture());
         try
         {
-            Assert.AreEqual("버전 0.1.0-beta.1", Control<TextBlock>(window, "VersionText").Text);
+            Assert.AreEqual("버전 0.1.0", Control<TextBlock>(window, "VersionText").Text);
         }
         finally { window.Close(); }
         return Task.CompletedTask;

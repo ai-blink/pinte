@@ -265,6 +265,8 @@ public partial class SelectionPreviewWindow : Window
         TitleThumb.IsEnabled = editingAllowed;
         ZoomDecreaseButton.IsEnabled = editingAllowed && _currentRegion.HasValue;
         ZoomIncreaseButton.IsEnabled = ZoomDecreaseButton.IsEnabled;
+        FineZoomSlider.IsEnabled = ZoomDecreaseButton.IsEnabled;
+        FineZoomText.IsEnabled = ZoomDecreaseButton.IsEnabled;
         PanModeButton.IsEnabled = editingAllowed && _currentRegion.HasValue && !AuxiliaryTools.IsExpanded;
         RegionSettingsButton.IsEnabled = editingAllowed && _currentRegion.HasValue;
         AppSettingsButton.IsEnabled = !manipulationLocked;
@@ -371,6 +373,7 @@ public partial class SelectionPreviewWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _closed = true;
+        StopGeometryRetry();
         _statusTimer.Stop();
         _relay.StatusChanged -= Relay_OnStatusChanged;
         try { if (_captureExcluded) _screenCapture.SetWindowCaptureExclusion(WindowHandle, false); }

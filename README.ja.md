@@ -13,7 +13,7 @@
   <a href="README.ja.md">日本語</a>
 </p>
 
-> **パブリックプレビュー — v0.1.0-beta.1。** 実際のテストに使用できますが、すべての Windows アプリとの互換性はまだ保証していません。
+> **正式リリース — v0.1.0。** 日常的な実使用に向けた版ですが、すべての Windows アプリとの互換性は引き続き確認が必要です。
 
 Pinte は、主にマウスを使う人が Windows 画面の必要な部分を拡大し、独立したレンズウィンドウで正確にクリックまたはドラッグして、キーボードなしで元の画面へ戻れるようにするアプリです。
 
@@ -28,7 +28,7 @@ Pinte は、主にマウスを使う人が Windows 画面の必要な部分を�
 
 ## ダウンロードと実行
 
-1. [v0.1.0-beta.1 リリース](https://github.com/ai-blink/pinte/releases/tag/v0.1.0-beta.1) から `Pinte-v0.1.0-beta.1-win-x64.zip` をダウンロードします。
+1. [v0.1.0 リリース](https://github.com/ai-blink/pinte/releases/tag/v0.1.0) から `Pinte-v0.1.0-win-x64.zip` をダウンロードします。
 2. ZIP を書き込み可能なフォルダーに展開します。
 3. `Magnifier.App.exe` を実行します。
 4. **Screen area** を選び、ソース枠を調整してから拡大レンズを開きます。
@@ -55,7 +55,7 @@ dotnet test Magnifier.slnx --nologo
 
 ## 現在の状態
 
-`v0.1.0-beta.1` は最初のパブリックプレビューです。主要なクリック・ドラッグフローには自動回帰テストがありますが、実際の対象アプリでの動作は、利用する Windows 環境で手動検証が必要です。再現可能な問題は [GitHub Issues](https://github.com/ai-blink/pinte/issues) で報告してください。
+`v0.1.0` は Pinte の最初の正式リリースです。主要なクリック・ドラッグフローには自動回帰テストがありますが、実際の対象アプリでの動作は、利用する Windows 環境で引き続き検証が必要です。再現可能な問題は [GitHub Issues](https://github.com/ai-blink/pinte/issues) で報告してください。
 
 ## ライセンス
 

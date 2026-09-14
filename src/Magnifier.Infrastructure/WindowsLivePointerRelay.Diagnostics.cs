@@ -7,7 +7,7 @@ public sealed partial class WindowsLivePointerRelay
     private static readonly object StopLogLock = new();
     private long _stopSequence;
 
-    private void RecordStop(string reason, bool wasPressed)
+    private void RecordStop(string reason, bool wasPressed, bool staleFrame = false)
     {
         // No file IO on the hook/message thread. A logging failure must never affect release.
         var json = JsonSerializer.Serialize(new
@@ -16,9 +16,15 @@ public sealed partial class WindowsLivePointerRelay
             At = DateTimeOffset.UtcNow,
             EngineBuild = typeof(WindowsLivePointerRelay).Assembly.ManifestModule.ModuleVersionId,
             Reason = reason,
+            StaleFrame = staleFrame,
             WasPressed = wasPressed,
             IsPressed = _state.IsPressed,
             InputRequested = _state.IsRequested,
+            InputEnabled = _state.IsEnabled,
+            IsSuspended = _suspended,
+            IsDraining = _draining,
+            IsIntercepting = _intercepting,
+            FrameIsFresh = FrameIsFresh(),
             PhysicalLeftHeld = _leftHeld,
             HookButtons = _hookButtons,
             PendingLeftRelease = _commands.HasPendingLeftRelease,

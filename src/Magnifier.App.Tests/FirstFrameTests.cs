@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using Magnifier.Core;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -69,6 +70,92 @@ public sealed class FirstFrameTests
         Assert.IsNull(((Image)host.Lens.FindName("CapturedImage")).Source);
         Assert.AreEqual(0, host.Relay.FrameCount);
     });
+
+    [TestMethod]
+    public Task ViewportUnavailable_RetriesGeometryThenAcceptsOnlyANewerFrame() => StaTest.Run(async () =>
+    {
+        using var host = new HiddenWindows();
+        var lens = host.Lens;
+        var source = new ScreenRegion(20, 30, 80, 60);
+        PrepareOffscreenWindow(lens);
+        lens.Show();
+        await Dispatcher.Yield(DispatcherPriority.Loaded);
+
+        var image = (Image)lens.FindName("CapturedImage");
+        image.Visibility = Visibility.Collapsed;
+        lens.UpdateLayout();
+        await lens.SetSourceAsync(source, (nint)1);
+        lens.UpdateCapture(CreateFrame(source, 47), true);
+
+        Assert.IsTrue(PrivateAccess.Get<bool>(lens, "_geometryPending"),
+            "일시적으로 표시 viewport를 계산할 수 없으면 새 프레임을 입력 재개 근거로 쓰면 안 된다.");
+        var retryTimer = PrivateAccess.Get<DispatcherTimer?>(lens, "_geometryRetryTimer");
+        Assert.IsNotNull(retryTimer, "viewport 실패는 후속 배치 재시도를 예약해야 한다.");
+        Assert.IsTrue(retryTimer.IsEnabled);
+        Assert.AreEqual(0, host.Relay.FrameCount);
+
+        image.Visibility = Visibility.Visible;
+        lens.UpdateLayout();
+        await WaitUntilAsync(() => !PrivateAccess.Get<bool>(lens, "_geometryPending"),
+            "viewport가 다시 유효해진 뒤 geometry 대기가 해제되지 않았다.");
+
+        Assert.AreEqual(0, host.Relay.FrameCount,
+            "geometry 완료 전 표시된 프레임을 나중에 소급해 입력 재개 근거로 쓰면 안 된다.");
+        lens.UpdateCapture(CreateFrame(source, 93), true);
+
+        Assert.AreEqual(1, host.Relay.FrameCount,
+            "재시도로 geometry가 완료되면 그 다음 캡처가 freshness를 갱신해야 한다.");
+    });
+
+    [TestMethod]
+    public Task GeometryConfigureFailure_RetriesBeforeAcceptingANewerFrame() => StaTest.Run(async () =>
+    {
+        using var host = new HiddenWindows();
+        var lens = host.Lens;
+        var source = new ScreenRegion(20, 30, 80, 60);
+        PrepareOffscreenWindow(lens);
+        lens.Show();
+        await Dispatcher.Yield(DispatcherPriority.Loaded);
+        await lens.SetSourceAsync(source, (nint)1);
+        lens.UpdateCapture(CreateFrame(source, 47), true);
+        await WaitUntilAsync(() => !PrivateAccess.Get<bool>(lens, "_geometryPending"),
+            "초기 렌즈 viewport를 구성하지 못했다.");
+
+        host.Relay.ConfigureFailure = new InvalidOperationException("일시 relay 구성 실패");
+        lens.SetZoom(2.5);
+        await WaitUntilAsync(() => host.Relay.Calls.Count(call => call == "configure") >= 2,
+            "relay 구성 실패를 관찰하지 못했다.");
+        Assert.IsNotNull(PrivateAccess.Get<DispatcherTimer>(lens, "_geometryRetryTimer"),
+            "relay 구성 실패 뒤 geometry 재시도가 예약되지 않았다.");
+        Assert.IsTrue(PrivateAccess.Get<bool>(lens, "_geometryPending"));
+
+        host.Relay.ConfigureFailure = null;
+        await WaitUntilAsync(() => !PrivateAccess.Get<bool>(lens, "_geometryPending"),
+            "relay 구성 복구 뒤 geometry 대기가 해제되지 않았다.");
+        var framesBeforeRecovery = host.Relay.FrameCount;
+        lens.UpdateCapture(CreateFrame(source, 93), true);
+
+        Assert.AreEqual(framesBeforeRecovery + 1, host.Relay.FrameCount,
+            "geometry 재시도 완료 뒤 새 캡처만 freshness를 갱신해야 한다.");
+    });
+
+    private static void PrepareOffscreenWindow(SelectionPreviewWindow lens)
+    {
+        lens.ShowInTaskbar = false;
+        lens.ShowActivated = false;
+        lens.Left = -32000;
+        lens.Top = -32000;
+    }
+
+    private static async Task WaitUntilAsync(Func<bool> condition, string failureMessage)
+    {
+        for (var attempt = 0; attempt < 80; ++attempt)
+        {
+            if (condition()) return;
+            await Task.Delay(25);
+        }
+        Assert.Fail(failureMessage);
+    }
 
     private static CapturedFrame CreateFrame(ScreenRegion region, byte value)
     {

@@ -13,7 +13,7 @@
   <a href="README.ja.md">日本語</a>
 </p>
 
-> **公开预览版 — v0.1.0-beta.1。** 此版本已经可以进行实际测试，但尚未保证与所有 Windows 应用兼容。
+> **正式版 — v0.1.0。** 此版本适合日常实际使用，但仍需持续验证与各类 Windows 应用的兼容性。
 
 Pinte 帮助主要使用鼠标的用户放大 Windows 桌面的指定区域，通过独立的放大镜窗口进行精确点击或拖动，并且无需键盘即可返回原始屏幕。
 
@@ -28,7 +28,7 @@ Pinte 帮助主要使用鼠标的用户放大 Windows 桌面的指定区域，�
 
 ## 下载与运行
 
-1. 从 [v0.1.0-beta.1 发布页](https://github.com/ai-blink/pinte/releases/tag/v0.1.0-beta.1)下载 `Pinte-v0.1.0-beta.1-win-x64.zip`。
+1. 从 [v0.1.0 发布页](https://github.com/ai-blink/pinte/releases/tag/v0.1.0)下载 `Pinte-v0.1.0-win-x64.zip`。
 2. 将 ZIP 解压到可写入的文件夹。
 3. 运行 `Magnifier.App.exe`。
 4. 选择 **Screen area**，调整源区域边框，然后打开放大镜。
@@ -55,7 +55,7 @@ dotnet test Magnifier.slnx --nologo
 
 ## 当前状态
 
-`v0.1.0-beta.1` 是首个公开预览版。核心点击与拖动流程已有自动回归测试，但真实目标应用中的行为仍需在您使用的 Windows 环境中进行手动验证。可复现的问题请提交至 [GitHub Issues](https://github.com/ai-blink/pinte/issues)。
+`v0.1.0` 是 Pinte 的首个正式版。核心点击与拖动流程已有自动回归测试，但真实目标应用中的行为仍需在您使用的 Windows 环境中持续验证。可复现的问题请提交至 [GitHub Issues](https://github.com/ai-blink/pinte/issues)。
 
 ## 许可证
 
