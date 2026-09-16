@@ -19,6 +19,12 @@
     <DefineConstants>$(DefineConstants);INPUT_TRANSFORM_TRIAL</DefineConstants>
   </PropertyGroup>
 
+  <!-- WPF needs native runtime libraries during window-hook initialization. Keep every
+       single-file Windows publish self-extracting so the release executable is runnable. -->
+  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true'">
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+
   <ItemGroup>
     <Resource Include="Assets\Pinte.png" />
     <ProjectReference Include="..\Magnifier.Core\Magnifier.Core.csproj" />
