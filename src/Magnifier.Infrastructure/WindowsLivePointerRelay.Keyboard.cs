@@ -23,10 +23,12 @@ public sealed partial class WindowsLivePointerRelay
         return CallNextHookEx(0, code, message, data);
     }
 
-    private void InstallKeyboardHook()
+    private bool InstallKeyboardHook(out int error)
     {
         if (_keyboardHook != 0) { UnhookWindowsHookEx(_keyboardHook); _keyboardHook = 0; }
         _keyboardHook = SetWindowsHookEx(WhKeyboardLl, _keyboardProc, GetModuleHandle(null), 0);
+        error = _keyboardHook == 0 ? Marshal.GetLastWin32Error() : 0;
+        return _keyboardHook != 0;
     }
 
     internal static bool IsPhysicalEscapeKeyDown(uint message, uint virtualKey, uint flags) =>

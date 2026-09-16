@@ -30,11 +30,15 @@ public sealed partial class WindowsLivePointerRelay
     private void RecordStop(string reason, bool wasPressed, bool staleFrame = false) =>
         Append(Snapshot("stop", reason, wasPressed, staleFrame));
 
-    private void RecordHookReinstall(bool installed, int error, int strikes, bool missedRelease, bool wasPressed, int osButtons) =>
-        Append(Snapshot("hook-reinstall", installed ? "입력 훅 재설치" : "입력 훅 재설치 실패", wasPressed, false) with
+    private void RecordHookWorkerRestart(string reason, int? strikes = null, int? osButtons = null) =>
+        Append(Snapshot("hook-worker-restart", reason, wasPressed: _state.IsPressed, staleFrame: false) with
         {
-            HookInstalled = installed, Win32Error = error, Strikes = strikes, MissedRelease = missedRelease, OsButtons = osButtons,
-            RecoveryAttempts = _hookRecovery.Attempts, RecoveryMaximumAttempts = _hookRecovery.MaximumAttempts
+            HookInstalled = _hook != 0,
+            Strikes = strikes,
+            OsButtons = osButtons,
+            RecoveryAttempts = _hookRecovery.Attempts,
+            RecoveryMaximumAttempts = _hookRecovery.MaximumAttempts,
+            RecoveryAction = _workerLifecycle.ReplacementPending ? "replace-worker" : "worker-started"
         });
 
     private void RecordHookLoss(string reason, int osButtons, string action) =>

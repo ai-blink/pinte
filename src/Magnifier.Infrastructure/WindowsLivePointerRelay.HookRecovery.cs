@@ -84,18 +84,11 @@ public sealed partial class WindowsLivePointerRelay
             StopInternal("입력 훅 복구 시도가 60초 이상 끊기지 않고 반복되어 조작을 중지했습니다", failed: true);
             return;
         }
-        var installed = InstallHook(out var error);
-        _hookLiveness.NoteReinstalled(now);
-        SynchronizeObservedButtons(buttons);
-        if (buttons == 0) _draining = false;
-        RecordHookReinstall(installed, error, strikes, false, false, buttons);
-        if (!installed)
-        {
-            _hookRecoveryExhausted = true;
-            StopInternal($"입력 훅 재설치 실패 · 조작 중지 (Win32 {error})", failed: true);
-            return;
-        }
-        if (_state.IsRequested) Publish("입력 훅 재설치 · 조작 자동 재개");
+        // Windows binds a low-level hook to this message thread. The log showed a non-zero
+        // SetWindowsHookEx result followed by another silent callback stream, so replacing only
+        // the handle here is not recovery. Exit this worker and let its finally create a fresh
+        // STA message thread after all old handles have been unhooked.
+        RequestHookWorkerReplacement(strikes, buttons);
     }
 
     private bool PrepareNewInputSession()
@@ -114,6 +107,23 @@ public sealed partial class WindowsLivePointerRelay
         _hookLiveness.NoteReinstalled(Environment.TickCount64);
         SynchronizeObservedButtons(ReadAllButtons());
         return true;
+    }
+
+    private Task? RequestHookWorkerReplacement(int strikes, int buttons)
+    {
+        lock (_workerGate)
+        {
+            if (_disposed) return null;
+            if (_workerLifecycle.ReplacementPending) return _replacementReady?.Task;
+            if (!_workerLifecycle.TryBeginReplacement()) return null;
+            _replacementReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            _ready = _replacementReady;
+            _threadId = 0;
+        }
+        RecordHookWorkerRestart("입력 훅 응답 없음 · 새 메시지 스레드 요청", strikes, buttons);
+        Publish("입력 훅 응답 없음 · 새 입력 스레드로 복구합니다");
+        PostQuitMessage(0);
+        return _replacementReady.Task;
     }
 
     private void SynchronizeObservedButtons(int buttons)

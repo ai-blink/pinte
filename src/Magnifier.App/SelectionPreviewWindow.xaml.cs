@@ -349,12 +349,13 @@ public partial class SelectionPreviewWindow : Window
         await FinishMoveAsync();
     }
 
-    private async void SelectionPreviewWindow_OnPreviewKeyDown(object sender, KeyEventArgs e)
+    private void SelectionPreviewWindow_OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key != Key.Escape) return;
+        // The relay's global low-level keyboard hook distinguishes a physical Escape from a
+        // virtual keyboard's injected Escape. WPF does not expose that provenance, so it must
+        // only consume this focused key and leave cancellation to the Infrastructure boundary.
         e.Handled = true;
-        try { await StopAsync("Esc · 보기로 전환"); }
-        catch { }
     }
 
     protected override void OnSourceInitialized(EventArgs e)

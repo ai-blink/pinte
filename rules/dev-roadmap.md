@@ -2,7 +2,7 @@
 
 - 2026-09-14 공개 기준: [Pinte v0.1.0 정식 릴리즈](https://github.com/ai-blink/pinte/releases/tag/v0.1.0)를 태그 `v0.1.0`과 Windows x64 자체 포함 ZIP으로 배포한다. 표준 build 0/0·자동 테스트 120개 통과는 릴리즈 기준이며, 실제 UI와 대상 앱 호환성은 `NEEDS_USER_UI_CHECK`다.
 
-- [ ] 훅 워치독·단일 인스턴스 후속 확인: D-029는 60초 공백 뒤 복구 예산 초기화와 소유 press release/stop을 보장한다. 물리 Esc만 취소하고 주입 Esc는 무시하며, `relay-path`의 `session-rearmed`·callback·큐·대상 Down으로 차단 지점을 판별한다. build 0/0·총 137 테스트 통과. 다음은 key-demo-osk를 켠 일반 대상 재현의 `NEEDS_USER_UI_CHECK`다. [기록](../notes/runs/2026-09-16-hook-recovery-path-trace.md).
+- [ ] 훅 워치독·단일 인스턴스 후속 확인: D-030은 확인된 무응답에서 같은 워커의 handle 재설치를 금지하고 old STA 훅 워커 정리 뒤 새 워커를 설치한다. 소유 press release/stop·물리 Esc만 취소·주입 Esc 무시·Esc 훅 설치 fail-closed를 유지하며 `hook-worker-restart`와 `relay-path`로 경계를 남긴다. build 0/0·총 139 테스트 통과. 다음은 key-demo-osk를 켠 일반 대상 장기 재현의 `NEEDS_USER_UI_CHECK`다.
 
 - [ ] 설정 모달 후속 확인: 초기화 순서 오류 수정은 전체 116개 자동 테스트에 포함돼 통과했다. 진입 창/일반·컴팩트 설정 열기, 메뉴 전환·변경 반영·닫은 뒤 재개는 `NEEDS_USER_UI_CHECK`다. [기록](../notes/runs/2026-09-12-settings-modal-init-fix.md).
 

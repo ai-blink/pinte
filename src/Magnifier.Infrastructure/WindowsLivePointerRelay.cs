@@ -11,11 +11,11 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
     private readonly WindowsPointerInput _output = new();
     private readonly LensInputState _state;
     private readonly RelayCommandPump _commands = new();
-    private readonly TaskCompletionSource _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly object _workerGate = new();
+    private TaskCompletionSource _ready = null!;
     private readonly HookProc _mouseProc;
     private readonly HookProc _keyboardProc;
     private readonly Dictionary<nint, nint> _savedStyles = [];
-    private readonly Thread _thread;
     private LensViewport? _viewport;
     private nint[] _windows = [];
     private uint _threadId;
@@ -29,9 +29,12 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
     private readonly HookLivenessMonitor _hookLiveness = new();
     private readonly HookRecoveryLimiter _hookRecovery = new();
     private readonly HookLossRecoveryState _hookLossRecovery = new();
+    private readonly HookWorkerLifecycle _workerLifecycle = new();
     private nint _hook, _keyboardHook;
     private bool _physicalEscapeRequested;
     private bool _hookRecoveryExhausted;
+    private bool _startWhenWorkerReady;
+    private TaskCompletionSource? _replacementReady;
     private string _message = "보기 · 실제 입력 꺼짐";
 
     public WindowsLivePointerRelay()
@@ -40,9 +43,8 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         _mouseProc = MouseHook;
         _keyboardProc = KeyboardHook;
         // A starved hook thread trips LowLevelHooksTimeout, after which Windows drops the hook.
-        _thread = new Thread(Run) { IsBackground = true, Name = "Magnifier pointer relay", Priority = ThreadPriority.Highest };
-        _thread.SetApartmentState(ApartmentState.STA);
-        _thread.Start();
+        // StartWorker can later replace that thread without discarding the requested session.
+        StartWorker();
     }
 
     public event Action<RelayStatus>? StatusChanged;
@@ -60,8 +62,19 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
     public async Task<bool> StartAsync()
     {
         var armed = false;
+        Task? replacementReady = null;
         await Dispatch(() =>
         {
+            // A recovery budget exhaustion means the existing message thread was unable to
+            // receive callbacks after successful handle reinstalls. A new lens request must not
+            // put another handle onto that known-bad thread; wait for the successor instead.
+            if (!_state.IsRequested && _hookRecoveryExhausted)
+            {
+                _startWhenWorkerReady = true;
+                replacementReady = RequestHookWorkerReplacement(0, ReadAllButtons());
+                Publish("입력 훅 새 스레드 준비 대기 · 완료 뒤 조작을 자동 시작합니다");
+                return;
+            }
             if (!_state.IsRequested && !PrepareNewInputSession())
             {
                 RecordRelayPath("session-start-failed", "입력 세션 준비 실패");
@@ -74,6 +87,11 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
                 armed ? "입력 세션 준비됨" : "입력 세션이 버튼 해제 또는 최신 화면을 기다림");
             Publish(armed ? "조작 켜짐 · 렌즈 안으로 이동하세요" : "버튼 해제와 최신 화면을 기다린 뒤 자동 재개합니다");
         });
+        if (replacementReady is not null)
+        {
+            await replacementReady.ConfigureAwait(false);
+            await Dispatch(() => armed = _state.IsEnabled);
+        }
         return armed;
     }
 
@@ -110,30 +128,100 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
 
     private async Task Dispatch(Action action)
     {
-        await _ready.Task.ConfigureAwait(false);
+        TaskCompletionSource ready;
+        lock (_workerGate) ready = _ready;
+        await ready.Task.ConfigureAwait(false);
         if (_disposed) throw new ObjectDisposedException(nameof(WindowsLivePointerRelay));
         var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        _commands.Enqueue(() => { try { action(); done.SetResult(); } catch (Exception ex) { done.SetException(ex); } });
-        if (!PostThreadMessage(_threadId, CommandMessage, 0, 0))
-            throw new InvalidOperationException("입력 스레드에 요청을 전달하지 못했습니다.");
+        var accepted = 1;
+        _commands.Enqueue(() =>
+        {
+            if (Interlocked.Exchange(ref accepted, 0) == 0) return;
+            try { action(); done.SetResult(); } catch (Exception ex) { done.SetException(ex); }
+        });
+        uint threadId;
+        bool replacementPending;
+        lock (_workerGate)
+        {
+            threadId = _threadId;
+            replacementPending = _workerLifecycle.ReplacementPending;
+        }
+        if (threadId == 0 || !PostThreadMessage(threadId, CommandMessage, 0, 0))
+        {
+            // A scheduled successor owns the same queue and drains it from its timer.
+            // Do not reject a UI command merely because the old hook worker is exiting.
+            if (!replacementPending)
+            {
+                Interlocked.Exchange(ref accepted, 0);
+                throw new InvalidOperationException("입력 스레드에 요청을 전달하지 못했습니다.");
+            }
+        }
         await done.Task.ConfigureAwait(false);
     }
 
-    private void Run()
+    private void StartWorker(TaskCompletionSource? ready = null)
+    {
+        ready ??= new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var thread = new Thread(() => Run(ready))
+        {
+            IsBackground = true,
+            Name = $"Magnifier pointer relay #{_workerLifecycle.Generation}",
+            Priority = ThreadPriority.Highest
+        };
+        thread.SetApartmentState(ApartmentState.STA);
+        lock (_workerGate)
+        {
+            _ready = ready;
+            _threadId = 0;
+        }
+        thread.Start();
+    }
+
+    private void Run(TaskCompletionSource ready)
     {
         _threadId = GetCurrentThreadId();
         PeekMessage(out _, 0, 0, 0, 0);
-        if (!InstallHook(out var hookError)) { _ready.SetException(new Win32Exception(hookError, "마우스 중계 설치 실패")); return; }
-        InstallKeyboardHook();
+        if (!InstallHook(out var hookError))
+        {
+            StopInternal($"마우스 입력 훅 설치 실패 · 조작 중지 (Win32 {hookError})", failed: true);
+            ready.TrySetException(new Win32Exception(hookError, "마우스 중계 설치 실패"));
+            return;
+        }
+        if (!InstallKeyboardHook(out var keyboardError))
+        {
+            UnhookWindowsHookEx(_hook);
+            _hook = 0;
+            StopInternal($"Esc 입력 훅 설치 실패 · 조작 중지 (Win32 {keyboardError})", failed: true);
+            ready.TrySetException(new Win32Exception(keyboardError, "Esc 입력 훅 설치 실패"));
+            return;
+        }
         var timer = SetTimer(0, 0, 50, 0);
         if (timer == 0)
         {
             if (_keyboardHook != 0) UnhookWindowsHookEx(_keyboardHook);
             UnhookWindowsHookEx(_hook);
-            _ready.SetException(new Win32Exception(Marshal.GetLastWin32Error(), "입력 해제 타이머 설치 실패"));
+            _keyboardHook = 0;
+            _hook = 0;
+            var error = Marshal.GetLastWin32Error();
+            StopInternal($"입력 상태 타이머 설치 실패 · 조작 중지 (Win32 {error})", failed: true);
+            ready.TrySetException(new Win32Exception(error, "입력 해제 타이머 설치 실패"));
             return;
         }
-        _ready.SetResult();
+        _hookLiveness.NoteReinstalled(Environment.TickCount64);
+        _hookLossRecovery.Reset();
+        SynchronizeObservedButtons(ReadAllButtons());
+        if (_startWhenWorkerReady)
+        {
+            _startWhenWorkerReady = false;
+            _hookRecoveryExhausted = false;
+            _hookRecovery.Reset();
+            _state.RequestStart();
+            TryResumeInput();
+            RecordRelayPath(_state.IsEnabled ? "session-armed" : "session-waiting",
+                _state.IsEnabled ? "새 입력 훅 스레드에서 입력 세션 준비됨" : "새 입력 훅 스레드가 버튼 해제를 기다림");
+        }
+        ready.TrySetResult();
+        if (_state.IsRequested) Publish("입력 훅 스레드 준비됨 · 조작 자동 재개");
         try
         {
             while (GetMessage(out var msg, 0, 0, 0) > 0)
@@ -143,10 +231,30 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         }
         finally
         {
-            try { StopInternal("입력 중계 종료"); } catch { }
             KillTimer(0, timer);
             if (_keyboardHook != 0) UnhookWindowsHookEx(_keyboardHook);
             UnhookWindowsHookEx(_hook);
+            _keyboardHook = 0;
+            _hook = 0;
+            TaskCompletionSource? replacement = null;
+            lock (_workerGate)
+            {
+                if (!_disposed && _workerLifecycle.ReplacementPending)
+                {
+                    replacement = _replacementReady;
+                    _replacementReady = null;
+                    _workerLifecycle.CompleteReplacement();
+                }
+            }
+            if (replacement is not null)
+            {
+                RecordHookWorkerRestart("입력 훅 스레드 교체 시작");
+                StartWorker(replacement);
+            }
+            else
+            {
+                try { StopInternal("입력 중계 종료"); } catch { }
+            }
         }
     }
 
