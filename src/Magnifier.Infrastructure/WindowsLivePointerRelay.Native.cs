@@ -12,6 +12,8 @@ public sealed partial class WindowsLivePointerRelay
     [StructLayout(LayoutKind.Sequential)] private struct NativePoint { public int X, Y; }
     [StructLayout(LayoutKind.Sequential)] private struct MouseHookData
     { public NativePoint Point; public uint MouseData, Flags, Time; public nint ExtraInfo; }
+    [StructLayout(LayoutKind.Sequential)] private struct KeyboardHookData
+    { public uint VirtualKey, ScanCode, Flags, Time; public nint ExtraInfo; }
     [StructLayout(LayoutKind.Sequential)] private struct Message
     { public nint Hwnd; public uint Id; public nuint WParam; public nint LParam; public uint Time; public NativePoint Point; public uint Private; }
     [StructLayout(LayoutKind.Sequential)] private struct GuiThreadInfo

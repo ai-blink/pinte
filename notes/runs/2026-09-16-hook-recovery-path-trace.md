@@ -16,15 +16,17 @@
 - `HookRecoveryLimiter`는 마지막 복구 시도 뒤 60초 이상 공백이 있을 때만 재설치 예산을 초기화한다. 수명 누적 12회로 영구 비활성화하지 않는다.
 - `HookLossRecoveryState`는 확정 훅 소실 중 relay가 누름을 소유하면 물리 버튼 해제를 기다리고, release 뒤 `StopInternal`을 통해 합성 Up 한 번과 stop을 보장한다.
 - 복구 예산 소진·재설치 실패는 상태를 조용히 유지하지 않고 stop/release와 구조화 `hook-recovery-exhausted` 진단으로 끝낸다. 다음 입력 세션은 복구 상태를 새로 준비한다.
-- `relay-path` 진단은 세션 armed 1회와 렌즈 안 왼쪽 누름당 최대 세 경계만 기록한다: hook enqueue/post 결과, command dequeue, 대상 Down 시작 또는 거절. 정상 move는 기록하지 않는다.
+- `relay-path` 진단은 세션 armed·자동 재개와 렌즈 안 왼쪽 누름당 최대 세 경계를 기록한다: hook enqueue/post 결과, command dequeue, 대상 Down 시작 또는 거절. 정상 move는 기록하지 않는다.
+- Esc 취소는 `WH_KEYBOARD_LL`에서 실제 키보드 Down만 받고 `LLKHF_INJECTED`가 있는 주입 Esc는 무시한다. 가상 키보드의 Esc 주입이 relay 요청을 취소하지 않게 한다.
 
 ## 검증과 배포
 
 - `dotnet build Magnifier.slnx --nologo` — 경고 0, 오류 0.
-- `dotnet test Magnifier.slnx --nologo` — Core 60, Infrastructure 26, App 48, 총 134 통과.
+- `dotnet test Magnifier.slnx --nologo` — Core 60, Infrastructure 29, App 48, 총 137 통과.
 - publish: `dotnet publish src/Magnifier.App/Magnifier.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o artifacts/release/Pinte-relay-path-trace-win-x64 --nologo`.
 - 사용자 승인으로 이전 Pinte를 종료하고 `C:\app\Magnifier.App.exe`를 SHA-256 `12DAF61C2BD09F03F08EB9FEA123EDD1EBEEB6676DFB0544494AD9553CF92B01` publish와 일치하게 교체·재실행했다. 이전 실행본은 `C:\app\Magnifier.App.pre-path-trace-20260916-210652.exe`로 보존했다.
+- 후속 publish는 `artifacts/release/Pinte-physical-escape-rearm-win-x64`이며 SHA-256 `46F4768DA88EF8701B9BBE6D8B26A42AADC65986E00BE1852185BA0CBC401872`다. 종료 상태에서 `C:\app\Magnifier.App.exe`를 교체하고 PID 46976으로 시작했으며, 직전 실행본은 `C:\app\Magnifier.App.pre-physical-escape-rearm-20260916-234105.exe`로 보존했다.
 
 ## 남은 수락
 
-새 Pinte를 실행한 상태로 key-demo-osk를 켜고 일반 대상에서 렌즈 클릭·드래그를 재현한다. 실패하면 Pinte를 닫지 않은 채 현재 PID의 `%LocalAppData%\Magnifier\diagnostics\relay-stop-<pid>.jsonl`에서 `relay-path`를 읽는다. callback 기록 부재, post 실패, dequeue 부재, target-press-begun 이후 실패를 구분한 뒤에만 다음 동작 수정을 결정한다. 이 단계는 `NEEDS_USER_UI_CHECK`다.
+새 Pinte를 실행한 상태로 key-demo-osk를 켜고 일반 대상에서 렌즈 클릭·드래그를 재현한다. 실패하면 Pinte를 닫지 않은 채 현재 PID의 `%LocalAppData%\Magnifier\diagnostics\relay-stop-<pid>.jsonl`에서 `session-rearmed`, callback, post, dequeue, target-press-begun을 순서대로 읽는다. 이 단계는 `NEEDS_USER_UI_CHECK`다.

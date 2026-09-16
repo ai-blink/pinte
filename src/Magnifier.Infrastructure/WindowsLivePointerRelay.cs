@@ -13,6 +13,7 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
     private readonly RelayCommandPump _commands = new();
     private readonly TaskCompletionSource _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly HookProc _mouseProc;
+    private readonly HookProc _keyboardProc;
     private readonly Dictionary<nint, nint> _savedStyles = [];
     private readonly Thread _thread;
     private LensViewport? _viewport;
@@ -28,7 +29,8 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
     private readonly HookLivenessMonitor _hookLiveness = new();
     private readonly HookRecoveryLimiter _hookRecovery = new();
     private readonly HookLossRecoveryState _hookLossRecovery = new();
-    private nint _hook;
+    private nint _hook, _keyboardHook;
+    private bool _physicalEscapeRequested;
     private bool _hookRecoveryExhausted;
     private string _message = "보기 · 실제 입력 꺼짐";
 
@@ -36,6 +38,7 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
     {
         _state = new LensInputState(_output);
         _mouseProc = MouseHook;
+        _keyboardProc = KeyboardHook;
         // A starved hook thread trips LowLevelHooksTimeout, after which Windows drops the hook.
         _thread = new Thread(Run) { IsBackground = true, Name = "Magnifier pointer relay", Priority = ThreadPriority.Highest };
         _thread.SetApartmentState(ApartmentState.STA);
@@ -121,9 +124,11 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         _threadId = GetCurrentThreadId();
         PeekMessage(out _, 0, 0, 0, 0);
         if (!InstallHook(out var hookError)) { _ready.SetException(new Win32Exception(hookError, "마우스 중계 설치 실패")); return; }
+        InstallKeyboardHook();
         var timer = SetTimer(0, 0, 50, 0);
         if (timer == 0)
         {
+            if (_keyboardHook != 0) UnhookWindowsHookEx(_keyboardHook);
             UnhookWindowsHookEx(_hook);
             _ready.SetException(new Win32Exception(Marshal.GetLastWin32Error(), "입력 해제 타이머 설치 실패"));
             return;
@@ -140,6 +145,7 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         {
             try { StopInternal("입력 중계 종료"); } catch { }
             KillTimer(0, timer);
+            if (_keyboardHook != 0) UnhookWindowsHookEx(_keyboardHook);
             UnhookWindowsHookEx(_hook);
         }
     }
@@ -322,6 +328,11 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
     {
         try
         {
+            if (_physicalEscapeRequested)
+            {
+                _physicalEscapeRequested = false;
+                if (_state.IsRequested) { StopInternal("Esc · 보기로 전환"); return; }
+            }
             CheckHookLiveness();
             if (_inputPostFailed) { _inputPostFailed = false; StopInternal("입력 큐 전달 실패 · 조작 중지"); return; }
             if (_state.IsPressed && !_state.IsEnabled)
@@ -332,7 +343,6 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
                 Publish(_message);
             }
             if (!_state.IsRequested || _suspended) return;
-            if ((GetAsyncKeyState(0x1B) & 0x8000) != 0) { StopInternal("Esc · 보기로 전환"); return; }
             var desktop = OpenInputDesktop(0, false, 1);
             if (desktop == 0) { StopInternal("입력 화면 변경 · 조작 중지"); return; }
             CloseDesktop(desktop);
@@ -372,7 +382,11 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         // Hook-observed release must drain first. Sampling cannot skip a queued physical Up.
         var held = _hookButtons != 0 || _leftHeld || OtherHeld
             || (GetAsyncKeyState(1) & 0x8000) != 0 || ReadOtherButtons() != 0;
-        if (_state.TryResume(held)) Publish("조작 켜짐 · 렌즈 안으로 이동하세요");
+        if (_state.TryResume(held))
+        {
+            RecordRelayPath("session-rearmed", "입력 세션 자동 재개");
+            Publish("조작 켜짐 · 렌즈 안으로 이동하세요");
+        }
     }
 
     private void SetPassthrough(bool enabled)
