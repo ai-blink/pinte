@@ -26,9 +26,10 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
     private PreviewPoint _logical;
     private readonly PointerCaptureMonitor _captureMonitor = new();
     private readonly HookLivenessMonitor _hookLiveness = new();
+    private readonly HookRecoveryLimiter _hookRecovery = new();
+    private readonly HookLossRecoveryState _hookLossRecovery = new();
     private nint _hook;
-    private int _hookReinstallCount;
-    private bool _hookReinstallDisabled;
+    private bool _hookRecoveryExhausted;
     private string _message = "보기 · 실제 입력 꺼짐";
 
     public WindowsLivePointerRelay()
@@ -58,9 +59,16 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         var armed = false;
         await Dispatch(() =>
         {
+            if (!_state.IsRequested && !PrepareNewInputSession())
+            {
+                RecordRelayPath("session-start-failed", "입력 세션 준비 실패");
+                return;
+            }
             _state.RequestStart();
             TryResumeInput();
             armed = _state.IsEnabled;
+            RecordRelayPath(armed ? "session-armed" : "session-waiting",
+                armed ? "입력 세션 준비됨" : "입력 세션이 버튼 해제 또는 최신 화면을 기다림");
             Publish(armed ? "조작 켜짐 · 렌즈 안으로 이동하세요" : "버튼 해제와 최신 화면을 기다린 뒤 자동 재개합니다");
         });
         return armed;
@@ -156,6 +164,9 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         if (kind is 0x201 or 0x204 or 0x207 or 0x20B) _hookButtons |= bit;
         if (kind is 0x202 or 0x205 or 0x208 or 0x20C) _hookButtons &= ~bit;
         var duplicateLeftDown = IsDuplicateLeftButtonDown(kind, previousButtons);
+        var relayAttempt = kind == 0x201 && !duplicateLeftDown && _state.IsEnabled && previousButtons == 0
+            && _viewport is { } candidateView && candidateView.Contains(new(mouse.Point.X, mouse.Point.Y))
+            ? NextRelayAttempt() : 0;
         var intercepted = _intercepting || _draining || (_state.IsEnabled && kind == 0x201 && previousButtons == 0
             && _viewport is { } view && view.Contains(new(mouse.Point.X, mouse.Point.Y)));
         if (intercepted && !_draining) _intercepting = true;
@@ -165,8 +176,13 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         // can deliver the original button before the hook's suppression result returns.
         if (!duplicateLeftDown)
         {
-            _commands.Enqueue(() => ProcessMouse(kind, mouse, intercepted, previous, hasPrevious), leftRelease: kind == 0x202);
-            if (!PostThreadMessage(_threadId, CommandMessage, 0, 0)) _inputPostFailed = true;
+            _commands.Enqueue(() => ProcessMouse(kind, mouse, intercepted, previous, hasPrevious, relayAttempt), leftRelease: kind == 0x202);
+            var commandPosted = PostThreadMessage(_threadId, CommandMessage, 0, 0);
+            if (!commandPosted) _inputPostFailed = true;
+            if (relayAttempt != 0 || !commandPosted)
+                RecordRelayPath(commandPosted ? "hook-left-down-enqueued" : "hook-command-post-failed",
+                    commandPosted ? "렌즈 안 왼쪽 버튼을 명령 큐에 전달" : "입력 명령 큐 전달 실패", relayAttempt,
+                    commandPosted, kind, mouse.Point.X, mouse.Point.Y);
         }
         return intercepted && !passMove ? 1 : CallNextHookEx(0, code, message, data);
     }
@@ -174,8 +190,12 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
     internal static bool IsDuplicateLeftButtonDown(uint kind, int previousButtons) =>
         kind == 0x201 && (previousButtons & 1) != 0;
 
-    private void ProcessMouse(uint kind, MouseHookData mouse, bool intercepted, NativePoint previous, bool hasPrevious)
+    private void ProcessMouse(uint kind, MouseHookData mouse, bool intercepted, NativePoint previous, bool hasPrevious,
+        long relayAttempt = 0)
     {
+        if (relayAttempt != 0)
+            RecordRelayPath("command-dequeued", "렌즈 입력 명령을 처리 시작", relayAttempt, pointerMessage: kind,
+                pointerX: mouse.Point.X, pointerY: mouse.Point.Y);
         if (kind == 0x201) _leftHeld = true;
         if (kind == 0x202) _leftHeld = false;
         var otherBit = kind switch
@@ -188,17 +208,25 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         if (kind is 0x204 or 0x207 or 0x20B) _otherButtonsHeld |= otherBit;
         if (kind is 0x205 or 0x208 or 0x20C) _otherButtonsHeld &= ~otherBit;
         _state.ObservePhysicalButton(_leftHeld || OtherHeld);
-        if (!intercepted) return;
+        if (!intercepted)
+        {
+            if (relayAttempt != 0) RecordRelayPath("command-rejected", "입력 가로채기 상태가 해제됨", relayAttempt);
+            return;
+        }
         try
         {
             if (_draining)
             {
                 // The held button belongs to the old drag, never to a return button.
                 if (!_leftHeld && !OtherHeld) { _draining = false; Publish("버튼 해제됨 · 조작 자동 재개 대기"); }
+                if (relayAttempt != 0) RecordRelayPath("command-rejected", "이전 입력 버튼 해제 대기", relayAttempt);
                 return;
             }
             if (!_state.IsEnabled || _viewport is not { } view)
+            {
+                if (relayAttempt != 0) RecordRelayPath("command-rejected", "입력 세션 또는 렌즈 영역이 준비되지 않음", relayAttempt);
                 return;
+            }
             if (!FrameIsFresh()) { StopInternal("화면 갱신 대기 · 조작 자동 재개 대기", resume: true); return; }
             if (!_relaying)
             {
@@ -236,6 +264,9 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
                     if (_state.IsPressed) break;
                     BeginCaptureMonitoring(target);
                     _state.Begin(target);
+                    if (relayAttempt != 0)
+                        RecordRelayPath("target-press-begun", "실제 대상 누름 전송 시작", relayAttempt,
+                            pointerMessage: kind, pointerX: target.X, pointerY: target.Y);
                     break;
                 case 0x200:
                     if (_state.IsPressed) _state.Move(target); else _output.MoveTo(target);
@@ -259,6 +290,7 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
 
     private void StopInternal(string reason, bool resume = false, bool failed = false)
     {
+        _hookLossRecovery.Reset();
         var wasRequested = _state.IsRequested;
         var wasPressed = _state.IsPressed;
         var staleFrame = reason == "화면 갱신 대기 · 조작 자동 재개 대기";
@@ -341,67 +373,6 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
         var held = _hookButtons != 0 || _leftHeld || OtherHeld
             || (GetAsyncKeyState(1) & 0x8000) != 0 || ReadOtherButtons() != 0;
         if (_state.TryResume(held)) Publish("조작 켜짐 · 렌즈 안으로 이동하세요");
-    }
-
-    private static int ReadOtherButtons() => ((GetAsyncKeyState(2) & 0x8000) != 0 ? 1 : 0)
-        | ((GetAsyncKeyState(4) & 0x8000) != 0 ? 2 : 0)
-        | ((GetAsyncKeyState(5) & 0x8000) != 0 ? 4 : 0)
-        | ((GetAsyncKeyState(6) & 0x8000) != 0 ? 8 : 0);
-
-    // Hook-side layout: left 1, right 2, middle 4, X1 8, X2 16.
-    private static int ReadAllButtons() => ((GetAsyncKeyState(1) & 0x8000) != 0 ? 1 : 0) | (ReadOtherButtons() << 1);
-
-    private bool InstallHook(out int error)
-    {
-        if (_hook != 0) { UnhookWindowsHookEx(_hook); _hook = 0; }
-        _hook = SetWindowsHookEx(14, _mouseProc, GetModuleHandle(null), 0);
-        error = _hook == 0 ? Marshal.GetLastWin32Error() : 0;
-        return _hook != 0;
-    }
-
-    private const int MaxAutoReinstalls = 12;
-
-    private void CheckHookLiveness()
-    {
-        if (_hookReinstallDisabled || !GetCursorPos(out var cursor)) return;
-        var buttons = ReadAllButtons();
-        var now = Environment.TickCount64;
-        var action = _hookLiveness.Sample(now, cursor.X, cursor.Y, buttons);
-        // Never disturb a live input session. A reinstall releases the button, so tearing one
-        // down mid-drag is the very failure the watchdog must not cause. Physical hold included:
-        // suspicion during a press waits until the button is released.
-        if (action == HookLivenessMonitor.Action.None
-            || _relaying || _intercepting || _draining || _state.IsPressed || _leftHeld || OtherHeld)
-            return;
-
-        if (action == HookLivenessMonitor.Action.Probe)
-        {
-            // A tagged move to the current position is invisible and presses nothing, yet a live
-            // hook echoes it back as activity, which clears the suspicion before any reinstall.
-            try { _output.MoveTo(new ScreenPoint(cursor.X, cursor.Y)); } catch { }
-            return;
-        }
-
-        // The self-probe never echoed: the hook is confirmed dropped (LowLevelHooksTimeout).
-        // Reinstall on this thread and trust the OS for button state after the outage.
-        var strikes = _hookLiveness.Strikes;
-        var installed = InstallHook(out var error);
-        _hookLiveness.NoteReinstalled(now);
-        _hookButtons = buttons;
-        _leftHeld = (buttons & 1) != 0;
-        _otherButtonsHeld = buttons >> 1;
-        _state.ObservePhysicalButton(_leftHeld || OtherHeld);
-        if (buttons == 0) _draining = false;
-        RecordHookReinstall(installed, error, strikes, false, false, buttons);
-        if (!installed) { StopInternal($"입력 훅 재설치 실패 · 조작 중지 (Win32 {error})", failed: true); return; }
-        if (++_hookReinstallCount >= MaxAutoReinstalls)
-        {
-            // A hook that keeps dying after verified reinstalls is a different, persistent fault.
-            // Storming past this point only churns the chain; surface it instead of hiding it.
-            _hookReinstallDisabled = true;
-            RecordHookReinstall(true, 0, strikes, false, false, buttons);
-        }
-        if (_state.IsRequested) Publish("입력 훅 재설치 · 조작 자동 재개");
     }
 
     private void SetPassthrough(bool enabled)
