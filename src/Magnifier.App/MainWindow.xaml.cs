@@ -19,7 +19,7 @@ public partial class MainWindow : Window
     private SelectionPreviewWindow? _lens;
     private ScreenRegion? _region;
     private bool _capturing, _returning, _shuttingDown, _closed;
-    private bool _selecting, _openingLens;
+    private bool _selecting, _openingLens, _lensHidden;
     private int _captureVersion, _sessionVersion;
     private TaskCompletionSource? _captureFinished;
     private LensLayout? _layout;
@@ -46,8 +46,7 @@ public partial class MainWindow : Window
         SourceInitialized += (_, _) => HwndSource.FromHwnd(new WindowInteropHelper(this).Handle)?.AddHook(WindowMessage);
     }
 
-    private async void SelectRegionButton_OnClick(object sender, RoutedEventArgs e)
-        => await SelectRegionAsync();
+    private async void SelectRegionButton_OnClick(object sender, RoutedEventArgs e) => await SelectRegionAsync();
 
     private async Task SelectRegionAsync()
     {
@@ -112,6 +111,8 @@ public partial class MainWindow : Window
             var work = _windows.GetWindowWorkArea(_frame.WindowHandle);
             _frame.Hide();
             _lens.Show();
+            _lensHidden = false;
+            _collapsedLens?.Hide();
             if (_settings.RememberLayout && savedLayout is { } layout && _windows.IsRegionVisible(layout.Lens))
                 _windows.PlaceWindow(_lens.WindowHandle, layout.Lens);
             else
@@ -157,6 +158,7 @@ public partial class MainWindow : Window
         _lens.SetToolbarPlacement(_settings.ToolbarPlacement);
         _lens.SetDisplayMode(_settings.LensDisplayMode);
         _indicator = new SourceIndicatorWindow(_capture, _windows);
+        CreateCollapsedLensOverlay();
         _frame.RegionChanged += region =>
         {
             if (_returning || _shuttingDown || _frame.IsVisible != true) return;
@@ -186,6 +188,7 @@ public partial class MainWindow : Window
         _lens.RegionSettingsRequested += async () => await ShowRegionSettingsAsync(_lens);
         _lens.AppSettingsRequested += async () => await ShowAppSettingsAsync(_lens);
         _lens.SourceEditRequested += async () => await BeginSourceEditingAsync();
+        _lens.LensHideRequested += async anchor => await HideLensAsync(anchor);
         _lens.GeometryInvalidated += () => _captureVersion++;
         _lens.EditingAllowedChanged += _ => UpdateSourceEditorEnabled();
         _lens.InputStatusChanged += text => SelectionStatusText.Text = text;
@@ -255,10 +258,12 @@ public partial class MainWindow : Window
             RememberLayout();
             _selecting = false;
             _openingLens = false;
+            _lensHidden = false;
             _editingSource = false;
             _lens?.SetSourceEditing(false);
             _frame?.Hide();
             _lens?.Hide();
+            _collapsedLens?.Hide();
             Show();
             Activate();
             SelectionStatusText.Text = "원래 화면으로 돌아왔습니다. 화면 영역을 지정한 뒤 확대하세요.";
@@ -301,6 +306,7 @@ public partial class MainWindow : Window
             _frame?.Close();
             _lens?.Close();
             _indicator?.Close();
+            _collapsedLens?.Close();
             _closed = true;
             Close();
         }

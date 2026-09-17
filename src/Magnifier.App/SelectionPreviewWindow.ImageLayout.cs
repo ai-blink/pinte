@@ -192,19 +192,6 @@ public partial class SelectionPreviewWindow
         QueueGeometryUpdate();
     }
 
-    private void KeepLensOnScreen()
-    {
-        // Only an explicit lens move changes its position. Source edits never call this.
-        if (WindowHandle == 0 || !_editingAllowed) return;
-        var work = _windows.GetWindowWorkArea(WindowHandle);
-        var bounds = _windows.GetWindowBounds(WindowHandle);
-        var width = Math.Min(bounds.Width, work.Width);
-        var height = Math.Min(bounds.Height, work.Height);
-        var left = Math.Clamp(bounds.X, work.X, work.X + work.Width - width);
-        var top = Math.Clamp(bounds.Y, work.Y, work.Y + work.Height - height);
-        _windows.PlaceWindow(WindowHandle, new ScreenRegion(left, top, width, height));
-    }
-
     private async Task<bool> ConfigureGeometryAsync()
     {
         if (_closed) return false;

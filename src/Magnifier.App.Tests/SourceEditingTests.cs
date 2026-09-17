@@ -1,4 +1,5 @@
 using System.Windows.Threading;
+using System.Windows.Controls;
 using Magnifier.Core;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -7,6 +8,20 @@ namespace Magnifier.App.Tests;
 [TestClass]
 public sealed class SourceEditingTests
 {
+    [TestMethod]
+    public Task NarrowSelectionToolbar_UsesCompactActionsWithoutClipping() => StaTest.Run(() =>
+    {
+        using var host = new HiddenWindows();
+        var editor = host.Editor;
+        var confirm = (Button)editor.FindName("ConfirmRegionButton");
+
+        Assert.AreEqual(300d, editor.MinWidth);
+        Assert.AreEqual(56d, confirm.MinWidth);
+        editor.SetSelectionMode(true);
+        Assert.AreEqual("확대", confirm.Content);
+        return Task.CompletedTask;
+    });
+
     [TestMethod]
     public Task ModalResume_WhileSourceEditing_KeepsExternalSuspension() => StaTest.Run(async () =>
     {

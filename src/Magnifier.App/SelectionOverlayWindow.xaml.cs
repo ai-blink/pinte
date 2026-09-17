@@ -73,7 +73,8 @@ public partial class SelectionOverlayWindow : Window
 
     public void SetSelectionMode(bool selecting)
     {
-        ConfirmRegionButton.Content = "이 영역 확대";
+        ConfirmRegionButton.Content = "확대";
+        ConfirmRegionButton.ToolTip = "지정한 영역을 확대";
         ConfirmRegionButton.Visibility = selecting ? Visibility.Visible : Visibility.Collapsed;
         ConfirmRegionButton.IsEnabled = selecting;
         Title = selecting ? "화면 영역 지정 · 테두리를 맞춘 뒤 이 영역 확대" : "확대할 원본 영역";
@@ -82,6 +83,7 @@ public partial class SelectionOverlayWindow : Window
     public void SetSourceEditingMode()
     {
         ConfirmRegionButton.Content = "완료";
+        ConfirmRegionButton.ToolTip = "원본 영역 편집 완료";
         ConfirmRegionButton.Visibility = Visibility.Visible;
         ConfirmRegionButton.IsEnabled = true;
         Title = "원본 영역 편집 · 테두리를 맞춘 뒤 완료";
@@ -249,6 +251,16 @@ public partial class SelectionOverlayWindow : Window
     {
         ReturnRequested?.Invoke();
         e.Handled = true;
+    }
+
+    private void SelectionToolbar_OnSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        // 좁은 원본 영역에서도 동작 버튼을 한 줄에 유지한다. 이동 손잡이의 설명만
+        // 접고 아이콘은 남겨 마우스로 이동할 수 있다.
+        if (MoveHandle.Template?.FindName("MoveHandleText", MoveHandle) is FrameworkElement moveHandleText)
+        {
+            moveHandleText.Visibility = e.NewSize.Width < 360 ? Visibility.Collapsed : Visibility.Visible;
+        }
     }
 
     private void CloseButton_OnClick(object sender, RoutedEventArgs e)

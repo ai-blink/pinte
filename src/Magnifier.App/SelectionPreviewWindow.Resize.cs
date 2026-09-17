@@ -10,6 +10,8 @@ namespace Magnifier.App;
 public partial class SelectionPreviewWindow
 {
     private const double ResizeGripMargin = 24;
+    private const double ResizeEdgeHitThickness = 20;
+    private const double ResizeCornerHitSize = 48;
     private bool _isResizing, _resizeReady, _resizeControlsVisible, _finishingResize;
     private int _resizeRevision;
     private Point _resizeStartPointer;
@@ -70,15 +72,18 @@ public partial class SelectionPreviewWindow
         {
             var direction = (string)thumb.Tag;
             var corner = direction.Length == 2;
-            var size = _resizeControlsVisible ? 44 : corner ? 16 : 8;
+            var edgeSize = _resizeControlsVisible ? 44 : ResizeEdgeHitThickness;
+            var cornerSize = _resizeControlsVisible ? 44 : ResizeCornerHitSize;
+            var size = corner ? cornerSize : edgeSize;
             thumb.Width = corner || direction is "W" or "E" || _resizeControlsVisible ? size : double.NaN;
             thumb.Height = corner || direction is "N" or "S" || _resizeControlsVisible ? size : double.NaN;
             thumb.HorizontalAlignment = direction.Contains('W') ? HorizontalAlignment.Left :
                 direction.Contains('E') ? HorizontalAlignment.Right : _resizeControlsVisible ? HorizontalAlignment.Center : HorizontalAlignment.Stretch;
             thumb.VerticalAlignment = direction.Contains('N') ? VerticalAlignment.Top :
                 direction.Contains('S') ? VerticalAlignment.Bottom : _resizeControlsVisible ? VerticalAlignment.Center : VerticalAlignment.Stretch;
+            var cornerInset = ResizeCornerHitSize / 2;
             thumb.Margin = corner || _resizeControlsVisible ? new Thickness(0) :
-                direction is "N" or "S" ? new Thickness(16, 0, 16, 0) : new Thickness(0, 16, 0, 16);
+                direction is "N" or "S" ? new Thickness(cornerInset, 0, cornerInset, 0) : new Thickness(0, cornerInset, 0, cornerInset);
             thumb.Background = _resizeControlsVisible ? (Brush)FindResource("AppBorderBrush") : Brushes.Transparent;
         }
     }
@@ -118,18 +123,17 @@ public partial class SelectionPreviewWindow
             var pointer = PointToScreen(Mouse.GetPosition(this));
             var dx = (int)Math.Round(pointer.X - _resizeStartPointer.X);
             var dy = (int)Math.Round(pointer.Y - _resizeStartPointer.Y);
-            var work = _windows.GetWindowWorkArea(WindowHandle);
             var dpi = VisualTreeHelper.GetDpi(this);
-            var minWidth = Math.Min(work.Width, (int)Math.Ceiling(MinWidth * dpi.DpiScaleX));
-            var minHeight = Math.Min(work.Height, (int)Math.Ceiling(MinHeight * dpi.DpiScaleY));
+            var minWidth = (int)Math.Ceiling(MinWidth * dpi.DpiScaleX);
+            var minHeight = (int)Math.Ceiling(MinHeight * dpi.DpiScaleY);
             var left = _resizeStartBounds.X;
             var top = _resizeStartBounds.Y;
             var right = left + _resizeStartBounds.Width;
             var bottom = top + _resizeStartBounds.Height;
-            if (_resizeDirection.Contains('W')) left = Math.Clamp(left + dx, Math.Min(work.X, right - minWidth), right - minWidth);
-            if (_resizeDirection.Contains('E')) right = Math.Clamp(right + dx, left + minWidth, Math.Max(left + minWidth, work.X + work.Width));
-            if (_resizeDirection.Contains('N')) top = Math.Clamp(top + dy, Math.Min(work.Y, bottom - minHeight), bottom - minHeight);
-            if (_resizeDirection.Contains('S')) bottom = Math.Clamp(bottom + dy, top + minHeight, Math.Max(top + minHeight, work.Y + work.Height));
+            if (_resizeDirection.Contains('W')) left = Math.Min(left + dx, right - minWidth);
+            if (_resizeDirection.Contains('E')) right = Math.Max(right + dx, left + minWidth);
+            if (_resizeDirection.Contains('N')) top = Math.Min(top + dy, bottom - minHeight);
+            if (_resizeDirection.Contains('S')) bottom = Math.Max(bottom + dy, top + minHeight);
             _windows.PlaceWindow(WindowHandle, new ScreenRegion(left, top, right - left, bottom - top));
             QueueGeometryUpdate();
         }

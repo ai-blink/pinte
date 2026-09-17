@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="확대할 원본 영역"
-        Width="420" Height="310" MinWidth="230" MinHeight="150"
+        Width="420" Height="310" MinWidth="300" MinHeight="150"
         AllowsTransparency="True" Background="Transparent"
         ShowInTaskbar="False" Topmost="True"
         WindowStyle="None" ResizeMode="NoResize"
@@ -43,7 +43,7 @@
 
         <Border Grid.ColumnSpan="3" Margin="12,0,12,0" Background="{DynamicResource AppPanelBrush}"
                 BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="10,10,6,6">
-            <Grid Margin="4">
+            <Grid Margin="4" SizeChanged="SelectionToolbar_OnSizeChanged">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
@@ -52,7 +52,7 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Thumb x:Name="MoveHandle" Cursor="SizeAll"
+                <Thumb x:Name="MoveHandle" Cursor="SizeAll" MinWidth="32"
                        DragStarted="Handle_OnDragStarted" DragDelta="MoveHandle_OnDragDelta"
                        DragCompleted="Handle_OnDragCompleted">
                     <Thumb.Template>
@@ -60,7 +60,7 @@
                             <Border Background="Transparent" Padding="10,0" CornerRadius="7">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <TextBlock Text="⠿" FontSize="18" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,7,0" />
-                                    <StackPanel>
+                                    <StackPanel x:Name="MoveHandleText">
                                         <TextBlock Foreground="{DynamicResource AppTextBrush}" FontSize="12" FontWeight="SemiBold" Text="원본 영역" />
                                         <TextBlock Foreground="{DynamicResource AppMutedTextBrush}" FontSize="10" Text="끌어서 이동" />
                                     </StackPanel>
@@ -69,16 +69,16 @@
                         </ControlTemplate>
                     </Thumb.Template>
                 </Thumb>
-                <Button x:Name="ConfirmRegionButton" Grid.Column="1" Style="{StaticResource AccentButtonStyle}" MinHeight="40" Margin="2,0"
-                        Visibility="Collapsed" Content="이 영역 확대" Click="ConfirmRegionButton_OnClick" />
+                <Button x:Name="ConfirmRegionButton" Grid.Column="1" Style="{StaticResource AccentButtonStyle}" MinWidth="56" MinHeight="40" Margin="2,0"
+                        Visibility="Collapsed" Content="확대" ToolTip="지정한 영역을 확대" AutomationProperties.Name="지정한 영역 확대" Click="ConfirmRegionButton_OnClick" />
                 <Button Grid.Column="2" Style="{StaticResource IconButtonStyle}" Width="40" MinWidth="40" MinHeight="40" Margin="2,0"
                         ToolTip="원본 크기와 비율" AutomationProperties.Name="원본 크기와 비율"
                         Content="크기" FontSize="12" Click="RegionSettingsButton_OnClick" />
                 <Button Grid.Column="3" Style="{StaticResource IconButtonStyle}" Width="40" MinWidth="40" MinHeight="40" Margin="2,0"
                         ToolTip="앱 설정" AutomationProperties.Name="앱 설정"
                         Content="⚙" Click="AppSettingsButton_OnClick" />
-                <Button Grid.Column="4" Style="{StaticResource SoftAccentButtonStyle}" MinHeight="40" Margin="2,0"
-                        Content="↩ 원래 화면" Click="ReturnButton_OnClick" />
+                <Button Grid.Column="4" Style="{StaticResource SoftAccentButtonStyle}" Width="40" MinWidth="40" MinHeight="40" Margin="2,0"
+                        Content="↩" ToolTip="원래 화면으로 돌아가기" AutomationProperties.Name="원래 화면으로 돌아가기" Click="ReturnButton_OnClick" />
                 <Button Grid.Column="5" Style="{StaticResource IconButtonStyle}" Width="40" MinWidth="40" MinHeight="40" Margin="2,0"
                         Content="×" Click="CloseButton_OnClick" ToolTip="확대를 끝내고 원래 화면으로"
                         AutomationProperties.Name="확대를 끝내고 원래 화면으로" />

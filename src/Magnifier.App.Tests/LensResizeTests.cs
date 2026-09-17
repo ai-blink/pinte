@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using Magnifier.Core;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -26,6 +27,28 @@ public sealed class LensResizeTests
         Assert.AreEqual(new Thickness(8), outerBorder.Margin);
         Assert.AreEqual(640d, lens.MinWidth);
         Assert.AreEqual(360d, lens.MinHeight);
+        var resizeLayer = lens.FindName("ResizeLayer") as Grid;
+        Assert.IsNotNull(resizeLayer);
+        var controls = resizeLayer.Children.OfType<Thumb>().ToArray();
+        Assert.AreEqual(8, controls.Length);
+        Assert.AreEqual(48d, controls.Single(thumb => (string)thumb.Tag == "NW").Width);
+        Assert.AreEqual(20d, controls.Single(thumb => (string)thumb.Tag == "N").Height);
+        return Task.CompletedTask;
+    });
+
+    [TestMethod]
+    public Task CompactToolbar_ContainsTheLensHideToggleAtMinimumWidth() => StaTest.Run(() =>
+    {
+        using var host = new HiddenWindows();
+        var lens = host.Lens;
+
+        lens.SetDisplayMode(LensDisplayMode.Compact);
+
+        var hide = (Button)lens.FindName("CompactHideLensButton");
+        var returnButton = (Button)lens.FindName("CompactReturnButton");
+        Assert.AreEqual("숨김", hide.Content);
+        Assert.AreEqual(44d, returnButton.MinWidth);
+        Assert.IsTrue(lens.MinWidth >= 440d);
         return Task.CompletedTask;
     });
 

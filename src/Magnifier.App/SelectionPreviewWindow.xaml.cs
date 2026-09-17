@@ -58,6 +58,7 @@ public partial class SelectionPreviewWindow : Window
     public event Action? RegionSettingsRequested;
     public event Action? AppSettingsRequested;
     public event Action? SourceEditRequested;
+    public event Action<ScreenPoint>? LensHideRequested;
     public event Action? GeometryInvalidated;
     public nint WindowHandle { get; private set; }
     public ScreenRegion? CurrentRegion => _currentRegion;
@@ -271,6 +272,7 @@ public partial class SelectionPreviewWindow : Window
         RegionSettingsButton.IsEnabled = editingAllowed && _currentRegion.HasValue;
         AppSettingsButton.IsEnabled = !manipulationLocked;
         SourceEditButton.IsEnabled = editingAllowed && _currentRegion.HasValue;
+        HideLensButton.IsEnabled = editingAllowed && _currentRegion.HasValue && !_isResizing && !_isMoving;
         UpdateCompactControls();
         AuxiliaryTools.IsEnabled = editingAllowed || AuxiliaryTools.IsExpanded;
         AuxiliaryControls.IsEnabled = !locked;
@@ -318,6 +320,19 @@ public partial class SelectionPreviewWindow : Window
         }
         e.Handled = true;
     }
+
+    private void HideLens_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (HideLensButton.IsEnabled && CompactHideLensButton.IsEnabled)
+        {
+            var button = (FrameworkElement)sender;
+            var anchor = button.PointToScreen(new Point(button.ActualWidth / 2, button.ActualHeight / 2));
+            LensHideRequested?.Invoke(new ScreenPoint((int)Math.Round(anchor.X), (int)Math.Round(anchor.Y)));
+        }
+        e.Handled = true;
+    }
+
+    public void ShowInteractionNotice(string message) => PublishInputStatus(message);
 
     private void CapturedImage_OnSizeChanged(object sender, SizeChangedEventArgs e)
     {

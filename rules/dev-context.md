@@ -1,23 +1,10 @@
 # 재개 컨텍스트
 
-- 현재 공개 기준은 **Pinte v0.1.0 정식 릴리즈**다. 태그 `v0.1.0`과 [GitHub Release](https://github.com/ai-blink/pinte/releases/tag/v0.1.0)가 같은 소스를 가리킨다. Windows x64 자체 포함 ZIP은 `Magnifier.App.exe`를 제공하며 이 릴리즈는 코드 서명되지 않았다.
-- 릴리즈 직전 표준 build는 경고0/오류0, `dotnet test Magnifier.slnx --nologo`는 Core 60·Infrastructure 12·App 48, 총 120개를 통과했다(2026-09-14 훅 감시 뒤 Infrastructure 18, 총 126개). 자동 테스트가 실제 대상 앱 반응이나 UI를 증명하지 않으므로 `NEEDS_USER_UI_CHECK`는 유지한다.
-- 캡처의 일시 실패는 relay 요청을 보존하고 release·일시 정지 후 자동 재시도한다. 새 프레임을 받은 뒤에만 재개한다. 명시적 중지·복귀·닫기·입력/해제 실패는 요청을 취소한다. 손 도구 상태 표시는 켜짐/꺼짐을 구분하며, 리사이즈 중 콘텐츠 여백은 24 DIP다.
-- 이전 드래그 감시 재실패·수정·사용자 확인의 상세는 notes/runs/2026-09-12-region-selection-drag-confirmed.md와 2026-09-11-drag-blocked-handoff.md에 보존한다. 이번 기능 확인과 혼합하지 않는다.
-- 2026-09-12 UI·안전·시각 정비: P0 stale-frame·프리셋·Esc·경계, 목업 토큰, 라벨/28 DIP 손잡이, 고정 렌즈+중앙 crop·하단 상태 숨김을 반영했다. 후속으로 두 창 `×`, 24 DIP 스크롤바, relay를 중단하는 `✋ 이동`을 추가했다. 최신 build 0/0·Core41/Infra11, 52 PASS. [시각 기록](../notes/runs/2026-09-12-magnifier-visual-refinement.md). 실제 UI·대상 앱 반응은 `NEEDS_USER_UI_CHECK`다.
-- delivery workspace: `C:/ai/projects/magnifier`, main. 이번 delivery 소스·문서·테스트는 사용자 요청으로 로컬 커밋한다. `notes/transfers/`와 도구 산출물은 수정·삭제·스테이징 금지이며 푸시는 하지 않는다.
-- 2026-09-12 최신 요구: 단순한 핵심 기능·화면에 집중하고 테스트는 사용자가 직접 한다. `화면 영역 지정` → 원본 테두리 이동/크기 조절 → `이 영역 확대` → 렌즈 조작으로 수정했다. 선택 중 입력은 꺼지고 취소하면 진입 창으로 돌아온다. 확정한 원본은 렌즈를 열 때 이동하지 않는다.
-- 사용자 확정 요구: 마우스만으로 정밀 조작·복귀. 실제 원본 테두리의 이동/크기 조절로 캡처 영역을 정하고, 확대 렌즈는 독립 이동한다. 직접 Down→연속 Move→Up이 주력, A/B는 보조다. 고정 작업창+개요·Esc 중심 복귀·목업만 수정은 이전 단계다.
-- 최신 상태: **USER_CONFIRMED_PASS — 영역 지정·드래그 유지 수정**. 사용자가 수정 실행본 안내 뒤 “아주 잘됨”으로 확인했다. 이전 반복 해제 차단은 이번 확인 범위에서 해소했다. 이중 포인터·앱별/DPI 호환·경계/오류별 복귀는 별도 미확인으로 남기며 M5 전체 완료를 선언하지 않는다.
-- 최신 요구: “항상 조작 시작된 상태이어야해 근데 자꾸 풀려”. 확대 열기 자체가 조작 요청이다. 창·영역·배율·경계·화면 갱신 일시 정지는 요청을 유지하고 버튼 해제·최신 화면 뒤 재개한다. 일시적인 capture 실패도 재시도 뒤 새 프레임에서 재개하며, 명시적 중지·Esc·복귀·닫기·입력/해제 실패는 자동 재개하지 않는다. 이전의 별도 조작 시작·재진입 보기 기본값은 D-020/D-026으로 대체했다.
-- 구현: SelectionOverlayWindow의 투명 내부/8개 손잡이, SelectionPreviewWindow의 독립 제목·고정 중지/원래 화면·배율·가상 포인터. Main은 캡처·진입/복귀·배치 저장을 관리한다. 설정에 입력 허용은 저장하지 않으며, 재진입할 때 새 조작 요청을 만든다.
-- 엔진: WindowsLivePointerRelay 전용 WH_MOUSE_LL 스레드 + 자기 태그 SendInput. hook 안 동기 주입의 중복 Down/Up을 재현해 실제 전달·창 스타일 변경을 hook 반환 뒤 FIFO 큐로 옮겼다. 분리/겹침 곡선·왕복, 경계 마지막 위치 Up·재무장 차단을 실제 native 수신으로 확인했다. 합성 절대 입력 프로브 결과이며 실제 상대 장치 검증은 남았다. UI는 Win32 입력/캡처를 직접 호출하지 않는다.
-- 2026-09-17 D-030: 실측 로그의 무응답은 `SetWindowsHookEx` 성공 뒤에도 같은 메시지 스레드의 callback이 재개되지 않아 발생했다. 확인된 훅 소실은 old handle 재설치 대신 STA 훅 워커를 종료·정리한 뒤 새 스레드로 교체한다. 기존 요청은 보존하되 소유 press는 release/stop으로 닫고, Esc는 물리 Down만 relay가 취소한다. key-demo-osk 직접 원인은 미확정이며 실제 재현은 `NEEDS_USER_UI_CHECK`다.
-- 공개 실행본: [v0.1.0 Windows x64 ZIP](https://github.com/ai-blink/pinte/releases/download/v0.1.0/Pinte-v0.1.0-win-x64.zip)의 `Magnifier.App.exe`다. 개발용 표준 출력은 `src/Magnifier.App/bin/Debug/net9.0-windows/Magnifier.App.exe`, 사용자 실제 실행본은 publish 단일 파일 `C:\app\Magnifier.App.exe`다. 메인 Hide가 보조 창도 숨기는 Owner 관계를 제거했고, 사용자가 두 창 모두 보임을 확인했다.
-- UI 상태: `화면 영역 지정`이 테두리 선택 단계로 진입하고 `이 영역 확대`가 렌즈를 연다. 기본 조작 시작/중지 버튼은 제거했으며, 확대 자체가 조작 요청이다. 크기·비율과 앱 설정은 설정창이 닫힐 때까지 중계의 자동 재개를 보류한다.
-- 사용자 확인: **“두 창 모두 아래에 있고 이동됨”**, 조작 유지 수정 후 **“조작이 유지되고 클릭·드래그됨”**. 두 번째 답변은 별도 재개 없이 렌즈 제목부를 옮긴 뒤 조작하는 흐름에 대한 확인이다. 대상 앱 이름·곡선/왕복 경로·정밀 좌표·복귀까지 확인한 것으로 확대하지 않는다. 보조 창은 자동화 목록에 반환되지 않아 사용자 확인으로 검증한다.
-- 이전 커서 피드백: “노란색 가상 포인터 갑자기 왜 생김 실제 마우스 좌표 하고도 다름”. Down에서만 중계를 시작하고 정상 Up 직후 커서를 렌즈로 복원한다. 조작 요청은 유지하며 가상 표시는 누름 중에만 남는다. 이번 확인을 이중 포인터 해결로 확대하지 않는다.
-- 확인된 차단: 드래그 중 렌즈 `(1209,451)`와 실제 커서 `(392,318)` 불일치. 복귀 SendInput을 hook에서 막으면 커서도 복귀하지 않고, SetCursorPos로 복귀하면 대상이 `(1209,451)`의 추가 pressed Move를 받는다. 표시만 지우거나 이 복귀를 제품에 넣어 해결 처리하지 않는다.
-- OS 변환: 사용자 go 승인 뒤 전용 인증서/Program Files 설치를 적용했다. UIAccess=true·Elevated=false에서 API 수락/해제 성공. WPF 수동 검사는 원본 전달 0/렌즈 Down 4, native 합성 검사는 원본 Down/Up 0/0·렌즈 Down 1로 BLOCKED다. 전후 해제 확인. 일반 제품의 OS 엔진 연결은 보류했고 전용 설치/인증서는 유지 중이다.
-- 남은 범위: 실제 상대 마우스·보조 절대 입력·모니터 끝 탈출, 재귀/겹침, 혼합 DPI/음수 좌표/다중 모니터, 브라우저 마커/Blender/Windows 앱. 렌즈를 놓을 때 화면 안 보정, 모니터 변경 시 입력 해제·진입 창 복원을 구현했으며 R2 실측 대상이다. 우클릭·스크롤 등 R3는 핵심 검증 뒤 진행한다.
-- 최신 지시: 사용자가 실제 대상 앱에서 직접 검증한다. 자동 UI 검사는 중단했다. `Start-Magnifier-Admin.cmd`는 소스 작업공간의 사용자 RunAs 진입점, `Start-InputTransform-Manual.cmd`는 별도 UIAccess 수동 검사다. 공개 ZIP에는 이 스크립트가 포함되지 않는다. `doc/manual-validation.md`를 따르며, 관리자 실행은 UIAccess나 커서 문제 해결을 뜻하지 않는다.
+- delivery workspace는 `C:/ai/projects/magnifier`의 현재 브랜치다. 이번 소스·테스트·문서 변경만 하나의 로컬 커밋으로 남기며, `notes/transfers/`와 도구 산출물은 스테이징·수정하지 않는다. 푸시는 하지 않는다.
+- 2026-09-17 구현: 렌즈를 화면 밖으로 옮기거나 그 방향으로 키워도 작업 영역으로 되돌리지 않는다. 8방향 외곽 리사이즈는 모서리 48 DIP·변 20 DIP hit area에서 실시간으로 배치한다.
+- `렌즈 숨김`은 복귀가 아니다. 클릭 지점의 캡처 제외 `⌕` 오버레이로 접고, 그 아이콘을 누르면 기존 렌즈 위치·크기·배율을 유지한 채 새 프레임과 입력을 다시 연다. 아이콘 표시 또는 펼치기 실패는 렌즈/입력을 안전하게 중지하거나 기존 렌즈 표시를 유지한다.
+- 좁은 영역 지정 도구막대는 이동 설명을 숨기고 축약 버튼을 사용해 `이 영역 확대`와 복귀가 잘리지 않게 했다. 일반·컴팩트 렌즈 모두 숨김 제어를 제공한다.
+- 자동 검증: `dotnet build Magnifier.slnx --nologo` 경고 0/오류 0, `dotnet test Magnifier.slnx --nologo` Core 60·Infrastructure 31·App 51, 총 142개 통과. 실제 UI·대상 앱 입력은 `NEEDS_USER_UI_CHECK`이며 [수동 시나리오](../doc/compact-lens-validation.md)의 화면 밖 배치·리사이즈·접기/펼치기·좁은 선택 폭을 확인한다.
+- 핵심 제약: UI는 Win32 캡처·입력 주입을 직접 호출하지 않는다. 창·영역·배율·리사이즈·숨김/펼치기 전후에는 release와 새 프레임을 우선하고, 명시적 중지·복귀·닫기·입력 실패는 자동 재개하지 않는다.
+- 현재 공개 기준은 [Pinte v0.1.0](https://github.com/ai-blink/pinte/releases/tag/v0.1.0)이다. 개발용 표준 출력은 `src/Magnifier.App/bin/Debug/net9.0-windows/Magnifier.App.exe`, 이전 공개 실행본은 `C:\app\Magnifier.App.exe`다. 이번 커밋은 새 공개 배포를 만들지 않는다.
+- 별도 미해결 범위: 실제 상대 마우스의 이중 포인터, 경계/오류별 release·복귀, 혼합 DPI·음수 좌표·다중 모니터, 브라우저/Blender/Windows 앱 호환. 기존 훅 워커 복구(D-030) 장기 확인도 `NEEDS_USER_UI_CHECK`다.
