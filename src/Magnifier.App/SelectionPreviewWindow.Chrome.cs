@@ -95,6 +95,7 @@ public partial class SelectionPreviewWindow
         CompactSourceEditButton.IsEnabled = SourceEditButton.IsEnabled;
         CompactZoomDecreaseButton.IsEnabled = ZoomDecreaseButton.IsEnabled;
         CompactZoomIncreaseButton.IsEnabled = ZoomIncreaseButton.IsEnabled;
+        CompactZoomText.IsEnabled = ZoomDecreaseButton.IsEnabled;
         CompactPanModeButton.IsEnabled = PanModeButton.IsEnabled;
         CompactAppSettingsButton.IsEnabled = AppSettingsButton.IsEnabled;
         CompactHideLensButton.IsEnabled = HideLensButton.IsEnabled;

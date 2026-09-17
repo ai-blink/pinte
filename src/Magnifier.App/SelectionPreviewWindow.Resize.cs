@@ -11,6 +11,7 @@ public partial class SelectionPreviewWindow
 {
     private const double ResizeGripMargin = 24;
     private const double ResizeEdgeHitThickness = 20;
+    private const double ResizeTopCornerHitSize = 24;
     private const double ResizeCornerHitSize = 48;
     private bool _isResizing, _resizeReady, _resizeControlsVisible, _finishingResize;
     private int _resizeRevision;
@@ -73,7 +74,7 @@ public partial class SelectionPreviewWindow
             var direction = (string)thumb.Tag;
             var corner = direction.Length == 2;
             var edgeSize = _resizeControlsVisible ? 44 : ResizeEdgeHitThickness;
-            var cornerSize = _resizeControlsVisible ? 44 : ResizeCornerHitSize;
+            var cornerSize = _resizeControlsVisible ? 44 : direction.Contains('N') ? ResizeTopCornerHitSize : ResizeCornerHitSize;
             var size = corner ? cornerSize : edgeSize;
             thumb.Width = corner || direction is "W" or "E" || _resizeControlsVisible ? size : double.NaN;
             thumb.Height = corner || direction is "N" or "S" || _resizeControlsVisible ? size : double.NaN;

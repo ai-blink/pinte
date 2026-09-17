@@ -31,7 +31,8 @@ public sealed class LensResizeTests
         Assert.IsNotNull(resizeLayer);
         var controls = resizeLayer.Children.OfType<Thumb>().ToArray();
         Assert.AreEqual(8, controls.Length);
-        Assert.AreEqual(48d, controls.Single(thumb => (string)thumb.Tag == "NW").Width);
+        Assert.AreEqual(24d, controls.Single(thumb => (string)thumb.Tag == "NW").Width);
+        Assert.AreEqual(48d, controls.Single(thumb => (string)thumb.Tag == "SW").Width);
         Assert.AreEqual(20d, controls.Single(thumb => (string)thumb.Tag == "N").Height);
         return Task.CompletedTask;
     });
@@ -108,6 +109,23 @@ public sealed class LensResizeTests
         Assert.AreEqual(3.4, slider.Value, 0.001);
         Assert.AreEqual("3.4", text.Text);
         CollectionAssert.Contains(host.Relay.Calls, "pause");
+    });
+
+    [TestMethod]
+    public Task CompactZoomText_AcceptsManualTenths() => StaTest.Run(async () =>
+    {
+        using var host = new HiddenWindows();
+        var lens = host.Lens;
+        await lens.SetSourceAsync(new ScreenRegion(20, 30, 80, 60), 0);
+        lens.SetDisplayMode(LensDisplayMode.Compact);
+        var text = (TextBox)lens.FindName("CompactZoomText");
+
+        text.Text = "1.7";
+        await PrivateAccess.CallAsync(lens, "CommitZoomTextAsync", text);
+
+        Assert.AreEqual(1.7, lens.Zoom, 0.001);
+        Assert.AreEqual("1.7", text.Text);
+        Assert.IsTrue(text.IsEnabled);
     });
 
     [TestMethod]

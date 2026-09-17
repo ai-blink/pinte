@@ -52,7 +52,7 @@
                        AutomationProperties.Name="확대 렌즈 이동 손잡이">
                     <Thumb.Template>
                         <ControlTemplate TargetType="Thumb">
-                            <Border Background="Transparent" Padding="14,0">
+                            <Border Background="Transparent" Padding="20,0,14,0">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <TextBlock Text="⠿" FontSize="19" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,8,0" />
                                     <StackPanel>
@@ -80,7 +80,7 @@
                     <Button x:Name="AppSettingsButton" Style="{StaticResource IconButtonStyle}" Content="⚙" Click="AppSettings_OnClick" MinWidth="40" Width="40" MinHeight="40"
                             ToolTip="앱 설정" AutomationProperties.Name="앱 설정" Margin="4,0,0,0" />
                     <Button x:Name="HideLensButton" Style="{StaticResource SoftAccentButtonStyle}" Content="렌즈 숨김" Click="HideLens_OnClick"
-                            ToolTip="렌즈를 숨기고 주 창의 ‘렌즈 다시 표시’로 같은 위치와 배율을 다시 엽니다"
+                            ToolTip="렌즈를 접고 같은 자리에 나타나는 아이콘으로 다시 펼칩니다"
                             AutomationProperties.Name="렌즈 숨김" />
                     <Border Width="1" Height="24" Background="{DynamicResource AppBorderBrush}" Margin="8,0" VerticalAlignment="Center" />
                     <Button Content="↩  원래 화면" Style="{StaticResource SoftAccentButtonStyle}" Click="Return_OnClick"
@@ -116,11 +116,13 @@
                            DragStarted="TitleThumb_OnDragStarted" DragDelta="TitleThumb_OnDragDelta"
                            DragCompleted="TitleThumb_OnDragCompleted" LostMouseCapture="TitleThumb_OnLostMouseCapture"
                            ToolTip="렌즈 이동" AutomationProperties.Name="렌즈 이동">
-                        <Thumb.Template><ControlTemplate TargetType="Thumb"><Border Background="Transparent"><TextBlock Text="⠿" FontSize="16" Foreground="{DynamicResource AppTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border></ControlTemplate></Thumb.Template>
+                        <Thumb.Template><ControlTemplate TargetType="Thumb"><Border Background="Transparent"><TextBlock Text="⠿" Margin="8,0,0,0" FontSize="16" Foreground="{DynamicResource AppTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border></ControlTemplate></Thumb.Template>
                     </Thumb>
                     <Button x:Name="CompactSourceEditButton" Style="{StaticResource CompactButtonStyle}" Content="▣" Click="SourceEdit_OnClick" ToolTip="영역 편집" AutomationProperties.Name="원본 영역 편집" />
                     <Button x:Name="CompactZoomDecreaseButton" Style="{StaticResource CompactButtonStyle}" Content="−" Click="ZoomDecrease_OnClick" ToolTip="배율 낮추기" AutomationProperties.Name="배율 낮추기" />
-                    <TextBlock x:Name="CompactZoomText" Width="24" VerticalAlignment="Center" TextAlignment="Center" Text="2×" FontSize="13" Foreground="{DynamicResource AppTextBrush}" />
+                    <TextBox x:Name="CompactZoomText" Width="24" Height="28" Padding="0" VerticalContentAlignment="Center" TextAlignment="Center" Text="2" FontSize="11"
+                             PreviewKeyDown="FineZoomText_OnPreviewKeyDown" LostKeyboardFocus="FineZoomText_OnLostKeyboardFocus"
+                             ToolTip="배율 직접 입력 · 0.25부터 8까지" AutomationProperties.Name="배율 직접 입력" />
                     <Button x:Name="CompactZoomIncreaseButton" Style="{StaticResource CompactButtonStyle}" Content="+" Click="ZoomIncrease_OnClick" ToolTip="배율 높이기" AutomationProperties.Name="배율 높이기" />
                     <Button x:Name="CompactPanModeButton" Style="{StaticResource CompactButtonStyle}" Content="✋○" Click="PanMode_OnClick" ToolTip="손 도구 꺼짐: 켜면 렌즈 안을 끌어 확대된 위치를 이동합니다" AutomationProperties.Name="손 도구 꺼짐, 누르면 켬" />
                     <Button x:Name="CompactAppSettingsButton" Style="{StaticResource CompactButtonStyle}" Content="⚙" Click="AppSettings_OnClick" ToolTip="앱 설정" AutomationProperties.Name="앱 설정" />

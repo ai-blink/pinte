@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -11,7 +12,7 @@ public partial class SelectionPreviewWindow
 {
     private const double MinimumZoom = 0.25;
     private const double MaximumZoom = 8;
-    private const double FastZoomStep = 0.5;
+    private const double FastZoomStep = 0.1;
     private readonly SemaphoreSlim _configurationLock = new(1, 1);
     private LensViewport? _configuredViewport;
     private nint _configuredFrameHandle;
@@ -64,7 +65,7 @@ public partial class SelectionPreviewWindow
             CapturedImage.Width = Math.Max(1, region.Width * Zoom / dpi.DpiScaleX);
             CapturedImage.Height = Math.Max(1, region.Height * Zoom / dpi.DpiScaleY);
             ZoomText.Text = $"{Zoom:0.##}×";
-            CompactZoomText.Text = ZoomText.Text;
+            CompactZoomText.Text = Zoom.ToString("0.##", CultureInfo.CurrentCulture);
             ZoomText.ToolTip = "원본 물리 픽셀 대비 표시 배율 · 렌즈 창 크기는 유지합니다";
             SynchronizeFineZoomControls();
             UpdatePanSurface(CapturedImage.Width, CapturedImage.Height);
@@ -88,6 +89,7 @@ public partial class SelectionPreviewWindow
         {
             FineZoomSlider.Value = Zoom;
             FineZoomText.Text = Zoom.ToString("0.##", CultureInfo.CurrentCulture);
+            CompactZoomText.Text = FineZoomText.Text;
         }
         finally { _syncingFineZoomControls = false; }
     }
@@ -112,19 +114,21 @@ public partial class SelectionPreviewWindow
     {
         if (e.Key != Key.Enter) return;
         e.Handled = true;
-        await CommitFineZoomTextAsync();
+        await CommitZoomTextAsync((TextBox)sender);
     }
 
     private async void FineZoomText_OnLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e) =>
-        await CommitFineZoomTextAsync();
+        await CommitZoomTextAsync((TextBox)sender);
 
-    private async Task CommitFineZoomTextAsync()
+    private Task CommitFineZoomTextAsync() => CommitZoomTextAsync(FineZoomText);
+
+    private async Task CommitZoomTextAsync(TextBox input)
     {
         if (_syncingFineZoomControls || _fineZoomTextCommitInProgress || !_editingAllowed || _currentRegion is null) return;
         _fineZoomTextCommitInProgress = true;
         try
         {
-            if (!TryParseFineZoom(FineZoomText.Text, out var zoom))
+            if (!TryParseFineZoom(input.Text, out var zoom))
             {
                 SynchronizeFineZoomControls();
                 PublishInputStatus("배율은 0.25에서 8 사이의 숫자로 입력하세요");
