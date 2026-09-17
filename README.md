@@ -13,7 +13,7 @@
   <a href="README.ja.md">日本語</a>
 </p>
 
-> **Official release — v0.1.0.** Pinte is available for hands-on use, while compatibility with every Windows application still needs to be verified.
+> **Official release — v0.1.1.** Pinte is available for hands-on use, while compatibility with every Windows application still needs to be verified.
 
 Pinte helps people who work with a mouse to enlarge part of the Windows desktop, make a precise click or drag through an independent lens window, and return to the original screen without relying on a keyboard.
 
@@ -28,7 +28,7 @@ The source frame and the lens can be positioned and resized separately. The lens
 
 ## Download and run
 
-1. Download `Pinte-v0.1.0-win-x64.zip` from the [v0.1.0 release](https://github.com/ai-blink/pinte/releases/tag/v0.1.0).
+1. Download `Pinte-v0.1.1-win-x64.zip` from the [v0.1.1 release](https://github.com/ai-blink/pinte/releases/tag/v0.1.1).
 2. Extract the ZIP to a folder you can write to.
 3. Run `Magnifier.App.exe`.
 4. Select **Screen area**, adjust the source frame, then open the magnified lens.
@@ -37,7 +37,7 @@ The release archive is self-contained for 64-bit Windows 10 or Windows 11; it do
 
 ## Safety and compatibility
 
-- Pinte deliberately excludes its own helper windows from screen capture. This prevents the repeating “mirror inside a mirror” feedback loop. As a result, the Pinte lens itself may not appear in some screen-recording or sharing tools.
+- Screen-capture hiding is off by default and can be changed in Settings. Turn it on to exclude Pinte helper windows and prevent the repeating “mirror inside a mirror” feedback loop in screen-recording or sharing tools.
 - Input relay is paused before source editing, lens resizing, a capture failure, returning, or closing. A temporary capture failure is retried automatically; relay resumes only after a fresh frame arrives, unless you explicitly return or close the lens.
 - Secure desktop surfaces, protected content, elevated applications, remote sessions, and individual application input policies can prevent capture or input relay. Test your intended target before depending on Pinte for an important operation.
 - Pinte is a local live magnifier. It does not upload or save screen captures.
@@ -55,7 +55,7 @@ For manual checks—including multi-monitor, DPI, compact lens, capture recovery
 
 ## Current status
 
-`v0.1.0` is Pinte's first official release. The core click-and-drag flow has automated regression coverage, but live target-application behavior still needs validation across the Windows environments you use. Please report reproducible issues through [GitHub Issues](https://github.com/ai-blink/pinte/issues).
+`v0.1.1` adds configurable screen-capture hiding, one-line settings menus, and a movable collapsed-lens toggle. The core click-and-drag flow has automated regression coverage, but live target-application behavior still needs validation across the Windows environments you use. Please report reproducible issues through [GitHub Issues](https://github.com/ai-blink/pinte/issues).
 
 ## License
 

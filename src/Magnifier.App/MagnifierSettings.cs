@@ -26,6 +26,7 @@ public sealed record MagnifierSettings
     public ToolbarPlacement ToolbarPlacement { get; init; } = ToolbarPlacement.Top;
     public ThemePreference Theme { get; init; } = ThemePreference.System;
     public SourceIndicatorPreference SourceIndicatorPreference { get; init; } = SourceIndicatorPreference.Hidden;
+    public bool HideAppWindowsFromScreenCapture { get; init; }
     public LensDisplayMode LensDisplayMode { get; init; } = LensDisplayMode.Normal;
     public bool RememberLayout { get; init; } = true;
     public int DefaultSourceWidth { get; init; } = 960;

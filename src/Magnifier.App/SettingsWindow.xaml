@@ -64,6 +64,20 @@
                                 </ComboBox>
                                 <TextBlock TextWrapping="Wrap" FontSize="12" Margin="0,0,0,18" Foreground="{DynamicResource AppMutedTextBrush}"
                                            Text="윤곽선은 원본 클릭을 가로채지 않습니다. 영역을 바꾸려면 렌즈의 영역 편집을 누르세요." />
+                                <TextBlock FontWeight="SemiBold" Text="화면 캡처 숨김" />
+                                <Border Background="{DynamicResource AppCanvasBrush}" BorderBrush="{DynamicResource AppBorderBrush}"
+                                        BorderThickness="1" CornerRadius="10" Padding="12,4" Margin="0,8,0,18">
+                                    <StackPanel>
+                                        <CheckBox x:Name="HideAppWindowsFromScreenCaptureBox" MinHeight="36"
+                                                  Content="앱 창을 화면 캡처에서 숨기기"
+                                                  Checked="HideAppWindowsFromScreenCapture_OnChanged"
+                                                  Unchecked="HideAppWindowsFromScreenCapture_OnChanged"
+                                                  AutomationProperties.Name="앱 창 화면 캡처 숨기기" />
+                                        <TextBlock Margin="0,0,0,5" TextWrapping="Wrap" FontSize="12"
+                                                   Foreground="{DynamicResource AppMutedTextBrush}"
+                                                   Text="기본값은 꺼짐입니다. 켜면 렌즈와 보조 창이 다른 화면 캡처·녹화에 나타나지 않습니다." />
+                                    </StackPanel>
+                                </Border>
                                 <Button x:Name="ResizeLensButton" HorizontalAlignment="Left" MinHeight="44" Margin="0,0,0,18"
                                         Content="렌즈 크기 조절" Click="ResizeLens_OnClick" AutomationProperties.Name="큰 렌즈 크기 조절 손잡이 열기" />
                                 <TextBlock FontWeight="SemiBold" Text="도구막대 배치 · 일반·컴팩트 공통" />
@@ -125,6 +139,8 @@
                                 <TextBlock Margin="0,5,0,8" FontSize="12" Foreground="{DynamicResource AppMutedTextBrush}" Text="원본 영역과 별도로 적용됩니다." />
                                 <ComboBox x:Name="DefaultZoomBox" Style="{StaticResource AppComboBoxStyle}" Width="160" MinHeight="42"
                                           SelectionChanged="DefaultZoomBox_OnSelectionChanged" AutomationProperties.Name="기본 확대 배율" />
+                                <TextBlock Margin="0,7,0,0" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource AppMutedTextBrush}"
+                                           Text="이전 값 기억을 켠 상태에서도 기본값을 미리 바꿀 수 있습니다. 다음에 기억 기능을 끄고 확대할 때 적용됩니다." />
                             </StackPanel>
 
                             <StackPanel x:Name="AboutPanel" Visibility="Collapsed">

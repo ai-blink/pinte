@@ -153,11 +153,11 @@ public partial class MainWindow : Window
         if (_frame is not null && _lens is not null) return;
         // Hiding an owner also hides its owned windows. These two windows must stay
         // visible while the entry window is hidden; their lifetime is managed below.
-        _frame = new SelectionOverlayWindow(_capture, _windows);
-        _lens = new SelectionPreviewWindow(_relay, _capture, _windows, _pointer);
+        _frame = new SelectionOverlayWindow(_capture, _windows, _settings.HideAppWindowsFromScreenCapture);
+        _lens = new SelectionPreviewWindow(_relay, _capture, _windows, _pointer, _settings.HideAppWindowsFromScreenCapture);
         _lens.SetToolbarPlacement(_settings.ToolbarPlacement);
         _lens.SetDisplayMode(_settings.LensDisplayMode);
-        _indicator = new SourceIndicatorWindow(_capture, _windows);
+        _indicator = new SourceIndicatorWindow(_capture, _windows, _settings.HideAppWindowsFromScreenCapture);
         CreateCollapsedLensOverlay();
         _frame.RegionChanged += region =>
         {

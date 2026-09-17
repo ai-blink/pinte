@@ -12,7 +12,7 @@ public sealed class SourceIndicatorWindowTests
         // EnsureHandle만 허용한다. fake 캡처 제외가 반드시 실패해 Show에는 도달하지 않는다.
         var capture = new NoDesktopCapture { ExclusionFailure = new InvalidOperationException("캡처 제외 거부") };
         var windows = new NoDesktopWindows();
-        var indicator = new SourceIndicatorWindow(capture, windows);
+        var indicator = new SourceIndicatorWindow(capture, windows, hideFromScreenCapture: true);
         try
         {
             Assert.IsFalse(indicator.ShowRegion(new ScreenRegion(-400, 50, 320, 180)));

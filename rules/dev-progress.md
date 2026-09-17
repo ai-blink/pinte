@@ -1,5 +1,7 @@
 # 개발 진행
 
+- 2026-09-18: **Pinte v0.1.1 릴리즈** — 화면 캡처 숨김을 기본 꺼짐의 설정으로 분리하고, 설정 콤보 목록을 한 줄로 고정했으며, 접힌 렌즈 `⌕` 토글은 드래그 이동과 클릭 펼치기를 구분한다. 표준 build 경고0/오류0·총 146 테스트 통과. 실제 화면 캡처 제외, 토글 이동·다시 펼치기, 대상 앱 입력은 `NEEDS_USER_UI_CHECK`다. [릴리즈](https://github.com/ai-blink/pinte/releases/tag/v0.1.1).
+
 - 2026-09-17: 이동 손잡이와 겹치던 상단 모서리 리사이즈 hit area를 24 DIP로 줄이고 기호를 옮겨 `SizeAll` hover를 우선했다. 배율 `−/+`는 0.1×로 바꾸고 컴팩트에도 직접 숫자 입력을 추가했다. build 0/0·총 143 테스트 통과, 실제 UI는 `NEEDS_USER_UI_CHECK`다.
 - 2026-09-17: 렌즈의 화면 밖 배치 보정을 제거하고, 8방향 실시간 리사이즈의 모서리·변 hit area를 넓혔다. `렌즈 숨김`은 클릭 지점의 `⌕` 펼치기 오버레이로 접혀 원래 배치·배율을 복원하며, 좁은 영역 지정 도구막대는 아이콘 우선으로 버튼 잘림을 막았다. build 0/0·총 142 테스트 통과, 실제 UI는 `NEEDS_USER_UI_CHECK`다.
 - 2026-09-17: D-030 실행본 첫 publish가 native self-extract 옵션 없이 만들어져 WPF `SourceInitialized`에서 `DllNotFoundException`으로 종료했다. 배포본은 즉시 이전 SHA `46F4768D…401872`로 복원했고, `PublishSingleFile=true`일 때 `IncludeNativeLibrariesForSelfExtract=true`를 프로젝트에 고정했다. 새 self-extract publish SHA `9D5A01C0…A6747D`를 `C:\app\Magnifier.App.exe`에 교체하고 PID 16324가 4초 이상 유지됨을 확인했다. 이는 진입 창 시작 확인이며 렌즈·relay 장기 동작은 여전히 `NEEDS_USER_UI_CHECK`다.

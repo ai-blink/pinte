@@ -58,6 +58,7 @@ internal sealed class NoDesktopCapture : IScreenCapture
 {
     public int CaptureCount { get; private set; }
     public int ExclusionCount { get; private set; }
+    public List<bool> ExclusionRequests { get; } = [];
     public Exception? ExclusionFailure { get; set; }
     public CapturedFrame Capture(ScreenRegion region)
     {
@@ -67,6 +68,7 @@ internal sealed class NoDesktopCapture : IScreenCapture
     public void SetWindowCaptureExclusion(nint windowHandle, bool excludeFromCapture)
     {
         ExclusionCount++;
+        ExclusionRequests.Add(excludeFromCapture);
         if (ExclusionFailure is { } failure) throw failure;
     }
 }
@@ -75,9 +77,16 @@ internal sealed class NoDesktopWindows : IWindowEnvironment
 {
     public ScreenRegion DesktopBounds => new(-1920, -1080, 3840, 2160);
     public int NativeOperationCount { get; private set; }
-    public ScreenRegion GetWindowBounds(nint handle) { NativeOperationCount++; return new(100, 100, 800, 640); }
+    public List<ScreenRegion> PlacedBounds { get; } = [];
+    public ScreenRegion WindowBounds { get; private set; } = new(100, 100, 800, 640);
+    public ScreenRegion GetWindowBounds(nint handle) { NativeOperationCount++; return WindowBounds; }
     public ScreenRegion GetWindowWorkArea(nint handle) { NativeOperationCount++; return DesktopBounds; }
-    public void PlaceWindow(nint handle, ScreenRegion bounds) => NativeOperationCount++;
+    public void PlaceWindow(nint handle, ScreenRegion bounds)
+    {
+        NativeOperationCount++;
+        WindowBounds = bounds;
+        PlacedBounds.Add(bounds);
+    }
     public void SetPassiveOverlay(nint handle) => NativeOperationCount++;
     public bool IsRegionVisible(ScreenRegion region) => true;
 }

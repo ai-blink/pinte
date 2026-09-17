@@ -16,13 +16,15 @@ public partial class SelectionOverlayWindow : Window
     private bool _editingEnabled = true;
     private bool _adjusting;
     private bool _settingRegion;
+    private bool _hideFromScreenCapture;
     private double? _lockedAspectRatio;
 
-    public SelectionOverlayWindow(IScreenCapture capture, IWindowEnvironment windows)
+    public SelectionOverlayWindow(IScreenCapture capture, IWindowEnvironment windows, bool hideFromScreenCapture = false)
     {
         InitializeComponent();
         _capture = capture;
         _windows = windows;
+        _hideFromScreenCapture = hideFromScreenCapture;
         SourceInitialized += (_, _) =>
         {
             WindowHandle = new WindowInteropHelper(this).Handle;
@@ -63,11 +65,17 @@ public partial class SelectionOverlayWindow : Window
 
     public nint WindowHandle { get; private set; }
 
+    public void SetCaptureExclusion(bool excludeFromCapture)
+    {
+        _hideFromScreenCapture = excludeFromCapture;
+        if (WindowHandle != nint.Zero) _capture.SetWindowCaptureExclusion(WindowHandle, excludeFromCapture);
+    }
+
     public void ShowEditor()
     {
         WindowHandle = new WindowInteropHelper(this).EnsureHandle();
-        // 재편집 때도 제외를 다시 확인한다. 첫 표시 실패 뒤의 재시도를 정상으로 오인하지 않는다.
-        _capture.SetWindowCaptureExclusion(WindowHandle, true);
+        // 재편집 때도 현재 화면 캡처 표시 정책을 다시 적용한다.
+        SetCaptureExclusion(_hideFromScreenCapture);
         Show();
     }
 

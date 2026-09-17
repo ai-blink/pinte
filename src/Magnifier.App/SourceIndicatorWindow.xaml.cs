@@ -11,16 +11,28 @@ public partial class SourceIndicatorWindow : Window
     private nint _windowHandle;
     private bool _captureExcluded;
     private bool _closed;
+    private bool _hideFromScreenCapture;
 
-    public SourceIndicatorWindow(IScreenCapture capture, IWindowEnvironment windows)
+    public SourceIndicatorWindow(IScreenCapture capture, IWindowEnvironment windows, bool hideFromScreenCapture = false)
     {
         InitializeComponent();
         _capture = capture;
         _windows = windows;
+        _hideFromScreenCapture = hideFromScreenCapture;
     }
 
     // 실패 상태는 Hide나 후속 표시 요청으로 지우지 않는다.
     public string? FailureReason { get; private set; }
+
+    public void SetCaptureExclusion(bool excludeFromCapture)
+    {
+        _hideFromScreenCapture = excludeFromCapture;
+        // 새 정책은 이전 정책의 실패를 고정하지 않는다. 다음 표시 요청에서 다시 판정한다.
+        FailureReason = null;
+        if (_windowHandle == nint.Zero) return;
+        _capture.SetWindowCaptureExclusion(_windowHandle, excludeFromCapture);
+        _captureExcluded = excludeFromCapture;
+    }
 
     public bool ShowRegion(ScreenRegion region)
     {
@@ -31,8 +43,7 @@ public partial class SourceIndicatorWindow : Window
             Hide();
             _windowHandle = new WindowInteropHelper(this).EnsureHandle();
             _windows.SetPassiveOverlay(_windowHandle);
-            _capture.SetWindowCaptureExclusion(_windowHandle, true);
-            _captureExcluded = true;
+            SetCaptureExclusion(_hideFromScreenCapture);
             // 물리 픽셀 배치는 Infrastructure가 소유한다. 원본 영역을 DIP로 다시 저장하지 않는다.
             _windows.PlaceWindow(_windowHandle, region);
             Show();

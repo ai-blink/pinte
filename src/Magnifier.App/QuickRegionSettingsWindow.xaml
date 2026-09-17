@@ -28,7 +28,7 @@
                 <ComboBox x:Name="PresetBox" Style="{StaticResource AppComboBoxStyle}" Margin="0,7,0,18" MinHeight="42"
                           SelectionChanged="PresetBox_OnSelectionChanged" AutomationProperties.Name="원본 영역 크기 프리셋">
                     <ComboBox.ItemContainerStyle>
-                        <Style TargetType="ComboBoxItem">
+                        <Style TargetType="ComboBoxItem" BasedOn="{StaticResource AppComboBoxItemStyle}">
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsAvailable}" Value="False">
                                     <Setter Property="IsEnabled" Value="False" />

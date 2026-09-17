@@ -8,7 +8,12 @@
     <Border Margin="2" Background="{DynamicResource AppPanelBrush}" BorderBrush="{DynamicResource AppAccentBrush}"
             BorderThickness="2" CornerRadius="24">
         <Button x:Name="ExpandButton" Style="{StaticResource IconButtonStyle}" BorderThickness="0" Background="Transparent"
-                Content="⌕" FontSize="25" Click="ExpandButton_OnClick"
-                ToolTip="렌즈 다시 펼치기" AutomationProperties.Name="렌즈 다시 펼치기" />
+                Content="⌕" FontSize="25" Cursor="SizeAll" Click="ExpandButton_OnClick"
+                PreviewMouseLeftButtonDown="ExpandButton_OnPreviewMouseLeftButtonDown"
+                PreviewMouseMove="ExpandButton_OnPreviewMouseMove"
+                PreviewMouseLeftButtonUp="ExpandButton_OnPreviewMouseLeftButtonUp"
+                LostMouseCapture="ExpandButton_OnLostMouseCapture"
+                ToolTip="클릭하여 렌즈 다시 펼치기 · 드래그하여 아이콘 이동"
+                AutomationProperties.Name="렌즈 다시 펼치기 또는 아이콘 이동" />
     </Border>
 </Window>

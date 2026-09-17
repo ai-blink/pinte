@@ -13,7 +13,8 @@ public partial class MainWindow
         {
             await BeginModalAsync("크기·비율 설정 · 조작 일시 중지");
             if (version != _sessionVersion || _returning || _shuttingDown) return;
-            var settings = new QuickRegionSettingsWindow(_capture, _windows.DesktopBounds, _frame.Region, _frame.LockedAspectRatio) { Owner = owner };
+            var settings = new QuickRegionSettingsWindow(_capture, _windows.DesktopBounds, _frame.Region,
+                _frame.LockedAspectRatio, _settings.HideAppWindowsFromScreenCapture) { Owner = owner };
             settings.SizingChanged += options => _frame.ApplySizing(options.Width, options.Height, options.LockedAspectRatio);
             settings.ShowDialog();
             // 숨은 편집창의 RegionChanged는 구독 guard를 통과하지 않으므로 명시 반영한다.
@@ -61,7 +62,8 @@ public partial class MainWindow
 
     private void ApplySettings(MagnifierSettings settings)
     {
-        if (_settings.SourceIndicatorPreference != settings.SourceIndicatorPreference)
+        var captureExclusionChanged = _settings.HideAppWindowsFromScreenCapture != settings.HideAppWindowsFromScreenCapture;
+        if (_settings.SourceIndicatorPreference != settings.SourceIndicatorPreference || captureExclusionChanged)
         {
             _indicatorPolicyPending = true;
             HideSourceIndicator();
@@ -70,8 +72,24 @@ public partial class MainWindow
         MagnifierTheme.Apply(settings.Theme);
         _lens?.SetToolbarPlacement(settings.ToolbarPlacement);
         _lens?.SetDisplayMode(settings.LensDisplayMode);
+        if (captureExclusionChanged) ApplyCaptureExclusion(settings.HideAppWindowsFromScreenCapture);
         if (!MagnifierSettingsStore.Save(settings))
             SelectionStatusText.Text = "설정 저장에 실패해 이번 실행에만 적용합니다.";
+    }
+
+    private void ApplyCaptureExclusion(bool excludeFromCapture)
+    {
+        try
+        {
+            _frame?.SetCaptureExclusion(excludeFromCapture);
+            _lens?.SetCaptureExclusion(excludeFromCapture);
+            _indicator?.SetCaptureExclusion(excludeFromCapture);
+            _collapsedLens?.SetCaptureExclusion(excludeFromCapture);
+        }
+        catch (Exception exception)
+        {
+            SelectionStatusText.Text = $"화면 캡처 숨김 설정 적용 실패: {exception.Message}";
+        }
     }
 
     private async Task BeginModalAsync(string reason)

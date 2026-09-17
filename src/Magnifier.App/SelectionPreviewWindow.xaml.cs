@@ -23,18 +23,19 @@ public partial class SelectionPreviewWindow : Window
     private WriteableBitmap? _bitmap;
     private RelayStatus? _relayStatus;
     private RelayStatus? _pendingRelayStatus;
-    private bool _captureExcluded, _closed, _isMoving, _captureStopPending;
+    private bool _captureExcluded, _closed, _isMoving, _captureStopPending, _hideFromScreenCapture;
     private int _sourceRevision, _inputRequestRevision;
     private string? _captureFailureReason;
     private bool _editingAllowed = true;
     private bool _externalInteractionLocked;
 
     public SelectionPreviewWindow(ILivePointerRelay relay, IScreenCapture capture,
-        IWindowEnvironment windows, IPointerInput pointer)
+        IWindowEnvironment windows, IPointerInput pointer, bool hideFromScreenCapture = false)
     {
         _relay = relay;
         _screenCapture = capture;
         _windows = windows;
+        _hideFromScreenCapture = hideFromScreenCapture;
         _inputSession = new PointerInputSession(pointer);
         InitializeComponent();
         _statusTimer = new DispatcherTimer(DispatcherPriority.Input)
@@ -65,6 +66,21 @@ public partial class SelectionPreviewWindow : Window
     public double Zoom { get; private set; } = 2;
 
     public bool IsInteractionLocked => _externalInteractionLocked || _relayStatus is { IsPressed: true } or { WaitingForRelease: true };
+
+    public void SetCaptureExclusion(bool excludeFromCapture)
+    {
+        _hideFromScreenCapture = excludeFromCapture;
+        if (WindowHandle == nint.Zero) return;
+        try
+        {
+            _screenCapture.SetWindowCaptureExclusion(WindowHandle, excludeFromCapture);
+            _captureExcluded = excludeFromCapture;
+        }
+        catch (Exception exception)
+        {
+            PublishInputStatus($"렌즈 캡처 숨김 설정 적용 실패: {exception.Message}");
+        }
+    }
 
     public async Task SetSourceAsync(ScreenRegion source, nint frameHandle)
     {
@@ -177,7 +193,7 @@ public partial class SelectionPreviewWindow : Window
 
     public async Task StartInputAsync()
     {
-        if (_closed || !IsVisible || !_captureExcluded || AuxiliaryTools.IsExpanded || _handToolEnabled ||
+        if (_closed || !IsVisible || AuxiliaryTools.IsExpanded || _handToolEnabled ||
             _sourceEditing || _isResizing || _currentRegion is null || _captureFailureReason is not null) return;
         var revision = ++_inputRequestRevision;
         await ConfigureGeometryAsync();
@@ -377,12 +393,7 @@ public partial class SelectionPreviewWindow : Window
     {
         base.OnSourceInitialized(e);
         WindowHandle = new WindowInteropHelper(this).Handle;
-        try
-        {
-            _screenCapture.SetWindowCaptureExclusion(WindowHandle, true);
-            _captureExcluded = true;
-        }
-        catch (Exception exception) { PublishInputStatus($"렌즈 캡처 제외 실패 · 조작 불가: {exception.Message}"); }
+        SetCaptureExclusion(_hideFromScreenCapture);
         UpdateControls();
     }
 

@@ -9,7 +9,7 @@ public partial class MainWindow
 
     private void CreateCollapsedLensOverlay()
     {
-        _collapsedLens = new LensCollapseOverlayWindow(_capture, _windows);
+        _collapsedLens = new LensCollapseOverlayWindow(_capture, _windows, _settings.HideAppWindowsFromScreenCapture);
         _collapsedLens.ExpandRequested += async () => await ExpandCollapsedLensAsync();
         _collapsedLens.Closing += PreventSecondaryClose;
     }

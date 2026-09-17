@@ -27,13 +27,18 @@ public partial class QuickRegionSettingsWindow : Window
     private ScreenRegion _region;
     private double _aspectRatio;
     private bool _syncing;
+    private readonly bool _hideFromScreenCapture;
+    private nint _windowHandle;
+    private bool _captureExcluded;
 
-    public QuickRegionSettingsWindow(IScreenCapture capture, ScreenRegion availableBounds, ScreenRegion region, double? lockedAspectRatio)
+    public QuickRegionSettingsWindow(IScreenCapture capture, ScreenRegion availableBounds, ScreenRegion region,
+        double? lockedAspectRatio, bool hideFromScreenCapture = false)
     {
         InitializeComponent();
         _capture = capture;
         _availableBounds = availableBounds;
         _region = region;
+        _hideFromScreenCapture = hideFromScreenCapture;
         _aspectRatio = lockedAspectRatio is { } value && value > 0 ? value : 16d / 9d;
         _presets = Presets.Select(x => x with { IsAvailable = x.Width <= availableBounds.Width && x.Height <= availableBounds.Height }).ToArray();
         PresetBox.ItemsSource = _presets;
@@ -47,12 +52,14 @@ public partial class QuickRegionSettingsWindow : Window
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
-        _capture.SetWindowCaptureExclusion(new WindowInteropHelper(this).Handle, true);
+        _windowHandle = new WindowInteropHelper(this).Handle;
+        _capture.SetWindowCaptureExclusion(_windowHandle, _hideFromScreenCapture);
+        _captureExcluded = _hideFromScreenCapture;
     }
 
     protected override void OnClosed(EventArgs e)
     {
-        try { _capture.SetWindowCaptureExclusion(new WindowInteropHelper(this).Handle, false); }
+        try { if (_captureExcluded) _capture.SetWindowCaptureExclusion(_windowHandle, false); }
         catch { }
         base.OnClosed(e);
     }

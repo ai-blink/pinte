@@ -17,6 +17,8 @@ public partial class SettingsWindow : Window
     private MagnifierSettings _settings;
     private readonly IScreenCapture _capture;
     private bool _syncing = true;
+    private nint _windowHandle;
+    private bool _captureExcluded;
 
     public SettingsWindow(MagnifierSettings settings, IScreenCapture capture, bool canResizeLens = false)
     {
@@ -38,12 +40,13 @@ public partial class SettingsWindow : Window
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
-        _capture.SetWindowCaptureExclusion(new WindowInteropHelper(this).Handle, true);
+        _windowHandle = new WindowInteropHelper(this).Handle;
+        SetCaptureExclusion(_settings.HideAppWindowsFromScreenCapture);
     }
 
     protected override void OnClosed(EventArgs e)
     {
-        try { _capture.SetWindowCaptureExclusion(new WindowInteropHelper(this).Handle, false); }
+        try { if (_captureExcluded) _capture.SetWindowCaptureExclusion(_windowHandle, false); }
         catch { }
         base.OnClosed(e);
     }
@@ -58,10 +61,10 @@ public partial class SettingsWindow : Window
             ThemeBox.SelectedIndex = (int)_settings.Theme;
             LensDisplayModeBox.SelectedIndex = (int)_settings.LensDisplayMode;
             SourceIndicatorBox.SelectedIndex = (int)_settings.SourceIndicatorPreference;
+            HideAppWindowsFromScreenCaptureBox.IsChecked = _settings.HideAppWindowsFromScreenCapture;
             RememberLayoutBox.IsChecked = _settings.RememberLayout;
             DefaultSizeBox.SelectedItem = Sizes.FirstOrDefault(x => x.Width == _settings.DefaultSourceWidth && x.Height == _settings.DefaultSourceHeight);
             DefaultZoomBox.SelectedItem = Zooms.OrderBy(x => Math.Abs(x - _settings.DefaultZoom)).First();
-            DefaultSizeBox.IsEnabled = DefaultZoomBox.IsEnabled = !_settings.RememberLayout;
         }
         finally { _syncing = false; }
     }
@@ -100,6 +103,12 @@ public partial class SettingsWindow : Window
         Update(_settings with { SourceIndicatorPreference = (SourceIndicatorPreference)SourceIndicatorBox.SelectedIndex });
     }
 
+    private void HideAppWindowsFromScreenCapture_OnChanged(object sender, RoutedEventArgs e)
+    {
+        if (_syncing) return;
+        Update(_settings with { HideAppWindowsFromScreenCapture = HideAppWindowsFromScreenCaptureBox.IsChecked == true });
+    }
+
     private void ResizeLens_OnClick(object sender, RoutedEventArgs e)
     {
         ResizeLensRequested = true;
@@ -126,9 +135,18 @@ public partial class SettingsWindow : Window
 
     private void Update(MagnifierSettings settings)
     {
+        var captureExclusionChanged = _settings.HideAppWindowsFromScreenCapture != settings.HideAppWindowsFromScreenCapture;
         _settings = settings;
+        if (captureExclusionChanged) SetCaptureExclusion(settings.HideAppWindowsFromScreenCapture);
         RefreshControls();
         SettingsChanged?.Invoke(_settings);
+    }
+
+    private void SetCaptureExclusion(bool excludeFromCapture)
+    {
+        if (_windowHandle == nint.Zero) return;
+        _capture.SetWindowCaptureExclusion(_windowHandle, excludeFromCapture);
+        _captureExcluded = excludeFromCapture;
     }
 
     private void AppearancePage_OnClick(object sender, RoutedEventArgs e) => ShowPage(AppearancePanel);

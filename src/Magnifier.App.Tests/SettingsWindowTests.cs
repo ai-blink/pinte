@@ -28,6 +28,7 @@ public sealed class SettingsWindowTests
             Assert.AreEqual(Visibility.Collapsed, Control<StackPanel>(window, "AboutPanel").Visibility);
             Assert.AreEqual((int)preferences.LensDisplayMode, Control<ComboBox>(window, "LensDisplayModeBox").SelectedIndex);
             Assert.AreEqual(2, Control<ComboBox>(window, "SourceIndicatorBox").SelectedIndex);
+            Assert.IsFalse(Control<CheckBox>(window, "HideAppWindowsFromScreenCaptureBox").IsChecked == true);
             Assert.IsTrue(Control<RadioButton>(window, "BottomToolbarButton").IsChecked == true);
             Assert.IsTrue(Control<Button>(window, "ResizeLensButton").IsEnabled);
             Assert.IsFalse(window.IsVisible);
@@ -80,12 +81,42 @@ public sealed class SettingsWindowTests
     });
 
     [TestMethod]
+    public Task CaptureHidingAndDefaultValueCombos_AlwaysPublishUserChanges() => StaTest.Run(() =>
+    {
+        var window = new SettingsWindow(MagnifierSettings.Default, new NoDesktopCapture());
+        try
+        {
+            var changes = new List<MagnifierSettings>();
+            window.SettingsChanged += changes.Add;
+            var captureHiding = Control<CheckBox>(window, "HideAppWindowsFromScreenCaptureBox");
+            var defaultSize = Control<ComboBox>(window, "DefaultSizeBox");
+            var defaultZoom = Control<ComboBox>(window, "DefaultZoomBox");
+
+            Assert.IsFalse(captureHiding.IsChecked == true, "새 설정의 화면 캡처 숨김은 기본 꺼짐이다.");
+            Assert.IsTrue(defaultSize.IsEnabled, "이전 값 기억 중에도 다음 기본값을 미리 선택할 수 있다.");
+            Assert.IsTrue(defaultZoom.IsEnabled, "이전 값 기억 중에도 다음 기본값을 미리 선택할 수 있다.");
+
+            captureHiding.IsChecked = true;
+            defaultSize.SelectedIndex = 0;
+            defaultZoom.SelectedIndex = 6;
+
+            Assert.AreEqual(3, changes.Count);
+            Assert.IsTrue(changes[^1].HideAppWindowsFromScreenCapture);
+            Assert.AreEqual(320, changes[^1].DefaultSourceWidth);
+            Assert.AreEqual(180, changes[^1].DefaultSourceHeight);
+            Assert.AreEqual(4d, changes[^1].DefaultZoom);
+        }
+        finally { window.Close(); }
+        return Task.CompletedTask;
+    });
+
+    [TestMethod]
     public Task AboutPage_ShowsTheReleaseInformationalVersion() => StaTest.Run(() =>
     {
         var window = new SettingsWindow(MagnifierSettings.Default, new NoDesktopCapture());
         try
         {
-            Assert.AreEqual("버전 0.1.0", Control<TextBlock>(window, "VersionText").Text);
+            Assert.AreEqual("버전 0.1.1", Control<TextBlock>(window, "VersionText").Text);
         }
         finally { window.Close(); }
         return Task.CompletedTask;

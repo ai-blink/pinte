@@ -144,12 +144,27 @@
             </Setter>
         </Style>
 
+        <Style x:Key="AppComboBoxItemStyle" TargetType="{x:Type ComboBoxItem}">
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="ContentTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center" />
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="AppComboBoxStyle" TargetType="{x:Type ComboBox}">
             <Setter Property="Padding" Value="10,5" />
             <Setter Property="Background" Value="{DynamicResource AppPanelBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Foreground" Value="{DynamicResource AppTextBrush}" />
+            <Setter Property="ItemContainerStyle" Value="{StaticResource AppComboBoxItemStyle}" />
         </Style>
     </Application.Resources>
 </Application>

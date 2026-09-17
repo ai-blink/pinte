@@ -16,6 +16,7 @@ public sealed class SettingsTests
         var settings = MagnifierSettingsStore.ReadJson(LegacyJson);
 
         Assert.AreEqual(SourceIndicatorPreference.Hidden, settings.SourceIndicatorPreference);
+        Assert.IsFalse(settings.HideAppWindowsFromScreenCapture);
         Assert.AreEqual(LensDisplayMode.Normal, settings.LensDisplayMode);
         AssertLegacyValues(settings);
     }
@@ -48,6 +49,7 @@ public sealed class SettingsTests
             RememberLayout = false,
             ToolbarPlacement = ToolbarPlacement.Bottom,
             SourceIndicatorPreference = (SourceIndicatorPreference)indicator,
+            HideAppWindowsFromScreenCapture = true,
             LensDisplayMode = LensDisplayMode.Compact
         };
 
