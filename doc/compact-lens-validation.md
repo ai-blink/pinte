@@ -4,7 +4,7 @@
 
 원본 작업공간: `C:/ai/projects/magnifier`.
 사용자 실제 실행본: `C:\app\Magnifier.App.exe`. 개발용 표준 출력: `src/Magnifier.App/bin/Debug/net9.0-windows/Magnifier.App.exe`.
-사용 중인 앱은 사용자가 복귀 후 닫는다. 에이전트는 앱 종료·포커스·입력 조작을 수행하지 않는다.
+사용 중인 앱은 기본적으로 사용자가 복귀 후 닫는다. 사용자가 실제 배포·교체·실행을 명시적으로 요청한 경우에만 에이전트는 대상 `C:\app\Magnifier.App.exe`를 종료·교체·시작할 수 있으며, UI 조작 검증은 계속 사용자 소유다.
 
 ## 확인 순서
 

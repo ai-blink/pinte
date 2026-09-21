@@ -275,6 +275,10 @@ public partial class MainWindow : Window
         finally { _returning = false; }
     }
 
+    // A second launch asks the existing instance to use this same release-first return path.
+    // It intentionally does not reopen interaction from a hidden lens.
+    internal Task<bool> RestoreForActivationAsync() => ReturnToScreenAsync();
+
     private nint WindowMessage(nint hwnd, int msg, nint wParam, nint lParam, ref bool handled)
     {
         if (msg == 0x007E) Dispatcher.BeginInvoke(async () =>

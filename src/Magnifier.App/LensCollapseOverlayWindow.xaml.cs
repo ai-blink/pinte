@@ -52,8 +52,8 @@ public partial class LensCollapseOverlayWindow : Window
             var bounds = new ScreenRegion(anchor.X - 26, anchor.Y - 26, 52, 52);
             _windows.PlaceWindow(_windowHandle, bounds);
             Show();
-            // 첫 Show 및 DPI 전환 뒤에도 클릭 대상의 물리 좌표를 다시 맞춘다.
-            _windows.PlaceWindow(_windowHandle, bounds);
+            // 첫 Show 및 DPI 전환 뒤에도 물리 좌표와 최상위 Z-order를 다시 맞춘다.
+            _windows.PlaceTopmostWindow(_windowHandle, bounds);
             return true;
         }
         catch (Exception exception)
@@ -124,7 +124,7 @@ public partial class LensCollapseOverlayWindow : Window
     internal void PlaceDraggedIcon(ScreenRegion startBounds, int horizontalPixels, int verticalPixels)
     {
         if (_windowHandle == nint.Zero) return;
-        _windows.PlaceWindow(_windowHandle, new ScreenRegion(
+        _windows.PlaceTopmostWindow(_windowHandle, new ScreenRegion(
             startBounds.X + horizontalPixels,
             startBounds.Y + verticalPixels,
             startBounds.Width,

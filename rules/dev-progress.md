@@ -1,5 +1,7 @@
 # 개발 진행
 
+- 2026-09-22: 접힌 렌즈 `⌕` 아이콘을 표시·이동할 때 비활성 최상위 Z-order로 재배치하고, 두 번째 실행이 기존 인스턴스의 release-first 진입 창 복귀를 요청하도록 세션 한정 활성화 신호를 추가했다. Windows x64 자체 포함 단일 파일 publish SHA-256 `073F599C…E2B881`을 `C:\app\Magnifier.App.exe`에 교체하고 PID 72100이 응답 상태로 시작함을 확인했다. 이전 0.1.0 파일은 `C:\app\Magnifier.App.pre-collapse-recovery-20260922-0132.exe`로 보존했다. build 경고0/오류0, Core 60·Infrastructure 31 통과, 변경한 두 App 테스트는 단독 통과했다. 전체 App 테스트는 공유 WPF `Application`의 창 종료 뒤 XAML을 다시 로드하지 못하는 기존 호스트 수명 제약으로 최종 완료 판정이 불가하다. 실제 Z-order·재실행 복구는 `NEEDS_USER_UI_CHECK`다.
+
 - 2026-09-18: **Pinte v0.1.1 릴리즈** — 화면 캡처 숨김을 기본 꺼짐의 설정으로 분리하고, 설정 콤보 목록을 한 줄로 고정했으며, 접힌 렌즈 `⌕` 토글은 드래그 이동과 클릭 펼치기를 구분한다. 표준 build 경고0/오류0·총 146 테스트 통과. 실제 화면 캡처 제외, 토글 이동·다시 펼치기, 대상 앱 입력은 `NEEDS_USER_UI_CHECK`다. [릴리즈](https://github.com/ai-blink/pinte/releases/tag/v0.1.1).
 
 - 2026-09-17: 이동 손잡이와 겹치던 상단 모서리 리사이즈 hit area를 24 DIP로 줄이고 기호를 옮겨 `SizeAll` hover를 우선했다. 배율 `−/+`는 0.1×로 바꾸고 컴팩트에도 직접 숫자 입력을 추가했다. build 0/0·총 143 테스트 통과, 실제 UI는 `NEEDS_USER_UI_CHECK`다.

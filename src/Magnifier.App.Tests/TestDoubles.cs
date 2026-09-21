@@ -78,6 +78,7 @@ internal sealed class NoDesktopWindows : IWindowEnvironment
     public ScreenRegion DesktopBounds => new(-1920, -1080, 3840, 2160);
     public int NativeOperationCount { get; private set; }
     public List<ScreenRegion> PlacedBounds { get; } = [];
+    public List<ScreenRegion> TopmostPlacedBounds { get; } = [];
     public ScreenRegion WindowBounds { get; private set; } = new(100, 100, 800, 640);
     public ScreenRegion GetWindowBounds(nint handle) { NativeOperationCount++; return WindowBounds; }
     public ScreenRegion GetWindowWorkArea(nint handle) { NativeOperationCount++; return DesktopBounds; }
@@ -86,6 +87,12 @@ internal sealed class NoDesktopWindows : IWindowEnvironment
         NativeOperationCount++;
         WindowBounds = bounds;
         PlacedBounds.Add(bounds);
+    }
+    public void PlaceTopmostWindow(nint handle, ScreenRegion bounds)
+    {
+        NativeOperationCount++;
+        WindowBounds = bounds;
+        TopmostPlacedBounds.Add(bounds);
     }
     public void SetPassiveOverlay(nint handle) => NativeOperationCount++;
     public bool IsRegionVisible(ScreenRegion region) => true;

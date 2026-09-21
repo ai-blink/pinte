@@ -10,11 +10,13 @@ public sealed class LensCollapseOverlayWindowTests
     public Task DefaultCaptureVisibility_DoesNotExcludeCollapseOverlay() => StaTest.Run(() =>
     {
         var capture = new NoDesktopCapture();
-        var overlay = new LensCollapseOverlayWindow(capture, new NoDesktopWindows());
+        var windows = new NoDesktopWindows();
+        var overlay = new LensCollapseOverlayWindow(capture, windows);
         try
         {
             Assert.IsTrue(overlay.ShowAt(new ScreenPoint(400, 300)));
             CollectionAssert.AreEqual(new[] { false }, capture.ExclusionRequests);
+            CollectionAssert.AreEqual(new[] { new ScreenRegion(374, 274, 52, 52) }, windows.TopmostPlacedBounds);
         }
         finally { overlay.Close(); }
         return Task.CompletedTask;
@@ -48,7 +50,7 @@ public sealed class LensCollapseOverlayWindowTests
 
             overlay.PlaceDraggedIcon(initialBounds, 120, -80);
 
-            Assert.AreEqual(new ScreenRegion(494, 194, 52, 52), windows.PlacedBounds[^1]);
+            Assert.AreEqual(new ScreenRegion(494, 194, 52, 52), windows.TopmostPlacedBounds[^1]);
         }
         finally { overlay.Close(); }
         return Task.CompletedTask;

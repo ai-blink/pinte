@@ -18,7 +18,10 @@ public partial class App : Application
     // competing WH_MOUSE_LL hook, and both churning the low-level chain is what let the hook time
     // out and reinstall in a storm. Per-session name so different users never block each other.
     private const string SingleInstanceName = @"Local\Pinte.Magnifier.SingleInstance";
+    private const string SingleInstanceActivationEventName = @"Local\Pinte.Magnifier.ActivateExisting";
     private Mutex? _singleInstance;
+    private EventWaitHandle? _activationSignal;
+    private RegisteredWaitHandle? _activationRegistration;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -46,23 +49,46 @@ public partial class App : Application
         // 서명 실험본으로 기존 SendInput 엔진을 실수로 시작하지 않는다.
         Shutdown(4);
 #else
+        _activationSignal = new EventWaitHandle(false, EventResetMode.AutoReset, SingleInstanceActivationEventName);
         _singleInstance = new Mutex(true, SingleInstanceName, out var createdNew);
         if (!createdNew)
         {
+            _activationSignal.Set();
             _singleInstance.Dispose();
             _singleInstance = null;
-            MessageBox.Show("Pinte 돋보기가 이미 실행 중입니다. 기존 창을 사용하세요.",
-                "Pinte", MessageBoxButton.OK, MessageBoxImage.Information);
             Shutdown(5);
             return;
         }
         StartupUri = new Uri("MainWindow.xaml", UriKind.Relative);
         base.OnStartup(e);
+        _activationRegistration = ThreadPool.RegisterWaitForSingleObject(
+            _activationSignal, static (state, _) => ((App)state!).RequestExistingWindowRestore(), this,
+            Timeout.Infinite, executeOnlyOnce: false);
 #endif
+    }
+
+    private void RequestExistingWindowRestore()
+    {
+        try
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (MainWindow is Magnifier.App.MainWindow main)
+                    _ = main.RestoreForActivationAsync();
+            });
+        }
+        catch (InvalidOperationException)
+        {
+            // Shutdown can race an activation request; the next launch owns the new instance.
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _activationRegistration?.Unregister(null);
+        _activationRegistration = null;
+        _activationSignal?.Dispose();
+        _activationSignal = null;
         if (_singleInstance is not null)
         {
             try { _singleInstance.ReleaseMutex(); } catch { }

@@ -24,6 +24,14 @@ public sealed class WindowsWindowEnvironment : IWindowEnvironment
             throw new Win32Exception(Marshal.GetLastWin32Error());
     }
 
+    public void PlaceTopmostWindow(nint handle, ScreenRegion bounds)
+    {
+        // HWND_TOPMOST + SWP_NOACTIVATE + SWP_SHOWWINDOW. The collapse control must remain
+        // reachable without stealing focus from the application the user is magnifying.
+        if (!SetWindowPos(handle, new nint(-1), bounds.X, bounds.Y, bounds.Width, bounds.Height, 0x50))
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "렌즈 펼치기 아이콘을 최상위로 표시하지 못했습니다.");
+    }
+
     public void SetPassiveOverlay(nint handle)
     {
         if (handle == 0) throw new ArgumentException("표시 전용 창의 핸들이 필요합니다.", nameof(handle));

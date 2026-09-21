@@ -35,6 +35,11 @@ dotnet build Magnifier.slnx --nologo
 dotnet test Magnifier.slnx --nologo
 ```
 
+## 실제 실행본·교체
+
+- 사용자가 항상 여는 정본은 시작 메뉴 바로 가기 `C:\Users\user\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Magnifier.App.exe - 바로 가기.lnk`이며, 현재 대상 실행 파일은 `C:\app\Magnifier.App.exe`다.
+- 빌드·실행·UI 검증·교체를 요청받으면 Debug 출력만으로 정본을 판단하지 않는다. 위 바로 가기와 대상 경로를 먼저 확인·보고하고, 사용자의 명시적 요청으로 실행 중인 해당 앱을 종료한 뒤에만 `C:\app\Magnifier.App.exe`를 교체한다.
+
 ## 경계
 
 - 대상 앱별 브러시·레이어·색상 제어는 추가하지 않는다. 대신 범용 좌표·드래그 보조에 집중한다.
