@@ -196,9 +196,11 @@ internal static partial class RelayProbe
         Check(((long)GetWindowLongPtr(_lensHwnd, -20) & 0x20) == 0, "hover에서 렌즈가 입력 통과로 바뀜");
         await Button(down: true);
         Check(_status?.IsRelaying == true, "Down에서 중계로 전환되지 않음: " + _status?.Message);
+        await WaitForTargetPress();
         Check(((long)GetWindowLongPtr(_lensHwnd, -20) & 0x20) != 0, "Down에서 렌즈가 입력 통과로 전환되지 않음");
         foreach (var point in points.Skip(1)) await Move(point);
         await Button(down: false);
+        await WaitForResume(); // Normal Up restores the cursor after target processing time.
         var expected = points.Select(p => view.MapToSource(new PreviewPoint(p.X, p.Y))).ToArray();
         ValidateDrag(expected);
         Check(_status?.IsPressed == false, "완료 뒤 중계 누름이 남음");
@@ -261,13 +263,24 @@ internal static partial class RelayProbe
 
     private static async Task WaitForResume()
     {
-        for (var i = 0; i < 20; i++)
+        for (var i = 0; i < 40; i++)
         {
             CheckOwnedForeground();
-            if (_status is { IsEnabled: true, WaitingForRelease: false }) return;
+            if (_status is { IsEnabled: true, IsRelaying: false, WaitingForRelease: false }) return;
             await Task.Delay(25);
         }
         Check(false, "버튼 해제·최신 화면 뒤 조작이 자동 재개되지 않음: " + _status?.Message);
+    }
+
+    private static async Task WaitForTargetPress()
+    {
+        for (var i = 0; i < 20; i++)
+        {
+            CheckOwnedForeground();
+            if (_status is { IsPressed: true } && _targetPressed) return;
+            await Task.Delay(25);
+        }
+        Check(false, "도착 대기 뒤 실제 대상 Down 수신 실패: " + _status?.Message);
     }
 
     private static void ValidateDrag(ScreenPoint[] expected)

@@ -1,6 +1,6 @@
 # 개발 진행
 
-- 2026-09-22: 접힌 렌즈 `⌕` 아이콘을 표시·이동할 때 비활성 최상위 Z-order로 재배치하고, 두 번째 실행이 기존 인스턴스의 release-first 진입 창 복귀를 요청하도록 세션 한정 활성화 신호를 추가했다. Windows x64 자체 포함 단일 파일 publish SHA-256 `073F599C…E2B881`을 `C:\app\Magnifier.App.exe`에 교체하고 PID 72100이 응답 상태로 시작함을 확인했다. 이전 0.1.0 파일은 `C:\app\Magnifier.App.pre-collapse-recovery-20260922-0132.exe`로 보존했다. build 경고0/오류0, Core 60·Infrastructure 31 통과, 변경한 두 App 테스트는 단독 통과했다. 전체 App 테스트는 공유 WPF `Application`의 창 종료 뒤 XAML을 다시 로드하지 못하는 기존 호스트 수명 제약으로 최종 완료 판정이 불가하다. 실제 Z-order·재실행 복구는 `NEEDS_USER_UI_CHECK`다.
+- 2026-09-24: 저지연 후보를 구현했다. `TimedPointerSequence`의 기본값은 Arrival100/MinimumHold35/PostRelease60/BetweenGestures0이며, 상태 전이는 deadline이 이미 지났으면 즉시 진행한다. Move backlog는 최대 8개씩 별도 wake로 비우고, health/capture watchdog의 50ms cadence는 유지한다. fake-clock 기준 짧은 tap 완료는 기존 800ms polling baseline에서 후보 195ms ideal로 줄었고, 게임·실제 native scheduler 통합은 확인 전이다. Core65·Infrastructure76, build 0/0, Release publish 후보를 만들었지만 `C:\app` 실행본은 교체하지 않았다. [실행 기록](../notes/runs/2026-09-24-pointer-latency-candidate.md).
 
 - 2026-09-18: **Pinte v0.1.1 릴리즈** — 화면 캡처 숨김을 기본 꺼짐의 설정으로 분리하고, 설정 콤보 목록을 한 줄로 고정했으며, 접힌 렌즈 `⌕` 토글은 드래그 이동과 클릭 펼치기를 구분한다. 표준 build 경고0/오류0·총 146 테스트 통과. 실제 화면 캡처 제외, 토글 이동·다시 펼치기, 대상 앱 입력은 `NEEDS_USER_UI_CHECK`다. [릴리즈](https://github.com/ai-blink/pinte/releases/tag/v0.1.1).
 

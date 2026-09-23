@@ -24,6 +24,7 @@ internal static partial class RelayProbe
             SamePosition = Near(currentCursor, lensPoint) });
 
         await Button(down: true);
+        await WaitForTargetPress();
         Check(_targetPressed, "진단 대상 Down 수신 실패");
         Results.Add(new { Name = "드래그 중 실제 커서와 렌즈 포인터", LensPoint = lensPoint,
             SourcePoint = sourcePoint, SystemCursor = ReadCursor(), LogicalCursor = _status!.Position,

@@ -5,6 +5,7 @@ public sealed class PointerInputSession
     private readonly IPointerInput _pointerInput;
     private bool _isInputEnabled;
     private bool _isPressed;
+    private bool _hasPreparedPress;
 
     public PointerInputSession(IPointerInput pointerInput)
     {
@@ -42,6 +43,12 @@ public sealed class PointerInputSession
 
     public bool Begin(ScreenPoint point)
     {
+        return PrepareBegin(point) && BeginPrepared();
+    }
+
+    /// <summary>버튼을 누르지 않고 원본 위치로 이동한다. 취소하면 준비도 무효화된다.</summary>
+    public bool PrepareBegin(ScreenPoint point)
+    {
         if (!_isInputEnabled)
         {
             return false;
@@ -54,8 +61,28 @@ public sealed class PointerInputSession
 
         try
         {
+            _hasPreparedPress = false;
             _pointerInput.MoveTo(point);
             LastPoint = point;
+            _hasPreparedPress = true;
+            return true;
+        }
+        catch
+        {
+            TryReleaseAfterFailure();
+            throw;
+        }
+    }
+
+    /// <summary>준비한 위치에서 재이동 없이 Down을 보낸다. 호출자는 위치와 대기 시간을 확인한다.</summary>
+    public bool BeginPrepared()
+    {
+        if (!_isInputEnabled) return false;
+        if (_isPressed || !_hasPreparedPress)
+            throw new InvalidOperationException("누름 전에 원본 위치를 준비해야 합니다.");
+        _hasPreparedPress = false;
+        try
+        {
             // Down 실패도 일부 입력이 전달되었을 수 있으므로 release 대상이다.
             _isPressed = true;
             _pointerInput.LeftButtonDown();
@@ -116,6 +143,7 @@ public sealed class PointerInputSession
 
     public void Cancel()
     {
+        _hasPreparedPress = false;
         if (_isPressed)
         {
             Release();

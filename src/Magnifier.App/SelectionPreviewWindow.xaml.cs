@@ -255,7 +255,8 @@ public partial class SelectionPreviewWindow : Window
         {
             _relayStatus = status;
             PublishInputStatus(status.Message);
-            VirtualCursor.Visibility = status.IsRelaying && status.IsPressed ? Visibility.Visible : Visibility.Collapsed;
+            // Post-release source dwell still routes movement through the logical lens cursor.
+            VirtualCursor.Visibility = status.IsRelaying ? Visibility.Visible : Visibility.Collapsed;
             if (status.IsRelaying && CapturedImage.IsVisible)
             {
                 var imagePoint = CapturedImage.PointFromScreen(new Point(status.Position.X, status.Position.Y));

@@ -90,6 +90,20 @@ public sealed class LensInputState
         }
     }
 
+    public bool PrepareBegin(ScreenPoint point)
+    {
+        if (!IsEnabled || IsWaitingForRelease) return false;
+        try { return _session.PrepareBegin(point); }
+        catch { StopAfterFailure(); throw; }
+    }
+
+    public bool BeginPrepared()
+    {
+        if (!IsEnabled || IsWaitingForRelease) return false;
+        try { return _session.BeginPrepared(); }
+        catch { StopAfterFailure(); throw; }
+    }
+
     public void Complete(ScreenPoint point)
     {
         try
