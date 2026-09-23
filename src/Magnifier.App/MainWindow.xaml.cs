@@ -26,7 +26,10 @@ public partial class MainWindow : Window
     private MagnifierSettings _settings;
 
     public MainWindow() : this(new WindowsScreenCapture(), new WindowsWindowEnvironment(),
-        new WindowsPointerInput(), new WindowsLivePointerRelay(), MagnifierSettingsStore.Load()) { }
+        new WindowsPointerInput(), new WindowsLivePointerRelay(), MagnifierSettingsStore.Load())
+    {
+        InitializePointerTiming(PointerTimingStore.Load());
+    }
 
     internal MainWindow(IScreenCapture capture, IWindowEnvironment windows, IPointerInput pointer,
         ILivePointerRelay relay, MagnifierSettings settings, TimeProvider? clock = null)
@@ -311,6 +314,7 @@ public partial class MainWindow : Window
             _lens?.Close();
             _indicator?.Close();
             _collapsedLens?.Close();
+            _timingWindow?.Close();
             _closed = true;
             Close();
         }

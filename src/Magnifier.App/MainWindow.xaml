@@ -24,8 +24,7 @@
                         Content="화면 영역 지정" Click="SelectRegionButton_OnClick" />
                 <TextBlock x:Name="SelectionStatusText" Margin="0,14,0,0" FontSize="12"
                            Foreground="{DynamicResource AppMutedTextBrush}" TextWrapping="Wrap"
-                           Text="원래 화면 · 입력 꺼짐" />
-            </StackPanel>
+                           Text="원래 화면 · 입력 꺼짐" />            </StackPanel>
         </Border>
     </Grid>
 </Window>

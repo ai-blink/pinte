@@ -30,6 +30,8 @@
                                          Content="▦   화면" Checked="AppearancePage_OnClick" />
                             <RadioButton x:Name="DefaultsPageButton" Style="{StaticResource SettingsNavigationStyle}"
                                          Content="⌗   영역 · 배율" Checked="DefaultsPage_OnClick" />
+                            <RadioButton x:Name="AdvancedPageButton" Style="{StaticResource SettingsNavigationStyle}"
+                                         Content="⚙   고급" Checked="AdvancedPage_OnClick" />
                             <RadioButton x:Name="AboutPageButton" Style="{StaticResource SettingsNavigationStyle}"
                                          Content="ⓘ   앱 정보" Checked="AboutPage_OnClick" />
                         </StackPanel>
@@ -141,6 +143,23 @@
                                           SelectionChanged="DefaultZoomBox_OnSelectionChanged" AutomationProperties.Name="기본 확대 배율" />
                                 <TextBlock Margin="0,7,0,0" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource AppMutedTextBrush}"
                                            Text="이전 값 기억을 켠 상태에서도 기본값을 미리 바꿀 수 있습니다. 다음에 기억 기능을 끄고 확대할 때 적용됩니다." />
+                            </StackPanel>
+
+                            <StackPanel x:Name="AdvancedPanel" Visibility="Collapsed">
+                                <TextBlock FontSize="24" FontWeight="SemiBold" Text="고급" />
+                                <TextBlock Margin="0,7,0,22" TextWrapping="Wrap" Foreground="{DynamicResource AppMutedTextBrush}"
+                                           Text="시스템 사양·게임·앱에 따라 알맞은 값이 다릅니다. 클릭이 누락되면 값을 늘리고, 느리면 줄이세요." />
+                                <TextBlock FontWeight="SemiBold" Text="입력 전달 타이밍" />
+                                <Border Background="{DynamicResource AppCanvasBrush}" BorderBrush="{DynamicResource AppBorderBrush}"
+                                        BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,8,0,18">
+                                    <StackPanel>
+                                        <TextBlock x:Name="TimingSummaryText" FontSize="13" />
+                                        <TextBlock Margin="0,6,0,12" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource AppMutedTextBrush}"
+                                                   Text="도착 후 누르기 대기 / 최소 누름 유지 / 해제 후 체류 / 제스처 간격. 조절 창은 렌즈 위에 떠 있어 대상 앱에서 바로 비교할 수 있습니다." />
+                                        <Button x:Name="InputTimingButton" HorizontalAlignment="Left" MinHeight="44" Content="입력 타이밍 조절 열기"
+                                                Click="InputTiming_OnClick" AutomationProperties.Name="입력 전달 타이밍 조절 창 열기" />
+                                    </StackPanel>
+                                </Border>
                             </StackPanel>
 
                             <StackPanel x:Name="AboutPanel" Visibility="Collapsed">

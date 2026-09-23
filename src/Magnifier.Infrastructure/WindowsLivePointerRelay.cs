@@ -265,6 +265,7 @@ public sealed partial class WindowsLivePointerRelay : ILivePointerRelay
     {
         _sequence.CancelPending();
         CancelSequenceWake();
+        TryApplyPendingTiming();
         _hookLossRecovery.Reset();
         var wasRequested = _state.IsRequested;
         var wasPressed = _state.IsPressed;

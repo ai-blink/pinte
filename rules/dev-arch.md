@@ -3,6 +3,7 @@
 ## 현재 구조
 
 - 이번 기능: MainWindow.SourceEditing은 원본 편집/완료와 표시 수명, MainWindow.Settings는 모달과 편집 보류 합산을 맡는다. SourceIndicatorWindow는 편집창과 별개인 표시창이며 SourceIndicatorLifetime은 5초 기한/취소를 맡는다. SelectionPreviewWindow.Chrome/Resize는 일반·컴팩트와 실제 창 리사이즈를 맡는다. 프레임은 source/session/geometry 경계 이전에 시작된 결과를 폐기한다.
+- 입력 타이밍(D-032): Core `PointerTimingSettings`가 값·범위·프리셋을, `ILivePointerRelay.ApplyTimingAsync`/`TimingStatus`가 적용 계약을 맡는다. WindowsLivePointerRelay.Timing은 pending을 worker에서 보관하고 `TimedPointerSequence.TryApplyTiming`(idle일 때만)으로 교체한다. App의 PointerTimingStore는 프로필 저장, PointerTimingWindow는 비모달 조절 창, MainWindow.PointerTiming은 시작 시 재적용과 설정 → 고급에서 창 열기를 소유한다.
 - IWindowEnvironment.SetPassiveOverlay는 표시창의 영구 클릭 통과·비활성화를 Infrastructure에 위임한다. 표시창 HWND는 relay Configure 목록에서 제외해 스타일 복원 충돌을 피한다. 편집창 ContentAperture는 접거나 좌표 의미를 바꾸지 않는다.
 - Magnifier.App.Tests는 fake 계약·STA에서 설정 호환, 표시 수명과 입력 보류 회귀를 확인한다. 이번 작업에서는 테스트를 추가·컴파일하고 실행은 사용자에게 맡긴다. 실제 좌표·클릭 통과·대상 반응은 사용자 확인 전 통과로 기록하지 않는다.
 

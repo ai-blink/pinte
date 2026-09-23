@@ -20,12 +20,14 @@ public partial class SettingsWindow : Window
     private nint _windowHandle;
     private bool _captureExcluded;
 
-    public SettingsWindow(MagnifierSettings settings, IScreenCapture capture, bool canResizeLens = false)
+    public SettingsWindow(MagnifierSettings settings, IScreenCapture capture, bool canResizeLens = false,
+        string timingSummary = "")
     {
         _settings = settings;
         _capture = capture;
         InitializeComponent();
         ResizeLensButton.IsEnabled = canResizeLens;
+        TimingSummaryText.Text = $"현재 {timingSummary}";
         DefaultSizeBox.ItemsSource = Sizes;
         DefaultZoomBox.ItemsSource = Zooms;
         VersionText.Text = $"버전 {GetDisplayVersion()}";
@@ -36,6 +38,7 @@ public partial class SettingsWindow : Window
 
     public event Action<MagnifierSettings>? SettingsChanged;
     public bool ResizeLensRequested { get; private set; }
+    public bool InputTimingRequested { get; private set; }
 
     protected override void OnSourceInitialized(EventArgs e)
     {
@@ -151,12 +154,21 @@ public partial class SettingsWindow : Window
 
     private void AppearancePage_OnClick(object sender, RoutedEventArgs e) => ShowPage(AppearancePanel);
     private void DefaultsPage_OnClick(object sender, RoutedEventArgs e) => ShowPage(DefaultsPanel);
+    private void AdvancedPage_OnClick(object sender, RoutedEventArgs e) => ShowPage(AdvancedPanel);
     private void AboutPage_OnClick(object sender, RoutedEventArgs e) => ShowPage(AboutPanel);
+
+    // The timing panel is non-modal (compared live in the target app), so this modal closes first.
+    private void InputTiming_OnClick(object sender, RoutedEventArgs e)
+    {
+        InputTimingRequested = true;
+        Close();
+    }
 
     private void ShowPage(FrameworkElement page)
     {
         AppearancePanel.Visibility = page == AppearancePanel ? Visibility.Visible : Visibility.Collapsed;
         DefaultsPanel.Visibility = page == DefaultsPanel ? Visibility.Visible : Visibility.Collapsed;
+        AdvancedPanel.Visibility = page == AdvancedPanel ? Visibility.Visible : Visibility.Collapsed;
         AboutPanel.Visibility = page == AboutPanel ? Visibility.Visible : Visibility.Collapsed;
     }
 

@@ -2,9 +2,6 @@ using Magnifier.Core;
 
 namespace Magnifier.Infrastructure;
 
-internal sealed record PointerTiming(int ArrivalMs = 100, int MinimumHoldMs = 35,
-    int PostReleaseMs = 60, int BetweenGesturesMs = 0);
-
 // One relay worker owns the FIFO and clock. No sleeps or delayed continuations can
 // outlive CancelPending. Physical input is collected independently of output timing.
 internal sealed class TimedPointerSequence
@@ -33,20 +30,32 @@ internal sealed class TimedPointerSequence
 
     public TimedPointerSequence(LensInputState state, Func<long> clock,
         Func<ScreenPoint, bool> cursorAt, Action restoreCursor,
-        Action<Trace, ScreenPoint, long> trace, PointerTiming? timing = null)
+        Action<Trace, ScreenPoint, long> trace, PointerTimingSettings? timing = null)
     {
         _state = state;
         _clock = clock;
         _cursorAt = cursorAt;
         _restoreCursor = restoreCursor;
         _trace = trace;
-        Timing = timing ?? new();
-        if (Timing.ArrivalMs < 0 || Timing.MinimumHoldMs < 0 ||
-            Timing.PostReleaseMs < 0 || Timing.BetweenGesturesMs < 0)
-            throw new ArgumentOutOfRangeException(nameof(timing));
+        Timing = Checked(timing ?? PointerTimingSettings.Default);
     }
 
-    public PointerTiming Timing { get; }
+    // The engine only requires non-negative waits; user-facing bounds are PointerTimingSettings.IsValid.
+    private static PointerTimingSettings Checked(PointerTimingSettings timing) =>
+        timing.ArrivalMs < 0 || timing.MinimumHoldMs < 0 || timing.PostReleaseMs < 0 || timing.BetweenGesturesMs < 0
+            ? throw new ArgumentOutOfRangeException(nameof(timing)) : timing;
+
+    public PointerTimingSettings Timing { get; private set; }
+
+    // Replace the whole snapshot only while no gesture is queued or in flight, so one
+    // gesture never mixes arrival/hold/recovery values from two revisions.
+    public bool TryApplyTiming(PointerTimingSettings timing)
+    {
+        var next = Checked(timing);
+        if (IsBusy || _collecting is not null) return false;
+        Timing = next;
+        return true;
+    }
     public Stage Phase { get; private set; }
     public bool IsBusy => Phase != Stage.Idle || _waiting.Count != 0;
     public int PendingGestures => _waiting.Count + (_current is null ? 0 : 1);

@@ -10,7 +10,7 @@ public sealed class TimedPointerLatencyTests
     [TestMethod]
     public void Defaults_KeepArrivalAndHoldButRemoveLongRecovery()
     {
-        var timing = new PointerTiming();
+        var timing = new PointerTimingSettings();
         Assert.AreEqual(100, timing.ArrivalMs);
         Assert.AreEqual(35, timing.MinimumHoldMs);
         Assert.AreEqual(60, timing.PostReleaseMs);
@@ -49,7 +49,7 @@ public sealed class TimedPointerLatencyTests
     [TestMethod]
     public void ThreeQueuedTaps_Have195msIdealDownIntervals()
     {
-        var h = new Harness(new PointerTiming());
+        var h = new Harness(new PointerTimingSettings());
         for (var i = 0; i < 3; i++)
         {
             h.Now = i * 20; h.Begin(new(10 + i, 20 + i), i + 1);
@@ -65,7 +65,7 @@ public sealed class TimedPointerLatencyTests
     [TestMethod]
     public void MaximumDragBacklog_YieldsEveryEightMovesWithoutTimerTail()
     {
-        var h = new Harness(new PointerTiming());
+        var h = new Harness(new PointerTimingSettings());
         h.Begin(new(10, 20));
         for (var i = 1; i <= TimedPointerSequence.MaximumBufferedMoves; i++)
             h.Sequence.Move(new(10 + i, 20 + i));
@@ -87,7 +87,7 @@ public sealed class TimedPointerLatencyTests
     [TestMethod]
     public void DragWithRealHold_WaitsForUserUpThenOnlyRecovery()
     {
-        var h = new Harness(new PointerTiming());
+        var h = new Harness(new PointerTimingSettings());
         h.Begin(new(10, 20)); h.At(100);
         h.Now = 200; h.Move(new(30, 40));
         Assert.IsNull(h.Sequence.NextWakeAt);
@@ -101,7 +101,7 @@ public sealed class TimedPointerLatencyTests
     [TestMethod]
     public void StopBeforeQueuedContinuation_DropsBacklogAndReleasesOnce()
     {
-        var h = new Harness(new PointerTiming());
+        var h = new Harness(new PointerTimingSettings());
         h.Begin(new(10, 20));
         for (var i = 0; i < 20; i++) h.Sequence.Move(new(11 + i, 21 + i));
         h.At(100);
@@ -120,7 +120,7 @@ public sealed class TimedPointerLatencyTests
     [TestMethod]
     public void FailedUp_LeavesReleaseResponsibilityAndNoWake()
     {
-        var h = new Harness(new PointerTiming());
+        var h = new Harness(new PointerTimingSettings());
         h.Begin(new(10, 20)); h.End(new(10, 20)); h.At(100);
         h.FailUp = true;
         Assert.ThrowsException<InvalidOperationException>(() => h.At(135));

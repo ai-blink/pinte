@@ -44,11 +44,12 @@ public partial class MainWindow
         {
             await BeginModalAsync("앱 설정 · 조작 일시 중지");
             if (version != _sessionVersion || _returning || _shuttingDown) return;
-            var settings = new SettingsWindow(_settings, _capture, lensVisible && !_editingSource) { Owner = owner };
+            var settings = new SettingsWindow(_settings, _capture, lensVisible && !_editingSource, TimingSummary) { Owner = owner };
             settings.SettingsChanged += ApplySettings;
             settings.ShowDialog();
             if (version == _sessionVersion && settings.ResizeLensRequested && !_returning && !_shuttingDown)
                 _lens?.SetResizeControlsVisible(true);
+            if (settings.InputTimingRequested && !_shuttingDown) OpenTimingWindow(owner);
         }
         catch (Exception ex)
         {

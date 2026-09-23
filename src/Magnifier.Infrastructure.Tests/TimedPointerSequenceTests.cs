@@ -266,7 +266,7 @@ public sealed class TimedPointerSequenceTests
         public List<long> PressedAttempts { get; } = [];
         public LensInputState State { get; }
         public TimedPointerSequence Sequence { get; }
-        public Harness(PointerTiming? timing = null)
+        public Harness(PointerTimingSettings? timing = null)
         {
             State = new(this);
             State.Arm(false);

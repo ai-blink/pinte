@@ -18,7 +18,7 @@ public sealed partial class WindowsLivePointerRelay
         switch (stage)
         {
             case TimedPointerSequence.Trace.Prepared:
-                RecordDelivery("target-prepared", $"원본 도착 · {_sequence.Timing.ArrivalMs}ms 대기", point, 0x200);
+                RecordDelivery("target-prepared", $"원본 도착 · {_sequence.Timing.ArrivalMs}ms 대기 · {TimingLabel}", point, 0x200);
                 break;
             case TimedPointerSequence.Trace.BeforePress:
                 BeginCaptureMonitoring(point);
@@ -40,6 +40,7 @@ public sealed partial class WindowsLivePointerRelay
     private void AdvancePointerSequence()
     {
         _sequence.Tick();
+        TryApplyPendingTiming();
         if (!_sequence.IsBusy && _relaying && !_state.IsPressed &&
             _hookButtons == 0 && !_leftHeld && !OtherHeld && !_commands.HasPendingLeftRelease)
         {

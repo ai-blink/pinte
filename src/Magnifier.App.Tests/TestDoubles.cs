@@ -14,6 +14,16 @@ internal sealed class ManualClock : TimeProvider
 internal sealed class RecordingRelay : ILivePointerRelay
 {
     public event Action<RelayStatus>? StatusChanged;
+#pragma warning disable CS0067 // Timing status is not exercised by the App window tests.
+    public event Action<PointerTimingStatus>? TimingChanged;
+#pragma warning restore CS0067
+    public PointerTimingStatus TimingStatus { get; private set; } = new(PointerTimingSettings.Default, 0, null, 0);
+    public Task ApplyTimingAsync(PointerTimingSettings timing, long revision)
+    {
+        Calls.Add("timing");
+        TimingStatus = new(timing, revision, null, 0);
+        return Task.CompletedTask;
+    }
     public List<bool> Suspensions { get; } = [];
     public List<string> Calls { get; } = [];
     public List<LensViewport> Configurations { get; } = [];

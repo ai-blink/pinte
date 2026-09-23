@@ -1,5 +1,6 @@
 # 개발 진행
 
+- 2026-09-24: 입력 타이밍을 재빌드 없이 조절하는 고급 설정을 추가했다(D-032). 저지연 후보는 게임 전달은 됐지만 체감이 느렸고, 사용자가 조절 창으로 5/1/5/0ms를 찾아 전달·체감 모두 확인했다. build 0/0, Core65·Infrastructure81·App61 PASS, `C:\app` 교체 SHA `E459018B…`. 다른 환경은 `NEEDS_USER_UI_CHECK`.
 - 2026-09-24: 저지연 후보를 구현했다. `TimedPointerSequence`의 기본값은 Arrival100/MinimumHold35/PostRelease60/BetweenGestures0이며, 상태 전이는 deadline이 이미 지났으면 즉시 진행한다. Move backlog는 최대 8개씩 별도 wake로 비우고, health/capture watchdog의 50ms cadence는 유지한다. fake-clock 기준 짧은 tap 완료는 기존 800ms polling baseline에서 후보 195ms ideal로 줄었고, 게임·실제 native scheduler 통합은 확인 전이다. Core65·Infrastructure76, build 0/0, Release publish 후보를 만들었지만 `C:\app` 실행본은 교체하지 않았다. [실행 기록](../notes/runs/2026-09-24-pointer-latency-candidate.md).
 
 - 2026-09-18: **Pinte v0.1.1 릴리즈** — 화면 캡처 숨김을 기본 꺼짐의 설정으로 분리하고, 설정 콤보 목록을 한 줄로 고정했으며, 접힌 렌즈 `⌕` 토글은 드래그 이동과 클릭 펼치기를 구분한다. 표준 build 경고0/오류0·총 146 테스트 통과. 실제 화면 캡처 제외, 토글 이동·다시 펼치기, 대상 앱 입력은 `NEEDS_USER_UI_CHECK`다. [릴리즈](https://github.com/ai-blink/pinte/releases/tag/v0.1.1).
