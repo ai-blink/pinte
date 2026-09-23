@@ -9,13 +9,17 @@ namespace Magnifier.App;
 
 public partial class SelectionPreviewWindow
 {
-    private const double ResizeGripMargin = 24;
+    private const double ResizeGripMargin = 12;
+    private const double ResizeVisibleHandleSize = 12;
+    // 완료 버튼(36)이 렌즈 콘텐츠를 가리지 않도록 조절 모드에서만 아래에 띠를 둔다.
+    private const double ResizeDoneStripHeight = 42;
     private const double ResizeEdgeHitThickness = 20;
     private const double ResizeTopCornerHitSize = 24;
     private const double ResizeCornerHitSize = 48;
     private bool _isResizing, _resizeReady, _resizeControlsVisible, _finishingResize;
     private int _resizeRevision;
     private Point _resizeStartPointer;
+    private Point _resizeLatestPointer;
     private ScreenRegion _resizeStartBounds;
     private string _resizeDirection = string.Empty;
 
@@ -48,10 +52,13 @@ public partial class SelectionPreviewWindow
     public void SetResizeControlsVisible(bool visible)
     {
         _resizeControlsVisible = visible;
-        // 44 DIP 손잡이는 유지하되, 절반만 창 밖에 둔다. 작은 렌즈에서
-        // 조절 모드 전용 빈 여백이 화면보다 커지는 것을 막는다.
-        OuterBorder.Margin = new Thickness(visible ? ResizeGripMargin : 8);
+        // 마우스 조절 모드는 작은 12 DIP 손잡이와 얇은 여백만 사용한다.
+        // 렌즈 콘텐츠와 최소 창 크기가 조절 UI 때문에 크게 밀리지 않아야 한다.
+        OuterBorder.Margin = visible
+            ? new Thickness(ResizeGripMargin, ResizeGripMargin, ResizeGripMargin, ResizeGripMargin + ResizeDoneStripHeight)
+            : new Thickness(8);
         ResizeDoneButton.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+        ApplyResizeModeUi();
         ApplyMinimumLensSize();
         ArrangeResizeControls();
         QueueGeometryUpdate();
@@ -61,8 +68,8 @@ public partial class SelectionPreviewWindow
     {
         var compact = _displayMode == LensDisplayMode.Compact;
         var gripSpace = _resizeControlsVisible ? ResizeGripMargin * 2 : 0;
-        MinWidth = (compact ? 440 : 640) + gripSpace;
-        MinHeight = (compact ? 280 : 360) + gripSpace;
+        MinWidth = (compact ? 484 : 640) + gripSpace;
+        MinHeight = (compact ? 280 : 360) + gripSpace + (_resizeControlsVisible ? ResizeDoneStripHeight : 0);
         if (double.IsFinite(Width) && Width < MinWidth) Width = MinWidth;
         if (double.IsFinite(Height) && Height < MinHeight) Height = MinHeight;
     }
@@ -73,8 +80,8 @@ public partial class SelectionPreviewWindow
         {
             var direction = (string)thumb.Tag;
             var corner = direction.Length == 2;
-            var edgeSize = _resizeControlsVisible ? 44 : ResizeEdgeHitThickness;
-            var cornerSize = _resizeControlsVisible ? 44 : direction.Contains('N') ? ResizeTopCornerHitSize : ResizeCornerHitSize;
+            var edgeSize = _resizeControlsVisible ? ResizeVisibleHandleSize : ResizeEdgeHitThickness;
+            var cornerSize = _resizeControlsVisible ? ResizeVisibleHandleSize : direction.Contains('N') ? ResizeTopCornerHitSize : ResizeCornerHitSize;
             var size = corner ? cornerSize : edgeSize;
             thumb.Width = corner || direction is "W" or "E" || _resizeControlsVisible ? size : double.NaN;
             thumb.Height = corner || direction is "N" or "S" || _resizeControlsVisible ? size : double.NaN;
@@ -104,10 +111,17 @@ public partial class SelectionPreviewWindow
         _resizeDirection = (string)((Thumb)sender).Tag;
         try
         {
-            await ApplyInputSuspensionAsync("렌즈 크기 조절 · 실제 입력 해제");
+            // DragStarted와 첫 DragDelta 사이에 await가 끼면 짧은 실제 드래그의
+            // 유일한 이동이 버려질 수 있다. 물리 시작 좌표와 현재 좌표를 먼저 고정한다.
             _resizeStartPointer = PointToScreen(Mouse.GetPosition(this));
+            _resizeLatestPointer = _resizeStartPointer;
             _resizeStartBounds = _windows.GetWindowBounds(WindowHandle);
-            if (revision == _resizeRevision && _isResizing) _resizeReady = true;
+            await ApplyInputSuspensionAsync("렌즈 크기 조절 · 실제 입력 해제");
+            if (revision == _resizeRevision && _isResizing)
+            {
+                _resizeReady = true;
+                ApplyResizeAt(_resizeLatestPointer);
+            }
         }
         catch (Exception exception)
         {
@@ -118,25 +132,12 @@ public partial class SelectionPreviewWindow
 
     private async void ResizeThumb_OnDragDelta(object sender, DragDeltaEventArgs e)
     {
-        if (!_isResizing || !_resizeReady) return;
+        if (!_isResizing) return;
+        _resizeLatestPointer = PointToScreen(Mouse.GetPosition(this));
+        if (!_resizeReady) return;
         try
         {
-            var pointer = PointToScreen(Mouse.GetPosition(this));
-            var dx = (int)Math.Round(pointer.X - _resizeStartPointer.X);
-            var dy = (int)Math.Round(pointer.Y - _resizeStartPointer.Y);
-            var dpi = VisualTreeHelper.GetDpi(this);
-            var minWidth = (int)Math.Ceiling(MinWidth * dpi.DpiScaleX);
-            var minHeight = (int)Math.Ceiling(MinHeight * dpi.DpiScaleY);
-            var left = _resizeStartBounds.X;
-            var top = _resizeStartBounds.Y;
-            var right = left + _resizeStartBounds.Width;
-            var bottom = top + _resizeStartBounds.Height;
-            if (_resizeDirection.Contains('W')) left = Math.Min(left + dx, right - minWidth);
-            if (_resizeDirection.Contains('E')) right = Math.Max(right + dx, left + minWidth);
-            if (_resizeDirection.Contains('N')) top = Math.Min(top + dy, bottom - minHeight);
-            if (_resizeDirection.Contains('S')) bottom = Math.Max(bottom + dy, top + minHeight);
-            _windows.PlaceWindow(WindowHandle, new ScreenRegion(left, top, right - left, bottom - top));
-            QueueGeometryUpdate();
+            ApplyResizeAt(_resizeLatestPointer);
         }
         catch (Exception exception)
         {
@@ -146,6 +147,25 @@ public partial class SelectionPreviewWindow
             ((Thumb)sender).CancelDrag();
             PublishInputStatus($"렌즈 크기 조절 실패: {exception.Message}");
         }
+    }
+
+    private void ApplyResizeAt(Point pointer)
+    {
+        var dx = (int)Math.Round(pointer.X - _resizeStartPointer.X);
+        var dy = (int)Math.Round(pointer.Y - _resizeStartPointer.Y);
+        var dpi = VisualTreeHelper.GetDpi(this);
+        var minWidth = (int)Math.Ceiling(MinWidth * dpi.DpiScaleX);
+        var minHeight = (int)Math.Ceiling(MinHeight * dpi.DpiScaleY);
+        var left = _resizeStartBounds.X;
+        var top = _resizeStartBounds.Y;
+        var right = left + _resizeStartBounds.Width;
+        var bottom = top + _resizeStartBounds.Height;
+        if (_resizeDirection.Contains('W')) left = Math.Min(left + dx, right - minWidth);
+        if (_resizeDirection.Contains('E')) right = Math.Max(right + dx, left + minWidth);
+        if (_resizeDirection.Contains('N')) top = Math.Min(top + dy, bottom - minHeight);
+        if (_resizeDirection.Contains('S')) bottom = Math.Max(bottom + dy, top + minHeight);
+        _windows.PlaceWindow(WindowHandle, new ScreenRegion(left, top, right - left, bottom - top));
+        QueueGeometryUpdate();
     }
 
     private async void ResizeThumb_OnDragCompleted(object sender, DragCompletedEventArgs e) => await FinishResizeAsync();
@@ -170,6 +190,28 @@ public partial class SelectionPreviewWindow
             PublishInputStatus($"렌즈 크기 확정 실패: {exception.Message}");
         }
         finally { _finishingResize = false; UpdateControls(); }
+    }
+
+    private void ApplyResizeModeUi()
+    {
+        var tip = _resizeControlsVisible
+            ? "크기 조절 켜짐: 가장자리 손잡이를 끌어 크기를 바꿉니다. 누르면 끕니다"
+            : "크기 조절 꺼짐: 켜면 렌즈 가장자리에 손잡이가 나타납니다";
+        var name = _resizeControlsVisible ? "렌즈 크기 조절 손잡이 켜짐, 누르면 끔" : "렌즈 크기 조절 손잡이 꺼짐, 누르면 켬";
+        ResizeModeButton.Style = (Style)FindResource(_resizeControlsVisible ? "AccentButtonStyle" : "IconButtonStyle");
+        CompactResizeModeButton.Style = (Style)FindResource(_resizeControlsVisible ? "CompactActiveButtonStyle" : "CompactButtonStyle");
+        foreach (var button in new[] { ResizeModeButton, CompactResizeModeButton })
+        {
+            button.ToolTip = tip;
+            System.Windows.Automation.AutomationProperties.SetName(button, name);
+        }
+    }
+
+    private async void ResizeMode_OnClick(object sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if (_resizeControlsVisible) await FinishResizeAsync();
+        SetResizeControlsVisible(!_resizeControlsVisible);
     }
 
     private async void ResizeDone_OnClick(object sender, RoutedEventArgs e)

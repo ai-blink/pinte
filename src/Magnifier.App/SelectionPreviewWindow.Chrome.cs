@@ -12,9 +12,9 @@ public partial class SelectionPreviewWindow
 
     private void Toolbar_OnSizeChanged(object sender, SizeChangedEventArgs e)
     {
-        // 컴팩트 최소 폭 440 DIP에서도 44 DIP 버튼을 유지한다. 이동 손잡이와 배율
-        // 표기만 줄여 숨김 토글까지 한 줄에 놓는다.
-        CompactReturnButton.Width = Math.Clamp(Toolbar.ActualWidth - 8 - 38 - 7 * 44 - 24, 44, 100);
+        // 컴팩트 최소 폭 484 DIP에서도 44 DIP 버튼을 유지한다. 이동 손잡이와 배율
+        // 표기만 줄여 크기 조절·숨김 토글까지 한 줄에 놓는다.
+        CompactReturnButton.Width = Math.Clamp(Toolbar.ActualWidth - 8 - 38 - 8 * 44 - 24, 44, 100);
     }
 
     public void SetDisplayMode(LensDisplayMode mode)
@@ -97,6 +97,7 @@ public partial class SelectionPreviewWindow
         CompactZoomIncreaseButton.IsEnabled = ZoomIncreaseButton.IsEnabled;
         CompactZoomText.IsEnabled = ZoomDecreaseButton.IsEnabled;
         CompactPanModeButton.IsEnabled = PanModeButton.IsEnabled;
+        CompactResizeModeButton.IsEnabled = ResizeModeButton.IsEnabled;
         CompactAppSettingsButton.IsEnabled = AppSettingsButton.IsEnabled;
         CompactHideLensButton.IsEnabled = HideLensButton.IsEnabled;
     }

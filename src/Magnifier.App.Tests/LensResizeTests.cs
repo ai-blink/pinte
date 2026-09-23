@@ -18,18 +18,24 @@ public sealed class LensResizeTests
 
         lens.SetResizeControlsVisible(true);
 
-        Assert.AreEqual(new Thickness(24), outerBorder.Margin);
-        Assert.AreEqual(688d, lens.MinWidth);
-        Assert.AreEqual(408d, lens.MinHeight);
+        Assert.AreEqual(new Thickness(12, 12, 12, 54), outerBorder.Margin);
+        Assert.AreEqual(664d, lens.MinWidth);
+        Assert.AreEqual(426d, lens.MinHeight);
+        var resizeLayer = lens.FindName("ResizeLayer") as Grid;
+        Assert.IsNotNull(resizeLayer);
+        var controls = resizeLayer.Children.OfType<Thumb>().ToArray();
+        Assert.AreEqual(12d, controls.Single(thumb => (string)thumb.Tag == "NW").Width);
+        Assert.AreEqual(12d, controls.Single(thumb => (string)thumb.Tag == "S").Height);
+        // 완료 버튼은 렌즈 콘텐츠 아래 띠 안에 있어 콘텐츠를 가리지 않는다.
+        var done = (Button)lens.FindName("ResizeDoneButton");
+        Assert.IsTrue(done.Margin.Bottom + done.Height <= outerBorder.Margin.Bottom);
+        Assert.IsTrue(done.Margin.Bottom >= 12d);
 
         lens.SetResizeControlsVisible(false);
 
         Assert.AreEqual(new Thickness(8), outerBorder.Margin);
         Assert.AreEqual(640d, lens.MinWidth);
         Assert.AreEqual(360d, lens.MinHeight);
-        var resizeLayer = lens.FindName("ResizeLayer") as Grid;
-        Assert.IsNotNull(resizeLayer);
-        var controls = resizeLayer.Children.OfType<Thumb>().ToArray();
         Assert.AreEqual(8, controls.Length);
         Assert.AreEqual(24d, controls.Single(thumb => (string)thumb.Tag == "NW").Width);
         Assert.AreEqual(48d, controls.Single(thumb => (string)thumb.Tag == "SW").Width);

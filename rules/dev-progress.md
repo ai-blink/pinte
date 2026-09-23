@@ -1,5 +1,6 @@
 # 개발 진행
 
+- 2026-09-24: 평소 외곽 리사이즈 판정 폭(변 20·모서리 48 DIP)이 테두리 여백 8 DIP를 넘어 확대 화면에 겹쳐서, 상단 툴바 쪽 말고는 잡으면 가상 커서로 바뀐다는 보고를 받았다(원인은 코드로 추정, 실측 안 함). 대안으로 일반·컴팩트 툴바에 크기 조절 토글 `⤢`를 추가했다. 손잡이는 12 DIP이고 여백 12 DIP 안에 있으며, 완료 버튼은 조절 모드에서만 생기는 렌즈 아래 42 DIP 띠로 옮겼다. 컴팩트 최소 폭은 440→484 DIP. build 0/0, Core65·Infrastructure81·App61 PASS. `C:\app` 교체 SHA `F4AD2AFC…0C92F5`(이전 `…pre-resize-strip-20260924-0545.exe`). 실제 UI는 `NEEDS_USER_UI_CHECK`.
 - 2026-09-24: 입력 타이밍을 재빌드 없이 조절하는 고급 설정을 추가했다(D-032). 저지연 후보는 게임 전달은 됐지만 체감이 느렸고, 사용자가 조절 창으로 5/1/5/0ms를 찾아 전달·체감 모두 확인했다. build 0/0, Core65·Infrastructure81·App61 PASS, `C:\app` 교체 SHA `E459018B…`. 다른 환경은 `NEEDS_USER_UI_CHECK`.
 - 2026-09-24: 저지연 후보를 구현했다. `TimedPointerSequence`의 기본값은 Arrival100/MinimumHold35/PostRelease60/BetweenGestures0이며, 상태 전이는 deadline이 이미 지났으면 즉시 진행한다. Move backlog는 최대 8개씩 별도 wake로 비우고, health/capture watchdog의 50ms cadence는 유지한다. fake-clock 기준 짧은 tap 완료는 기존 800ms polling baseline에서 후보 195ms ideal로 줄었고, 게임·실제 native scheduler 통합은 확인 전이다. Core65·Infrastructure76, build 0/0, Release publish 후보를 만들었지만 `C:\app` 실행본은 교체하지 않았다. [실행 기록](../notes/runs/2026-09-24-pointer-latency-candidate.md).
 
@@ -18,7 +19,5 @@
 
 - 2026-09-13: 일시 캡처 실패는 relay 요청을 취소하지 않고 release·일시 정지 후 자동 재시도한다. 새 캡처 프레임을 받은 뒤에만 조작을 재개한다. 손 도구의 켜짐/꺼짐 상태를 구분하고, 리사이즈 중 렌즈 여백을 44 DIP에서 24 DIP로 줄였다. [컴팩트 렌즈 수동 시나리오](../doc/compact-lens-validation.md)와 기존 실행 기록은 세부 확인 근거로 보존한다.
 - M0~M4 초기화·영역 선택·캡처·입력 gate·보조 A/B 이력은 각 notes/runs/2026-09-08-* 기록과 dev-roadmap의 완료 항목을 따른다. 이전 수락은 이번 기능의 통과 근거가 아니다.
-- 2026-09-12: UI·설정·시각 정비 — 승인 목업 토큰·카드·도구막대와 화면 피드백(라벨, 넓은 hit area, 고정 렌즈/crop)을 반영했다. 두 창 `×`, 24 DIP 스크롤바, relay를 중단하는 `✋ 이동`을 추가했다. build 0/0·Core41/Infra11, 52 PASS. UI 확인은 `NEEDS_USER_UI_CHECK`. [기록](../notes/runs/2026-09-12-magnifier-visual-refinement.md). 사용자 요청으로 로컬 커밋.
-- 2026-09-11 인계: 두 차례 수정 뒤에도 실패. 다른 root capture 전환 2회가 누름 중 중지를 유발했다. build 0/0·44개 통과와 별개로 BLOCKED. 관련 변경 커밋·푸시 없음. `notes/runs/2026-09-11-drag-blocked-handoff.md`.
 - 2026-09-12: 영역 지정 단계·드래그 유지 수정 **USER_CONFIRMED_PASS** — 사용자 “아주 잘됨”. 표준 build 0/0, 테스트 실행은 사용자에게 맡김. 관련 변경·문서를 한 커밋으로 보존. 상세: `notes/runs/2026-09-12-region-selection-drag-confirmed.md`.
 - 2026-09-08~10 초기 M5·R0 이력(14항목)은 `../memory/archive-2026-09.md`에 보존한다.

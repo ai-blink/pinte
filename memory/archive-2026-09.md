@@ -16,3 +16,6 @@
 - 2026-09-10 조작 유지: 확대 열기·일시 정지 뒤 자동 재개, Core 34·native 6개 통과. 사용자 클릭·드래그 확인 뒤 재실패.
 - 2026-09-10 커서: hover·Up 복원, build 0/0·Core 34개·native 6개 통과. 드래그 중 이중 포인터 `BLOCKED`.
 - 2026-09-10 OS 변환: 승인된 UIAccess 설치/API 수락 완료. WPF 수동·native 합성 클릭 전달 실패. build 0/0·Core 34개. 사용자 관리자 검증 진입 파일 준비, 자동 UI 중단. `notes/runs/2026-09-10-uiaccess-pointer-trial.md`.
+- (2026-09-24 dev-context에서 이동) 2026-09-22 16:20 배포본은 post-Up560ms 단독 비교본: `C:\app\Magnifier.App.exe`, SHA `6BD56E9EA521CC89A7FC8521F33EC252300EC1C00E63C1386F019EDBBB472B44`. 이 버전의 종료 후 검증은161테스트 통과였으며, 이전18DD8FD1 실행본은 `C:\app\Magnifier.App.pre-post-up-dwell-20260922-162001.exe`로 복구 가능하다. 사용자의 게임 결과는5회 중1회 랜덤이었고 PID69992 로그10회 모두 Down 직전 explorer root라 조회값만으로 성공/실패를 판단할 수 없었다.
+- (2026-09-24 dev-progress에서 이동) 2026-09-12: UI·설정·시각 정비 — 승인 목업 토큰·카드·도구막대와 화면 피드백(라벨, 넓은 hit area, 고정 렌즈/crop)을 반영했다. 두 창 `×`, 24 DIP 스크롤바, relay를 중단하는 `✋ 이동`을 추가했다. build 0/0·Core41/Infra11, 52 PASS. UI 확인은 `NEEDS_USER_UI_CHECK`. [기록](../notes/runs/2026-09-12-magnifier-visual-refinement.md). 사용자 요청으로 로컬 커밋.
+- (2026-09-24 dev-progress에서 이동) 2026-09-11 인계: 두 차례 수정 뒤에도 실패. 다른 root capture 전환 2회가 누름 중 중지를 유발했다. build 0/0·44개 통과와 별개로 BLOCKED. 관련 변경 커밋·푸시 없음. `notes/runs/2026-09-11-drag-blocked-handoff.md`.

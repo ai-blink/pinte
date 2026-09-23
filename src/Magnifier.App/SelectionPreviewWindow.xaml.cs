@@ -288,6 +288,7 @@ public partial class SelectionPreviewWindow : Window
         PanModeButton.IsEnabled = editingAllowed && _currentRegion.HasValue && !AuxiliaryTools.IsExpanded;
         RegionSettingsButton.IsEnabled = editingAllowed && _currentRegion.HasValue;
         AppSettingsButton.IsEnabled = !manipulationLocked;
+        ResizeModeButton.IsEnabled = editingAllowed && !_isResizing;
         SourceEditButton.IsEnabled = editingAllowed && _currentRegion.HasValue;
         HideLensButton.IsEnabled = editingAllowed && _currentRegion.HasValue && !_isResizing && !_isMoving;
         UpdateCompactControls();
