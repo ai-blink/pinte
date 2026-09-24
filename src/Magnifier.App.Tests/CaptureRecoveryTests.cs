@@ -32,12 +32,12 @@ public sealed class CaptureRecoveryTests
 
         await PrivateAccess.CallAsync(host.Lens, "SetPanModeAsync", true);
 
-        Assert.AreEqual("✋ 손 도구 · 켜짐", ((Button)host.Lens.FindName("PanModeButton")).Content);
+        Assert.AreEqual("손 도구 켜짐, 누르면 끔", System.Windows.Automation.AutomationProperties.GetName((Button)host.Lens.FindName("PanModeButton")));
         Assert.AreEqual("✋✓", ((Button)host.Lens.FindName("CompactPanModeButton")).Content);
 
         await host.Lens.EndPanModeAsync();
 
-        Assert.AreEqual("✋ 손 도구 · 꺼짐", ((Button)host.Lens.FindName("PanModeButton")).Content);
+        Assert.AreEqual("손 도구 꺼짐, 누르면 켬", System.Windows.Automation.AutomationProperties.GetName((Button)host.Lens.FindName("PanModeButton")));
         Assert.AreEqual("✋○", ((Button)host.Lens.FindName("CompactPanModeButton")).Content);
     });
 }

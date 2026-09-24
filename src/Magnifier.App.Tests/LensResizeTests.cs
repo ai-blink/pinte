@@ -37,11 +37,44 @@ public sealed class LensResizeTests
         Assert.AreEqual(640d, lens.MinWidth);
         Assert.AreEqual(360d, lens.MinHeight);
         Assert.AreEqual(8, controls.Length);
-        Assert.AreEqual(24d, controls.Single(thumb => (string)thumb.Tag == "NW").Width);
-        Assert.AreEqual(48d, controls.Single(thumb => (string)thumb.Tag == "SW").Width);
-        Assert.AreEqual(20d, controls.Single(thumb => (string)thumb.Tag == "N").Height);
+        // 조절 모드가 꺼지면 가장자리 판정 영역이 없어 크기 조절 커서도 뜨지 않는다.
+        Assert.IsTrue(controls.All(thumb => thumb.Visibility == Visibility.Collapsed));
         return Task.CompletedTask;
     });
+
+    [TestMethod]
+    public Task NormalToolbar_FitsOneLineAtTypicalLensWidth() => StaTest.Run(() =>
+    {
+        using var host = new HiddenWindows();
+        var lens = host.Lens;
+        lens.SetDisplayMode(LensDisplayMode.Normal);
+        var toolbar = (WrapPanel)lens.FindName("NormalToolbar");
+
+        // 렌즈 880 DIP(160% 화면의 1409 px)에서 테두리·툴바 여백 42 DIP를 뺀 폭 안에 들어간다.
+        var wide = MeasureOneLine(toolbar);
+        Assert.IsTrue(wide <= 838d, $"일반 툴바 긴 표기 한 줄 폭 {wide:0.0} DIP");
+
+        // 최소 렌즈 폭 640 DIP에서는 짧은 표기로 바꿔 598 DIP 안에 들어간다.
+        typeof(SelectionPreviewWindow).GetMethod("SetNormalToolbarNarrow",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.Invoke(lens, [true]);
+        var narrow = MeasureOneLine(toolbar);
+        Assert.IsTrue(narrow <= lens.MinWidth - 42d, $"일반 툴바 짧은 표기 한 줄 폭 {narrow:0.0} DIP");
+        Assert.AreEqual(Visibility.Collapsed, ((Slider)lens.FindName("FineZoomSlider")).Visibility);
+        return Task.CompletedTask;
+    });
+
+    private static double MeasureOneLine(Panel toolbar)
+    {
+        var width = 0d;
+        // 표기가 바뀐 버튼의 내부 ContentPresenter까지 다시 재도록 레이아웃을 먼저 갱신한다.
+        toolbar.UpdateLayout();
+        foreach (FrameworkElement child in toolbar.Children)
+        {
+            child.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            width += child.DesiredSize.Width;
+        }
+        return width;
+    }
 
     [TestMethod]
     public Task CompactToolbar_ContainsTheLensHideToggleAtMinimumWidth() => StaTest.Run(() =>

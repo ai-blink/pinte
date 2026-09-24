@@ -7,7 +7,8 @@ namespace Magnifier.App;
 public partial class SelectionPreviewWindow
 {
     private LensDisplayMode _displayMode;
-    private bool _externalInputSuspended, _sourceEditing, _moveReady, _finishingMove;
+    private bool _externalInputSuspended, _sourceEditing, _moveReady, _finishingMove, _normalToolbarNarrow;
+    private double _normalToolbarWideWidth;
     private readonly SemaphoreSlim _suspensionLock = new(1, 1);
 
     private void Toolbar_OnSizeChanged(object sender, SizeChangedEventArgs e)
@@ -15,6 +16,31 @@ public partial class SelectionPreviewWindow
         // 컴팩트 최소 폭 484 DIP에서도 44 DIP 버튼을 유지한다. 이동 손잡이와 배율
         // 표기만 줄여 크기 조절·숨김 토글까지 한 줄에 놓는다.
         CompactReturnButton.Width = Math.Clamp(Toolbar.ActualWidth - 8 - 38 - 8 * 44 - 24, 44, 100);
+        UpdateNormalToolbarDensity();
+    }
+
+    // 일반 툴바의 긴 표기가 한 줄에 안 들어가면 짧은 표기로 바꾸고 세밀 슬라이더를 숨긴다.
+    // 긴 표기 폭은 긴 표기일 때만 재므로 창을 다시 넓히면 원래 표기로 돌아온다.
+    private void UpdateNormalToolbarDensity()
+    {
+        if (NormalToolbar.Visibility != Visibility.Visible) return;
+        if (!_normalToolbarNarrow)
+            _normalToolbarWideWidth = NormalToolbar.Children.OfType<UIElement>().Sum(child => child.DesiredSize.Width);
+        var available = Toolbar.ActualWidth - Toolbar.Padding.Left - Toolbar.Padding.Right
+            - Toolbar.BorderThickness.Left - Toolbar.BorderThickness.Right;
+        SetNormalToolbarNarrow(_normalToolbarWideWidth > available);
+    }
+
+    private void SetNormalToolbarNarrow(bool narrow)
+    {
+        if (narrow == _normalToolbarNarrow) return;
+        _normalToolbarNarrow = narrow;
+        SourceEditButton.Content = narrow ? "▣" : "영역 편집";
+        RegionSettingsButton.Content = narrow ? "크기" : "영역 크기";
+        HideLensButton.Content = narrow ? "숨김" : "렌즈 숨김";
+        ReturnButton.Content = narrow ? "↩ 복귀" : "↩ 원래 화면";
+        FineZoomSlider.Visibility = narrow ? Visibility.Collapsed : Visibility.Visible;
+        ApplyPanModeUi();
     }
 
     public void SetDisplayMode(LensDisplayMode mode)

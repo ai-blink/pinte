@@ -41,13 +41,14 @@ public partial class SelectionPreviewWindow
     private void ApplyPanModeUi()
     {
         if (!IsInitialized) return;
-        PanModeButton.Content = _handToolEnabled ? "✋ 손 도구 · 켜짐" : "✋ 손 도구 · 꺼짐";
+        // 켜짐·꺼짐은 강조 색으로 구분해 일반 툴바 폭을 줄인다.
+        PanModeButton.Content = _normalToolbarNarrow ? "✋" : "✋ 손 도구";
         PanModeButton.ToolTip = _handToolEnabled
             ? "손 도구 켜짐: 렌즈 안을 끌어 확대된 위치를 이동합니다"
             : "손 도구 꺼짐: 켜면 렌즈 안을 끌어 확대된 위치를 이동합니다";
         PanModeButton.Style = _handToolEnabled
-            ? (Style)FindResource("AccentButtonStyle")
-            : (Style)FindResource("SoftAccentButtonStyle");
+            ? (Style)FindResource("LensAccentButtonStyle")
+            : (Style)FindResource("LensSoftAccentButtonStyle");
         System.Windows.Automation.AutomationProperties.SetName(PanModeButton,
             _handToolEnabled ? "손 도구 켜짐, 누르면 끔" : "손 도구 꺼짐, 누르면 켬");
         CompactPanModeButton.Content = _handToolEnabled ? "✋✓" : "✋○";

@@ -13,9 +13,6 @@ public partial class SelectionPreviewWindow
     private const double ResizeVisibleHandleSize = 12;
     // 완료 버튼(36)이 렌즈 콘텐츠를 가리지 않도록 조절 모드에서만 아래에 띠를 둔다.
     private const double ResizeDoneStripHeight = 42;
-    private const double ResizeEdgeHitThickness = 20;
-    private const double ResizeTopCornerHitSize = 24;
-    private const double ResizeCornerHitSize = 48;
     private bool _isResizing, _resizeReady, _resizeControlsVisible, _finishingResize;
     private int _resizeRevision;
     private Point _resizeStartPointer;
@@ -78,21 +75,17 @@ public partial class SelectionPreviewWindow
     {
         foreach (Thumb thumb in ResizeLayer.Children)
         {
+            // 조절 모드가 꺼져 있으면 가장자리 판정 영역을 두지 않는다. 판정 폭이
+            // 테두리 여백을 넘어 확대 화면과 겹치면 relay가 가상 커서로 가져간다.
             var direction = (string)thumb.Tag;
-            var corner = direction.Length == 2;
-            var edgeSize = _resizeControlsVisible ? ResizeVisibleHandleSize : ResizeEdgeHitThickness;
-            var cornerSize = _resizeControlsVisible ? ResizeVisibleHandleSize : direction.Contains('N') ? ResizeTopCornerHitSize : ResizeCornerHitSize;
-            var size = corner ? cornerSize : edgeSize;
-            thumb.Width = corner || direction is "W" or "E" || _resizeControlsVisible ? size : double.NaN;
-            thumb.Height = corner || direction is "N" or "S" || _resizeControlsVisible ? size : double.NaN;
+            thumb.Visibility = _resizeControlsVisible ? Visibility.Visible : Visibility.Collapsed;
+            thumb.Width = ResizeVisibleHandleSize;
+            thumb.Height = ResizeVisibleHandleSize;
             thumb.HorizontalAlignment = direction.Contains('W') ? HorizontalAlignment.Left :
-                direction.Contains('E') ? HorizontalAlignment.Right : _resizeControlsVisible ? HorizontalAlignment.Center : HorizontalAlignment.Stretch;
+                direction.Contains('E') ? HorizontalAlignment.Right : HorizontalAlignment.Center;
             thumb.VerticalAlignment = direction.Contains('N') ? VerticalAlignment.Top :
-                direction.Contains('S') ? VerticalAlignment.Bottom : _resizeControlsVisible ? VerticalAlignment.Center : VerticalAlignment.Stretch;
-            var cornerInset = ResizeCornerHitSize / 2;
-            thumb.Margin = corner || _resizeControlsVisible ? new Thickness(0) :
-                direction is "N" or "S" ? new Thickness(cornerInset, 0, cornerInset, 0) : new Thickness(0, cornerInset, 0, cornerInset);
-            thumb.Background = _resizeControlsVisible ? (Brush)FindResource("AppBorderBrush") : Brushes.Transparent;
+                direction.Contains('S') ? VerticalAlignment.Bottom : VerticalAlignment.Center;
+            thumb.Background = (Brush)FindResource("AppBorderBrush");
         }
     }
 

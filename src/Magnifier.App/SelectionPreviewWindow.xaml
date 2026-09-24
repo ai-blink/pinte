@@ -8,7 +8,18 @@
     <Window.Resources>
         <Style TargetType="Button" BasedOn="{StaticResource AppButtonStyle}">
             <Setter Property="MinHeight" Value="40" />
-            <Setter Property="Padding" Value="11,5" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+        <!-- 일반 툴바가 한 줄에 들어가도록 강조 버튼도 40 DIP 높이·좁은 여백을 쓴다. -->
+        <Style x:Key="LensSoftAccentButtonStyle" TargetType="Button" BasedOn="{StaticResource SoftAccentButtonStyle}">
+            <Setter Property="MinHeight" Value="40" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style x:Key="LensAccentButtonStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+            <Setter Property="MinHeight" Value="40" />
+            <Setter Property="Padding" Value="8,4" />
             <Setter Property="FontSize" Value="13" />
         </Style>
         <Style x:Key="CompactButtonStyle" TargetType="Button" BasedOn="{StaticResource IconButtonStyle}">
@@ -73,31 +84,30 @@
                     BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="10">
                 <Grid>
                 <WrapPanel x:Name="NormalToolbar" VerticalAlignment="Center">
-                    <Button x:Name="SourceEditButton" Content="영역 편집" Click="SourceEdit_OnClick"
+                    <Button x:Name="SourceEditButton" MinWidth="40" Content="영역 편집" Click="SourceEdit_OnClick"
                             ToolTip="원본 영역을 다시 편집합니다" AutomationProperties.Name="원본 영역 편집" />
-                    <Button x:Name="RegionSettingsButton" Content="영역 크기" Click="RegionSettings_OnClick"
+                    <Button x:Name="RegionSettingsButton" MinWidth="40" Content="영역 크기" Click="RegionSettings_OnClick"
                             ToolTip="원본 크기와 비율" AutomationProperties.Name="원본 크기와 비율" />
                     <Button x:Name="AppSettingsButton" Style="{StaticResource IconButtonStyle}" Content="⚙" Click="AppSettings_OnClick" MinWidth="40" Width="40" MinHeight="40"
                             ToolTip="앱 설정" AutomationProperties.Name="앱 설정" Margin="4,0,0,0" />
                     <Button x:Name="ResizeModeButton" Style="{StaticResource IconButtonStyle}" Content="⤢" Click="ResizeMode_OnClick" MinWidth="40" Width="40" MinHeight="40"
                             ToolTip="크기 조절 꺼짐: 켜면 렌즈 가장자리에 손잡이가 나타납니다" AutomationProperties.Name="렌즈 크기 조절 손잡이 꺼짐, 누르면 켬" />
-                    <Button x:Name="HideLensButton" Style="{StaticResource SoftAccentButtonStyle}" Content="렌즈 숨김" Click="HideLens_OnClick"
+                    <Button x:Name="HideLensButton" Style="{StaticResource LensSoftAccentButtonStyle}" Content="렌즈 숨김" Click="HideLens_OnClick"
                             ToolTip="렌즈를 접고 같은 자리에 나타나는 아이콘으로 다시 펼칩니다"
                             AutomationProperties.Name="렌즈 숨김" />
-                    <Border Width="1" Height="24" Background="{DynamicResource AppBorderBrush}" Margin="8,0" VerticalAlignment="Center" />
-                    <Button Content="↩  원래 화면" Style="{StaticResource SoftAccentButtonStyle}" Click="Return_OnClick"
+                    <Border Width="1" Height="24" Background="{DynamicResource AppBorderBrush}" Margin="4,0" VerticalAlignment="Center" />
+                    <Button x:Name="ReturnButton" Content="↩ 원래 화면" Style="{StaticResource LensSoftAccentButtonStyle}" Click="Return_OnClick"
+                            ToolTip="입력을 해제하고 원래 화면으로 복귀"
                             AutomationProperties.Name="입력을 해제하고 원래 화면으로 복귀" />
-                    <Border Width="1" Height="24" Background="{DynamicResource AppBorderBrush}" Margin="8,0" VerticalAlignment="Center" />
+                    <Border Width="1" Height="24" Background="{DynamicResource AppBorderBrush}" Margin="4,0" VerticalAlignment="Center" />
                     <Button x:Name="ZoomDecreaseButton" Style="{StaticResource IconButtonStyle}" Content="−" Click="ZoomDecrease_OnClick" MinWidth="40" Width="40" MinHeight="40"
                             AutomationProperties.Name="배율 낮추기" />
                     <TextBlock x:Name="ZoomText" MinWidth="54" VerticalAlignment="Center" TextAlignment="Center"
                                FontSize="14" FontWeight="SemiBold" Text="2×" />
                     <Button x:Name="ZoomIncreaseButton" Style="{StaticResource IconButtonStyle}" Content="+" Click="ZoomIncrease_OnClick" MinWidth="40" Width="40" MinHeight="40"
                             AutomationProperties.Name="배율 높이기" />
-                    <Border Width="1" Height="24" Background="{DynamicResource AppBorderBrush}" Margin="8,0" VerticalAlignment="Center" />
-                    <TextBlock Text="세밀" Margin="2,0,4,0" VerticalAlignment="Center" FontSize="11"
-                               Foreground="{DynamicResource AppMutedTextBrush}" />
-                    <Slider x:Name="FineZoomSlider" Width="116" Minimum="0.25" Maximum="8" Value="2"
+                    <Border Width="1" Height="24" Background="{DynamicResource AppBorderBrush}" Margin="4,0" VerticalAlignment="Center" />
+                    <Slider x:Name="FineZoomSlider" Width="88" Minimum="0.25" Maximum="8" Value="2"
                             SmallChange="0.1" LargeChange="0.5" TickFrequency="0.1"
                             AutoToolTipPlacement="BottomRight" AutoToolTipPrecision="1"
                             ValueChanged="FineZoomSlider_OnValueChanged"
@@ -109,8 +119,8 @@
                              PreviewKeyDown="FineZoomText_OnPreviewKeyDown" LostKeyboardFocus="FineZoomText_OnLostKeyboardFocus"
                              ToolTip="배율 직접 입력 · 0.25부터 8까지" AutomationProperties.Name="배율 직접 입력" />
                     <TextBlock Text="×" Margin="0,0,3,0" VerticalAlignment="Center" FontWeight="SemiBold" />
-                    <Border Width="1" Height="24" Background="{DynamicResource AppBorderBrush}" Margin="8,0" VerticalAlignment="Center" />
-                    <Button x:Name="PanModeButton" Content="✋ 손 도구 · 꺼짐" Style="{StaticResource SoftAccentButtonStyle}" Click="PanMode_OnClick"
+                    <Border Width="1" Height="24" Background="{DynamicResource AppBorderBrush}" Margin="4,0" VerticalAlignment="Center" />
+                    <Button x:Name="PanModeButton" MinWidth="40" Content="✋ 손 도구" Style="{StaticResource LensSoftAccentButtonStyle}" Click="PanMode_OnClick"
                             ToolTip="손 도구 꺼짐: 켜면 렌즈 안을 끌어 확대된 위치를 이동합니다" AutomationProperties.Name="손 도구 꺼짐, 누르면 켬" />
                 </WrapPanel>
                 <StackPanel x:Name="CompactToolbar" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
@@ -185,11 +195,11 @@
                             </Grid>
                         </ScrollViewer>
                     </Grid>
-                    <ScrollBar x:Name="VerticalPanBar" Grid.Row="0" Grid.Column="1" Width="24" Minimum="0" Visibility="Collapsed"
+                    <ScrollBar x:Name="VerticalPanBar" Grid.Row="0" Grid.Column="1" Width="14" Minimum="0" Visibility="Collapsed"
                                ValueChanged="VerticalPanBar_OnValueChanged" ToolTip="세로로 이동" />
-                    <ScrollBar x:Name="HorizontalPanBar" Grid.Row="1" Grid.Column="0" Height="24" Minimum="0" Orientation="Horizontal" Visibility="Collapsed"
+                    <ScrollBar x:Name="HorizontalPanBar" Grid.Row="1" Grid.Column="0" Height="14" Minimum="0" Orientation="Horizontal" Visibility="Collapsed"
                                ValueChanged="HorizontalPanBar_OnValueChanged" ToolTip="가로로 이동" />
-                    <Border x:Name="PanCorner" Grid.Row="1" Grid.Column="1" Width="24" Height="24" Background="{DynamicResource AppCanvasBrush}" />
+                    <Border x:Name="PanCorner" Grid.Row="1" Grid.Column="1" Width="14" Height="14" Background="{DynamicResource AppCanvasBrush}" />
                 </Grid>
             </Border>
 
