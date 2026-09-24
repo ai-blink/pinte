@@ -13,7 +13,7 @@
   <a href="README.ja.md">日本語</a>
 </p>
 
-> **正式版 — v0.1.1。** 此版本适合日常实际使用，但仍需持续验证与各类 Windows 应用的兼容性。
+> **正式版 — v0.2.0。** 此版本适合日常实际使用，但仍需持续验证与各类 Windows 应用的兼容性。
 
 Pinte 帮助主要使用鼠标的用户放大 Windows 桌面的指定区域，通过独立的放大镜窗口进行精确点击或拖动，并且无需键盘即可返回原始屏幕。
 
@@ -28,7 +28,7 @@ Pinte 帮助主要使用鼠标的用户放大 Windows 桌面的指定区域，�
 
 ## 下载与运行
 
-1. 从 [v0.1.1 发布页](https://github.com/ai-blink/pinte/releases/tag/v0.1.1)下载 `Pinte-v0.1.1-win-x64.zip`。
+1. 从 [v0.2.0 发布页](https://github.com/ai-blink/pinte/releases/tag/v0.2.0)下载 `Pinte-v0.2.0-win-x64.zip`。
 2. 将 ZIP 解压到可写入的文件夹。
 3. 运行 `Magnifier.App.exe`。
 4. 选择 **Screen area**，调整源区域边框，然后打开放大镜。
@@ -55,7 +55,7 @@ dotnet test Magnifier.slnx --nologo
 
 ## 当前状态
 
-`v0.1.1` 增加了可配置的屏幕捕获隐藏、单行设置列表和可移动的折叠放大镜切换按钮。核心点击与拖动流程已有自动回归测试，但真实目标应用中的行为仍需在您使用的 Windows 环境中持续验证。可复现的问题请提交至 [GitHub Issues](https://github.com/ai-blink/pinte/issues)。
+`v0.2.0` 增加了高级输入时序设置、面向会漏掉即时点击的目标应用的有序点击传递、工具栏中的放大镜大小调整开关，以及在窄宽度下仍保持单行的工具栏。核心点击与拖动流程已有自动回归测试，但真实目标应用中的行为仍需在您使用的 Windows 环境中持续验证。可复现的问题请提交至 [GitHub Issues](https://github.com/ai-blink/pinte/issues)。
 
 ## 许可证
 

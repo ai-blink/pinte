@@ -13,7 +13,7 @@
   <a href="README.ja.md">日本語</a>
 </p>
 
-> **Official release — v0.1.1.** Pinte is available for hands-on use, while compatibility with every Windows application still needs to be verified.
+> **Official release — v0.2.0.** Pinte is available for hands-on use, while compatibility with every Windows application still needs to be verified.
 
 Pinte helps people who work with a mouse to enlarge part of the Windows desktop, make a precise click or drag through an independent lens window, and return to the original screen without relying on a keyboard.
 
@@ -28,7 +28,7 @@ The source frame and the lens can be positioned and resized separately. The lens
 
 ## Download and run
 
-1. Download `Pinte-v0.1.1-win-x64.zip` from the [v0.1.1 release](https://github.com/ai-blink/pinte/releases/tag/v0.1.1).
+1. Download `Pinte-v0.2.0-win-x64.zip` from the [v0.2.0 release](https://github.com/ai-blink/pinte/releases/tag/v0.2.0).
 2. Extract the ZIP to a folder you can write to.
 3. Run `Magnifier.App.exe`.
 4. Select **Screen area**, adjust the source frame, then open the magnified lens.
@@ -55,7 +55,7 @@ For manual checks—including multi-monitor, DPI, compact lens, capture recovery
 
 ## Current status
 
-`v0.1.1` adds configurable screen-capture hiding, one-line settings menus, and a movable collapsed-lens toggle. The core click-and-drag flow has automated regression coverage, but live target-application behavior still needs validation across the Windows environments you use. Please report reproducible issues through [GitHub Issues](https://github.com/ai-blink/pinte/issues).
+`v0.2.0` adds advanced input timing settings, ordered click delivery for targets that miss instant clicks, a toolbar resize toggle for the lens, and a toolbar that stays on one line at narrow widths. The core click-and-drag flow has automated regression coverage, but live target-application behavior still needs validation across the Windows environments you use. Please report reproducible issues through [GitHub Issues](https://github.com/ai-blink/pinte/issues).
 
 ## License
 
