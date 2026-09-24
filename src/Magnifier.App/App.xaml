@@ -145,8 +145,10 @@
         </Style>
 
         <Style x:Key="AppComboBoxItemStyle" TargetType="{x:Type ComboBoxItem}">
-            <Setter Property="MinHeight" Value="32" />
-            <Setter Property="Padding" Value="10,4" />
+            <!-- 펼친 목록 항목은 닫힌 콤보(30 DIP)와 같은 높이로 촘촘하게 둔다. -->
+            <Setter Property="MinHeight" Value="30" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Padding" Value="10,2" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="ContentTemplate">
                 <Setter.Value>
@@ -159,7 +161,9 @@
         </Style>
 
         <Style x:Key="AppComboBoxStyle" TargetType="{x:Type ComboBox}">
-            <Setter Property="Padding" Value="10,5" />
+            <!-- 상하 여백을 작게 두고 선택 텍스트를 상자 세로 중앙에 맞춘다. -->
+            <Setter Property="Padding" Value="10,2" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="Background" Value="{DynamicResource AppPanelBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
