@@ -1,8 +1,10 @@
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using Magnifier.App.Localization;
 using Magnifier.Core;
 
 namespace Magnifier.App;
@@ -20,19 +22,21 @@ public partial class SelectionPreviewWindow
     private ScreenRegion _resizeStartBounds;
     private string _resizeDirection = string.Empty;
 
+    private static readonly (string Direction, Cursor Cursor, string DirectionKey)[] ResizeDirections =
+    [
+        ("N", Cursors.SizeNS, "Lens_Direction_N"), ("S", Cursors.SizeNS, "Lens_Direction_S"),
+        ("W", Cursors.SizeWE, "Lens_Direction_W"), ("E", Cursors.SizeWE, "Lens_Direction_E"),
+        ("NW", Cursors.SizeNWSE, "Lens_Direction_NW"), ("NE", Cursors.SizeNESW, "Lens_Direction_NE"),
+        ("SW", Cursors.SizeNESW, "Lens_Direction_SW"), ("SE", Cursors.SizeNWSE, "Lens_Direction_SE")
+    ];
+
     private void InitializeResizeControls()
     {
-        foreach (var (direction, cursor, name) in new[]
-        {
-            ("N", Cursors.SizeNS, "위"), ("S", Cursors.SizeNS, "아래"),
-            ("W", Cursors.SizeWE, "왼쪽"), ("E", Cursors.SizeWE, "오른쪽"),
-            ("NW", Cursors.SizeNWSE, "왼쪽 위"), ("NE", Cursors.SizeNESW, "오른쪽 위"),
-            ("SW", Cursors.SizeNESW, "왼쪽 아래"), ("SE", Cursors.SizeNWSE, "오른쪽 아래")
-        })
+        foreach (var (direction, cursor, directionKey) in ResizeDirections)
         {
             var thumb = new Thumb { Tag = direction, Cursor = cursor, Focusable = false,
-                Background = Brushes.Transparent, ToolTip = $"렌즈 {name} 크기 조절" };
-            System.Windows.Automation.AutomationProperties.SetName(thumb, $"렌즈 {name} 크기 조절");
+                Background = Brushes.Transparent };
+            SetResizeThumbTooltip(thumb, directionKey);
             var border = new FrameworkElementFactory(typeof(Border));
             border.SetBinding(Border.BackgroundProperty, new System.Windows.Data.Binding("Background")
                 { RelativeSource = new System.Windows.Data.RelativeSource(System.Windows.Data.RelativeSourceMode.TemplatedParent) });
@@ -44,6 +48,23 @@ public partial class SelectionPreviewWindow
             ResizeLayer.Children.Add(thumb);
         }
         ArrangeResizeControls();
+    }
+
+    private static void SetResizeThumbTooltip(Thumb thumb, string directionKey)
+    {
+        var text = string.Format(Loc.Instance["Lens_ResizeThumb_Format"], Loc.Instance[directionKey]);
+        thumb.ToolTip = text;
+        System.Windows.Automation.AutomationProperties.SetName(thumb, text);
+    }
+
+    private void UpdateResizeThumbLocalization()
+    {
+        foreach (Thumb thumb in ResizeLayer.Children)
+        {
+            var direction = (string)thumb.Tag;
+            var directionKey = ResizeDirections.First(entry => entry.Direction == direction).DirectionKey;
+            SetResizeThumbTooltip(thumb, directionKey);
+        }
     }
 
     public void SetResizeControlsVisible(bool visible)
@@ -77,14 +98,19 @@ public partial class SelectionPreviewWindow
         {
             // 조절 모드가 꺼져 있으면 가장자리 판정 영역을 두지 않는다. 판정 폭이
             // 테두리 여백을 넘어 확대 화면과 겹치면 relay가 가상 커서로 가져간다.
+            // 변 손잡이는 모서리 사이의 변 전체를 덮어 어디서든 잡을 수 있게 한다.
             var direction = (string)thumb.Tag;
+            var horizontalEdge = direction is "N" or "S";
+            var verticalEdge = direction is "W" or "E";
             thumb.Visibility = _resizeControlsVisible ? Visibility.Visible : Visibility.Collapsed;
-            thumb.Width = ResizeVisibleHandleSize;
-            thumb.Height = ResizeVisibleHandleSize;
+            thumb.Width = horizontalEdge ? double.NaN : ResizeVisibleHandleSize;
+            thumb.Height = verticalEdge ? double.NaN : ResizeVisibleHandleSize;
             thumb.HorizontalAlignment = direction.Contains('W') ? HorizontalAlignment.Left :
-                direction.Contains('E') ? HorizontalAlignment.Right : HorizontalAlignment.Center;
+                direction.Contains('E') ? HorizontalAlignment.Right : HorizontalAlignment.Stretch;
             thumb.VerticalAlignment = direction.Contains('N') ? VerticalAlignment.Top :
-                direction.Contains('S') ? VerticalAlignment.Bottom : VerticalAlignment.Center;
+                direction.Contains('S') ? VerticalAlignment.Bottom : VerticalAlignment.Stretch;
+            thumb.Margin = horizontalEdge ? new Thickness(ResizeVisibleHandleSize, 0, ResizeVisibleHandleSize, 0) :
+                verticalEdge ? new Thickness(0, ResizeVisibleHandleSize, 0, ResizeVisibleHandleSize) : new Thickness(0);
             thumb.Background = (Brush)FindResource("AppBorderBrush");
         }
     }
@@ -109,7 +135,7 @@ public partial class SelectionPreviewWindow
             _resizeStartPointer = PointToScreen(Mouse.GetPosition(this));
             _resizeLatestPointer = _resizeStartPointer;
             _resizeStartBounds = _windows.GetWindowBounds(WindowHandle);
-            await ApplyInputSuspensionAsync("렌즈 크기 조절 · 실제 입력 해제");
+            await ApplyInputSuspensionAsync(Loc.Instance["Lens_Reason_Resizing"]);
             if (revision == _resizeRevision && _isResizing)
             {
                 _resizeReady = true;
@@ -118,7 +144,7 @@ public partial class SelectionPreviewWindow
         }
         catch (Exception exception)
         {
-            PublishInputStatus($"렌즈 크기 조절 해제 실패: {exception.Message}");
+            PublishInputStatus(string.Format(Loc.Instance["Lens_Status_ResizeReleaseFailed_Format"], exception.Message));
             ((Thumb)sender).CancelDrag();
         }
     }
@@ -135,10 +161,10 @@ public partial class SelectionPreviewWindow
         catch (Exception exception)
         {
             _resizeReady = false;
-            try { await StopAsync($"렌즈 크기 조절 실패 · 입력 중지: {exception.Message}"); }
+            try { await StopAsync(string.Format(Loc.Instance["Lens_Reason_ResizeFailed_Format"], exception.Message)); }
             catch { }
             ((Thumb)sender).CancelDrag();
-            PublishInputStatus($"렌즈 크기 조절 실패: {exception.Message}");
+            PublishInputStatus(string.Format(Loc.Instance["Lens_Status_ResizeFailed_Format"], exception.Message));
         }
     }
 
@@ -174,13 +200,13 @@ public partial class SelectionPreviewWindow
         {
             await RefreshGeometryAsync();
             _isResizing = false;
-            await ApplyInputSuspensionAsync("렌즈 크기 확정 · 최신 화면과 버튼 해제 대기");
+            await ApplyInputSuspensionAsync(Loc.Instance["Lens_Reason_ResizeFinished"]);
         }
         catch (Exception exception)
         {
-            try { await StopAsync($"렌즈 크기 확정 실패 · 입력 중지: {exception.Message}"); }
+            try { await StopAsync(string.Format(Loc.Instance["Lens_Reason_ResizeFinishFailed_Format"], exception.Message)); }
             catch { }
-            PublishInputStatus($"렌즈 크기 확정 실패: {exception.Message}");
+            PublishInputStatus(string.Format(Loc.Instance["Lens_Status_ResizeFinishFailed_Format"], exception.Message));
         }
         finally { _finishingResize = false; UpdateControls(); }
     }
@@ -188,9 +214,9 @@ public partial class SelectionPreviewWindow
     private void ApplyResizeModeUi()
     {
         var tip = _resizeControlsVisible
-            ? "크기 조절 켜짐: 가장자리 손잡이를 끌어 크기를 바꿉니다. 누르면 끕니다"
-            : "크기 조절 꺼짐: 켜면 렌즈 가장자리에 손잡이가 나타납니다";
-        var name = _resizeControlsVisible ? "렌즈 크기 조절 손잡이 켜짐, 누르면 끔" : "렌즈 크기 조절 손잡이 꺼짐, 누르면 켬";
+            ? Loc.Instance["Lens_ResizeMode_On_Tooltip"]
+            : Loc.Instance["Lens_ResizeMode_Off_Tooltip"];
+        var name = _resizeControlsVisible ? Loc.Instance["Lens_ResizeMode_On_Automation"] : Loc.Instance["Lens_ResizeMode_Off_Automation"];
         ResizeModeButton.Style = (Style)FindResource(_resizeControlsVisible ? "AccentButtonStyle" : "IconButtonStyle");
         CompactResizeModeButton.Style = (Style)FindResource(_resizeControlsVisible ? "CompactActiveButtonStyle" : "CompactButtonStyle");
         foreach (var button in new[] { ResizeModeButton, CompactResizeModeButton })

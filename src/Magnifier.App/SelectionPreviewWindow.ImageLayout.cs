@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Magnifier.App.Localization;
 using Magnifier.Core;
 
 namespace Magnifier.App;
@@ -45,11 +46,11 @@ public partial class SelectionPreviewWindow
         }
         try
         {
-            await PauseAsync("배율 변경 · 조작 자동 재개 대기");
+            await PauseAsync(Loc.Instance["Lens_Reason_ZoomChanging"]);
             SetZoom(zoom);
             await ConfigureGeometryAsync();
         }
-        catch (Exception exception) { PublishInputStatus($"배율 변경 실패: {exception.Message}"); }
+        catch (Exception exception) { PublishInputStatus(string.Format(Loc.Instance["Lens_Status_ZoomChangeFailed_Format"], exception.Message)); }
     }
 
     private void ResizeLens()
@@ -66,7 +67,7 @@ public partial class SelectionPreviewWindow
             CapturedImage.Height = Math.Max(1, region.Height * Zoom / dpi.DpiScaleY);
             ZoomText.Text = $"{Zoom:0.##}×";
             CompactZoomText.Text = Zoom.ToString("0.##", CultureInfo.CurrentCulture);
-            ZoomText.ToolTip = "원본 물리 픽셀 대비 표시 배율 · 렌즈 창 크기는 유지합니다";
+            ZoomText.ToolTip = Loc.Instance["Lens_ZoomText_FullTooltip"];
             SynchronizeFineZoomControls();
             UpdatePanSurface(CapturedImage.Width, CapturedImage.Height);
             UpdatePointMarkers();
@@ -131,7 +132,7 @@ public partial class SelectionPreviewWindow
             if (!TryParseFineZoom(input.Text, out var zoom))
             {
                 SynchronizeFineZoomControls();
-                PublishInputStatus("배율은 0.25에서 8 사이의 숫자로 입력하세요");
+                PublishInputStatus(Loc.Instance["Lens_Status_ZoomRangeError"]);
                 return;
             }
             await ChangeZoomAsync(zoom);
@@ -153,7 +154,7 @@ public partial class SelectionPreviewWindow
         InvalidateGeometry();
         if (_geometryQueued) return;
         _geometryQueued = true;
-        var pause = PauseAsync("렌즈 배치 변경 · 최신 화면 확인 대기");
+        var pause = PauseAsync(Loc.Instance["Lens_Reason_LayoutChanging"]);
         Dispatcher.BeginInvoke(async () =>
         {
             _geometryQueued = false;
@@ -165,7 +166,7 @@ public partial class SelectionPreviewWindow
                 await ConfigureGeometryAsync();
                 PlacementChanged?.Invoke();
             }
-            catch (Exception exception) { PublishInputStatus($"렌즈 배치 설정 실패: {exception.Message}"); }
+            catch (Exception exception) { PublishInputStatus(string.Format(Loc.Instance["Lens_Status_LayoutFailed_Format"], exception.Message)); }
         }, DispatcherPriority.Loaded);
     }
 
@@ -181,7 +182,7 @@ public partial class SelectionPreviewWindow
     {
         if (_closed || !IsLoaded) return;
         InvalidateGeometry();
-        await PauseAsync("렌즈 좌표 갱신 · 최신 화면 확인 대기");
+        await PauseAsync(Loc.Instance["Lens_Reason_CoordinateRefresh"]);
         ResizeLens();
         UpdateLayout();
         await Dispatcher.Yield(DispatcherPriority.Loaded);
@@ -264,7 +265,7 @@ public partial class SelectionPreviewWindow
         {
             if (await ConfigureGeometryAsync()) PlacementChanged?.Invoke();
         }
-        catch (Exception exception) { PublishInputStatus($"렌즈 좌표 재시도 실패: {exception.Message}"); }
+        catch (Exception exception) { PublishInputStatus(string.Format(Loc.Instance["Lens_Status_GeometryRetryFailed_Format"], exception.Message)); }
     }
 
     private void StopGeometryRetry() => _geometryRetryTimer?.Stop();
@@ -276,7 +277,7 @@ public partial class SelectionPreviewWindow
         InvalidateGeometry();
         try
         {
-            await PauseAsync("화면 DPI 변경 · 조작 자동 재개 대기");
+            await PauseAsync(Loc.Instance["Lens_Reason_DpiChanged"]);
             RequestViewportCentering();
             ResizeLens();
             QueueGeometryUpdate();

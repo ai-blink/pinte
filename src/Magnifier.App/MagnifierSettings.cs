@@ -2,6 +2,7 @@ using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
+using Magnifier.App.Localization;
 
 namespace Magnifier.App;
 
@@ -32,6 +33,7 @@ public sealed record MagnifierSettings
     public int DefaultSourceWidth { get; init; } = 960;
     public int DefaultSourceHeight { get; init; } = 540;
     public double DefaultZoom { get; init; } = 2;
+    public AppLanguage Language { get; init; } = AppLanguage.System;
 
     public static MagnifierSettings Default { get; } = new();
 
@@ -39,6 +41,7 @@ public sealed record MagnifierSettings
         && Enum.IsDefined(typeof(ThemePreference), Theme)
         && Enum.IsDefined(SourceIndicatorPreference)
         && Enum.IsDefined(LensDisplayMode)
+        && Enum.IsDefined(Language)
         && DefaultSourceWidth is >= 80 and <= 7680
         && DefaultSourceHeight is >= 60 and <= 4320
         && double.IsFinite(DefaultZoom) && DefaultZoom is >= 0.25 and <= 8;

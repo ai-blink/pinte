@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Magnifier.App.Localization;
 
 namespace Magnifier.App;
 
@@ -31,14 +32,14 @@ public partial class SelectionPreviewWindow
         SetNormalToolbarNarrow(_normalToolbarWideWidth > available);
     }
 
-    private void SetNormalToolbarNarrow(bool narrow)
+    private void SetNormalToolbarNarrow(bool narrow, bool force = false)
     {
-        if (narrow == _normalToolbarNarrow) return;
+        if (narrow == _normalToolbarNarrow && !force) return;
         _normalToolbarNarrow = narrow;
-        SourceEditButton.Content = narrow ? "▣" : "영역 편집";
-        RegionSettingsButton.Content = narrow ? "크기" : "영역 크기";
-        HideLensButton.Content = narrow ? "숨김" : "렌즈 숨김";
-        ReturnButton.Content = narrow ? "↩ 복귀" : "↩ 원래 화면";
+        SourceEditButton.Content = narrow ? "▣" : Loc.Instance["Lens_SourceEdit_Full"];
+        RegionSettingsButton.Content = narrow ? Loc.Instance["Lens_RegionSettings_Short"] : Loc.Instance["Lens_RegionSettings_Full"];
+        HideLensButton.Content = narrow ? Loc.Instance["Lens_HideLens_Short"] : Loc.Instance["Lens_HideLens_Full"];
+        ReturnButton.Content = narrow ? Loc.Instance["Lens_Return_Short"] : Loc.Instance["Lens_Return_Full"];
         FineZoomSlider.Visibility = narrow ? Visibility.Collapsed : Visibility.Visible;
         ApplyPanModeUi();
     }
@@ -91,7 +92,7 @@ public partial class SelectionPreviewWindow
 
     public void ShowSourceIndicatorFailure(string? reason)
     {
-        SourceIndicatorErrorText.Text = reason is null ? string.Empty : $"원본 윤곽선 숨김 · {reason}";
+        SourceIndicatorErrorText.Text = reason is null ? string.Empty : string.Format(Loc.Instance["Lens_SourceIndicatorFailure_Format"], reason);
         SourceIndicatorErrorText.ToolTip = SourceIndicatorErrorText.Text;
         SourceIndicatorErrorText.Visibility = reason is null ? Visibility.Collapsed : Visibility.Visible;
         QueueGeometryUpdate();
@@ -137,13 +138,13 @@ public partial class SelectionPreviewWindow
         {
             await RefreshGeometryAsync();
             _isMoving = false;
-            await ApplyInputSuspensionAsync("렌즈 이동 완료 · 최신 화면과 버튼 해제 대기");
+            await ApplyInputSuspensionAsync(Loc.Instance["Lens_Reason_MoveFinished"]);
         }
         catch (Exception exception)
         {
-            try { await StopAsync($"렌즈 이동 실패 · 입력 중지: {exception.Message}"); }
+            try { await StopAsync(string.Format(Loc.Instance["Lens_Reason_MoveFailed_Format"], exception.Message)); }
             catch { }
-            PublishInputStatus($"렌즈 이동 해제 실패: {exception.Message}");
+            PublishInputStatus(string.Format(Loc.Instance["Lens_Status_MoveReleaseFailed_Format"], exception.Message));
         }
         finally { _finishingMove = false; }
     }

@@ -26,6 +26,13 @@ public sealed class LensResizeTests
         var controls = resizeLayer.Children.OfType<Thumb>().ToArray();
         Assert.AreEqual(12d, controls.Single(thumb => (string)thumb.Tag == "NW").Width);
         Assert.AreEqual(12d, controls.Single(thumb => (string)thumb.Tag == "S").Height);
+        // 변 손잡이는 모서리 사이 변 전체를 덮는다.
+        var north = controls.Single(thumb => (string)thumb.Tag == "N");
+        Assert.IsTrue(double.IsNaN(north.Width));
+        Assert.AreEqual(HorizontalAlignment.Stretch, north.HorizontalAlignment);
+        var east = controls.Single(thumb => (string)thumb.Tag == "E");
+        Assert.IsTrue(double.IsNaN(east.Height));
+        Assert.AreEqual(VerticalAlignment.Stretch, east.VerticalAlignment);
         // 완료 버튼은 렌즈 콘텐츠 아래 띠 안에 있어 콘텐츠를 가리지 않는다.
         var done = (Button)lens.FindName("ResizeDoneButton");
         Assert.IsTrue(done.Margin.Bottom + done.Height <= outerBorder.Margin.Bottom);

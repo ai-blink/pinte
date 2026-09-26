@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Threading;
+using Magnifier.App.Localization;
 using Magnifier.Core;
 using Magnifier.Infrastructure;
 
@@ -42,6 +43,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         _settings = settings;
         MagnifierTheme.Apply(_settings.Theme);
+        Loc.Instance.SetLanguage(_settings.Language);
         _layout = LensLayoutStore.Load();
         _timer.Tick += CaptureTick;
         _indicatorTimer.Tick += (_, _) => UpdateIndicatorExpiry();

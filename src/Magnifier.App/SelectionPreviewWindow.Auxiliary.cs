@@ -1,4 +1,5 @@
 using System.Windows;
+using Magnifier.App.Localization;
 using Magnifier.Core;
 
 namespace Magnifier.App;
@@ -18,7 +19,7 @@ public partial class SelectionPreviewWindow
         if (!IsInitialized) return;
         if (_handToolEnabled) await SetPanModeAsync(false);
         var resume = _relayStatus is { InputRequested: true };
-        try { await StopAsync("A/B 보조 도구 · 직접 조작 꺼짐"); _resumeAfterAuxiliary = resume; }
+        try { await StopAsync(Loc.Instance["Lens_Reason_AuxiliaryOpen"]); _resumeAfterAuxiliary = resume; }
         catch { }
         ResizeLens();
         QueueGeometryUpdate();
@@ -31,7 +32,7 @@ public partial class SelectionPreviewWindow
         if (!IsInitialized) return;
         var resume = _resumeAfterAuxiliary;
         _pendingPointTarget = PointTarget.None;
-        try { await StopAsync("A/B 보조 도구 닫기 · 보기로 전환"); }
+        try { await StopAsync(Loc.Instance["Lens_Reason_AuxiliaryClose"]); }
         catch { resume = false; }
         ResizeLens();
         QueueGeometryUpdate();
@@ -40,7 +41,7 @@ public partial class SelectionPreviewWindow
         if (resume)
         {
             try { await StartInputAsync(); }
-            catch (Exception exception) { PublishInputStatus($"조작 재개 실패: {exception.Message}"); }
+            catch (Exception exception) { PublishInputStatus(string.Format(Loc.Instance["Lens_Status_ResumeFailed_Format"], exception.Message)); }
         }
     }
 
@@ -53,12 +54,12 @@ public partial class SelectionPreviewWindow
             var enabled = PreviewInputEnabledCheckBox.IsChecked == true && AuxiliaryTools.IsExpanded && _editingAllowed;
             _inputSession.SetInputEnabled(enabled);
             SetPreviewInputToggle(enabled);
-            PublishInputStatus(enabled ? "A/B 실제 입력 허용 · 직접 조작은 꺼짐" : "A/B 실제 입력 꺼짐");
+            PublishInputStatus(enabled ? Loc.Instance["Lens_Status_AuxInputOn"] : Loc.Instance["Lens_Status_AuxInputOff"]);
         }
         catch (Exception exception)
         {
             SetPreviewInputToggle(false);
-            PublishInputStatus($"A/B 입력 상태 변경 실패: {exception.Message}");
+            PublishInputStatus(string.Format(Loc.Instance["Lens_Status_AuxInputChangeFailed_Format"], exception.Message));
         }
         UpdateStrokeControls();
     }
@@ -90,7 +91,7 @@ public partial class SelectionPreviewWindow
     {
         if (!_editingAllowed || !AuxiliaryTools.IsExpanded) return;
         _pendingPointTarget = target;
-        PublishInputStatus($"확대 이미지에서 {target} 지점을 선택하세요 · 실제 입력은 보내지 않습니다");
+        PublishInputStatus(string.Format(Loc.Instance["Lens_Status_PickPoint_Format"], target));
     }
 
     private void SelectPointFromImage(Point imagePoint)
@@ -101,7 +102,7 @@ public partial class SelectionPreviewWindow
         _pendingPointTarget = PointTarget.None;
         UpdateStrokeControls();
         UpdatePointMarkers();
-        PublishInputStatus($"A/B 지점 지정 · X {point.X} · Y {point.Y}");
+        PublishInputStatus(string.Format(Loc.Instance["Lens_Status_PointSet_Format"], point.X, point.Y));
     }
 
     private async void RunStraightStroke_OnClick(object sender, RoutedEventArgs e)
@@ -115,7 +116,7 @@ public partial class SelectionPreviewWindow
         {
             for (var remaining = _countdownSeconds; remaining > 0; remaining--)
             {
-                PublishInputStatus($"{remaining}초 뒤 A→B 직선 · 조작 중지 또는 원래 화면으로 취소");
+                PublishInputStatus(string.Format(Loc.Instance["Lens_Status_Countdown_Format"], remaining));
                 await Task.Delay(TimeSpan.FromSeconds(1), cancellation.Token);
             }
             cancellation.Token.ThrowIfCancellationRequested();
@@ -125,19 +126,19 @@ public partial class SelectionPreviewWindow
                 if (_inputSession.Begin(pointA))
                 {
                     _inputSession.Complete(pointB);
-                    PublishInputStatus("A/B 입력 API 수락 · 버튼 해제 · 실제 대상 반응을 확인하세요");
+                    PublishInputStatus(Loc.Instance["Lens_Status_StrokeAccepted"]);
                 }
             }
             finally { if (!_closed) Show(); }
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
-        { PublishInputStatus("A/B 카운트다운 취소 · 실제 입력 꺼짐"); }
+        { PublishInputStatus(Loc.Instance["Lens_Status_StrokeCancelled"]); }
         catch (Exception exception)
-        { PublishInputStatus($"A/B 입력 실패: {exception.Message}"); }
+        { PublishInputStatus(string.Format(Loc.Instance["Lens_Status_StrokeFailed_Format"], exception.Message)); }
         finally
         {
             try { _inputSession.SetInputEnabled(false); }
-            catch (Exception exception) { PublishInputStatus($"A/B 해제 재시도 필요: {exception.Message}"); }
+            catch (Exception exception) { PublishInputStatus(string.Format(Loc.Instance["Lens_Status_AuxReleaseRetry_Format"], exception.Message)); }
             SetPreviewInputToggle(false);
             if (ReferenceEquals(_straightStrokeCancellation, cancellation)) _straightStrokeCancellation = null;
             cancellation.Dispose();
@@ -159,12 +160,12 @@ public partial class SelectionPreviewWindow
     private void UpdateStrokeControls()
     {
         if (!IsInitialized) return;
-        CountdownText.Text = $"{_countdownSeconds}초";
-        PointStatusText.Text = $"A {FormatPoint(_pointA)} · B {FormatPoint(_pointB)}";
+        CountdownText.Text = string.Format(Loc.Instance["Lens_Countdown_Format"], _countdownSeconds);
+        PointStatusText.Text = string.Format(Loc.Instance["Lens_PointStatus_Format"], FormatPoint(_pointA), FormatPoint(_pointB));
         RunStraightStrokeButton.IsEnabled = _inputSession.IsInputEnabled && _pointA.HasValue && _pointB.HasValue
             && _straightStrokeCancellation is null && _bitmap is not null;
     }
 
-    private static string FormatPoint(ScreenPoint? point) => point is ScreenPoint value ? $"({value.X}, {value.Y})" : "미지정";
+    private static string FormatPoint(ScreenPoint? point) => point is ScreenPoint value ? $"({value.X}, {value.Y})" : Loc.Instance["Lens_PointUnset"];
     private enum PointTarget { None, A, B }
 }

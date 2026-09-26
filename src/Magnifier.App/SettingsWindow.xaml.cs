@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using Magnifier.App.Localization;
 using Magnifier.Core;
 
 namespace Magnifier.App;
@@ -27,10 +28,10 @@ public partial class SettingsWindow : Window
         _capture = capture;
         InitializeComponent();
         ResizeLensButton.IsEnabled = canResizeLens;
-        TimingSummaryText.Text = $"현재 {timingSummary}";
+        TimingSummaryText.Text = string.Format(Loc.Instance["Timing_CurrentPrefix"], timingSummary);
         DefaultSizeBox.ItemsSource = Sizes;
         DefaultZoomBox.ItemsSource = Zooms;
-        VersionText.Text = $"버전 {GetDisplayVersion()}";
+        VersionText.Text = string.Format(Loc.Instance["Version_Prefix"], GetDisplayVersion());
         RefreshControls();
         // Checked 이벤트는 모든 페이지의 XAML 필드가 연결된 뒤에 발생해야 한다.
         AppearancePageButton.IsChecked = true;
@@ -62,6 +63,7 @@ public partial class SettingsWindow : Window
             TopToolbarButton.IsChecked = _settings.ToolbarPlacement == ToolbarPlacement.Top;
             BottomToolbarButton.IsChecked = _settings.ToolbarPlacement == ToolbarPlacement.Bottom;
             ThemeBox.SelectedIndex = (int)_settings.Theme;
+            LanguageBox.SelectedIndex = (int)_settings.Language;
             LensDisplayModeBox.SelectedIndex = (int)_settings.LensDisplayMode;
             SourceIndicatorBox.SelectedIndex = (int)_settings.SourceIndicatorPreference;
             HideAppWindowsFromScreenCaptureBox.IsChecked = _settings.HideAppWindowsFromScreenCapture;
@@ -79,7 +81,7 @@ public partial class SettingsWindow : Window
         if (!string.IsNullOrWhiteSpace(informationalVersion))
             return informationalVersion.Split('+', 2)[0];
 
-        return assembly.GetName().Version?.ToString(3) ?? "개발 빌드";
+        return assembly.GetName().Version?.ToString(3) ?? Loc.Instance["Version_DevBuild"];
     }
 
     private void ToolbarPlacement_OnChanged(object sender, RoutedEventArgs e)
@@ -92,6 +94,14 @@ public partial class SettingsWindow : Window
     {
         if (_syncing || ThemeBox.SelectedIndex < 0) return;
         Update(_settings with { Theme = (ThemePreference)ThemeBox.SelectedIndex });
+    }
+
+    private void LanguageBox_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_syncing || LanguageBox.SelectedIndex < 0) return;
+        var language = (AppLanguage)LanguageBox.SelectedIndex;
+        Loc.Instance.SetLanguage(language);
+        Update(_settings with { Language = language });
     }
 
     private void LensDisplayMode_OnChanged(object sender, SelectionChangedEventArgs e)

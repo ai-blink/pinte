@@ -1,4 +1,5 @@
 using System.Windows;
+using Magnifier.App.Localization;
 
 namespace Magnifier.App;
 
@@ -71,6 +72,7 @@ public partial class MainWindow
         }
         _settings = settings;
         MagnifierTheme.Apply(settings.Theme);
+        Loc.Instance.SetLanguage(settings.Language);
         _lens?.SetToolbarPlacement(settings.ToolbarPlacement);
         _lens?.SetDisplayMode(settings.LensDisplayMode);
         if (captureExclusionChanged) ApplyCaptureExclusion(settings.HideAppWindowsFromScreenCapture);

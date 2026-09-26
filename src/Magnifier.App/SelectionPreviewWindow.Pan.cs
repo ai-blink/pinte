@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using Magnifier.App.Localization;
 
 namespace Magnifier.App;
 
@@ -17,7 +18,7 @@ public partial class SelectionPreviewWindow
     {
         if (!_editingAllowed || AuxiliaryTools.IsExpanded) return;
         try { await SetPanModeAsync(!_handToolEnabled); }
-        catch (Exception exception) { PublishInputStatus($"손 도구 변경 실패: {exception.Message}"); }
+        catch (Exception exception) { PublishInputStatus(string.Format(Loc.Instance["Lens_Status_PanModeChangeFailed_Format"], exception.Message)); }
         e.Handled = true;
     }
 
@@ -31,7 +32,7 @@ public partial class SelectionPreviewWindow
         }
         _handToolEnabled = enabled;
         await ApplyInputSuspensionAsync(enabled
-            ? "손 도구 · 실제 입력 일시 중지" : "손 도구 종료 · 새 화면 확인 뒤 조작 자동 재개");
+            ? Loc.Instance["Lens_Reason_PanOn"] : Loc.Instance["Lens_Reason_PanOff"]);
         ApplyPanModeUi();
         UpdateControls();
     }
@@ -42,19 +43,19 @@ public partial class SelectionPreviewWindow
     {
         if (!IsInitialized) return;
         // 켜짐·꺼짐은 강조 색으로 구분해 일반 툴바 폭을 줄인다.
-        PanModeButton.Content = _normalToolbarNarrow ? "✋" : "✋ 손 도구";
+        PanModeButton.Content = _normalToolbarNarrow ? "✋" : Loc.Instance["Lens_PanMode_Full"];
         PanModeButton.ToolTip = _handToolEnabled
-            ? "손 도구 켜짐: 렌즈 안을 끌어 확대된 위치를 이동합니다"
-            : "손 도구 꺼짐: 켜면 렌즈 안을 끌어 확대된 위치를 이동합니다";
+            ? Loc.Instance["Lens_PanMode_Tooltip_On"]
+            : Loc.Instance["Lens_PanMode_Tooltip_Off"];
         PanModeButton.Style = _handToolEnabled
             ? (Style)FindResource("LensAccentButtonStyle")
             : (Style)FindResource("LensSoftAccentButtonStyle");
         System.Windows.Automation.AutomationProperties.SetName(PanModeButton,
-            _handToolEnabled ? "손 도구 켜짐, 누르면 끔" : "손 도구 꺼짐, 누르면 켬");
+            _handToolEnabled ? Loc.Instance["Lens_PanMode_Automation_On"] : Loc.Instance["Lens_PanMode_Automation_Off"]);
         CompactPanModeButton.Content = _handToolEnabled ? "✋✓" : "✋○";
         CompactPanModeButton.ToolTip = PanModeButton.ToolTip;
         System.Windows.Automation.AutomationProperties.SetName(CompactPanModeButton,
-            _handToolEnabled ? "손 도구 켜짐, 누르면 끔" : "손 도구 꺼짐, 누르면 켬");
+            _handToolEnabled ? Loc.Instance["Lens_PanMode_Automation_On"] : Loc.Instance["Lens_PanMode_Automation_Off"]);
         CompactPanModeButton.Style = _handToolEnabled
             ? (Style)FindResource("CompactActiveButtonStyle")
             : (Style)FindResource("CompactButtonStyle");

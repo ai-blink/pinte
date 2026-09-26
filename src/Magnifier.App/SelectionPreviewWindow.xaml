@@ -1,7 +1,8 @@
 <Window x:Class="Magnifier.App.SelectionPreviewWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="확대 렌즈" Width="760" Height="560" MinWidth="640" MinHeight="360"
+        xmlns:loc="clr-namespace:Magnifier.App.Localization"
+        Title="{loc:Tr Lens_Title}" Width="760" Height="560" MinWidth="640" MinHeight="360"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         ResizeMode="NoResize" Topmost="True" ShowInTaskbar="False"
         PreviewKeyDown="SelectionPreviewWindow_OnPreviewKeyDown">
@@ -60,15 +61,15 @@
                 <Thumb x:Name="TitleThumb" Grid.Column="0" Cursor="SizeAll" DragStarted="TitleThumb_OnDragStarted"
                        DragDelta="TitleThumb_OnDragDelta" DragCompleted="TitleThumb_OnDragCompleted"
                        LostMouseCapture="TitleThumb_OnLostMouseCapture"
-                       AutomationProperties.Name="확대 렌즈 이동 손잡이">
+                       AutomationProperties.Name="{loc:Tr Lens_TitleThumb_Automation}">
                     <Thumb.Template>
                         <ControlTemplate TargetType="Thumb">
                             <Border Background="Transparent" Padding="20,0,14,0">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <TextBlock Text="⠿" FontSize="19" Foreground="{DynamicResource AppMutedTextBrush}" Margin="0,0,8,0" />
                                     <StackPanel>
-                                        <TextBlock Foreground="{DynamicResource AppTextBrush}" FontSize="13" FontWeight="SemiBold" Text="확대 렌즈" />
-                                        <TextBlock Foreground="{DynamicResource AppMutedTextBrush}" FontSize="10" Text="제목부를 잡아 독립적으로 이동" />
+                                        <TextBlock Foreground="{DynamicResource AppTextBrush}" FontSize="13" FontWeight="SemiBold" Text="{loc:Tr Lens_Title}" />
+                                        <TextBlock Foreground="{DynamicResource AppMutedTextBrush}" FontSize="10" Text="{loc:Tr Lens_TitleThumb_Subtitle}" />
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
@@ -76,36 +77,36 @@
                     </Thumb.Template>
                 </Thumb>
                 <Button Grid.Column="1" Style="{StaticResource IconButtonStyle}" Width="40" MinWidth="40" MinHeight="40" Margin="0,6,8,6"
-                        Content="×" Click="CloseLens_OnClick" ToolTip="확대를 끝내고 원래 화면으로"
-                        AutomationProperties.Name="확대를 끝내고 원래 화면으로" />
+                        Content="×" Click="CloseLens_OnClick" ToolTip="{loc:Tr Lens_Close_Tooltip}"
+                        AutomationProperties.Name="{loc:Tr Lens_Close_Tooltip}" />
             </Grid>
 
             <Border x:Name="Toolbar" Grid.Row="1" Margin="8,7,8,5" Padding="4" SizeChanged="Toolbar_OnSizeChanged" Background="{DynamicResource AppCanvasBrush}"
                     BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="10">
                 <Grid>
                 <WrapPanel x:Name="NormalToolbar" VerticalAlignment="Center">
-                    <Button x:Name="SourceEditButton" MinWidth="40" Content="영역 편집" Click="SourceEdit_OnClick"
-                            ToolTip="원본 영역을 다시 편집합니다" AutomationProperties.Name="원본 영역 편집" />
-                    <Button x:Name="RegionSettingsButton" MinWidth="40" Content="영역 크기" Click="RegionSettings_OnClick"
-                            ToolTip="원본 크기와 비율" AutomationProperties.Name="원본 크기와 비율" />
+                    <Button x:Name="SourceEditButton" MinWidth="40" Content="{loc:Tr Lens_SourceEdit_Full}" Click="SourceEdit_OnClick"
+                            ToolTip="{loc:Tr Lens_SourceEdit_Tooltip}" AutomationProperties.Name="{loc:Tr Lens_SourceEdit_Automation}" />
+                    <Button x:Name="RegionSettingsButton" MinWidth="40" Content="{loc:Tr Lens_RegionSettings_Full}" Click="RegionSettings_OnClick"
+                            ToolTip="{loc:Tr Lens_RegionSettings_Tooltip}" AutomationProperties.Name="{loc:Tr Lens_RegionSettings_Tooltip}" />
                     <Button x:Name="AppSettingsButton" Style="{StaticResource IconButtonStyle}" Content="⚙" Click="AppSettings_OnClick" MinWidth="40" Width="40" MinHeight="40"
-                            ToolTip="앱 설정" AutomationProperties.Name="앱 설정" Margin="4,0,0,0" />
+                            ToolTip="{loc:Tr Lens_AppSettings_Tooltip}" AutomationProperties.Name="{loc:Tr Lens_AppSettings_Tooltip}" Margin="4,0,0,0" />
                     <Button x:Name="ResizeModeButton" Style="{StaticResource IconButtonStyle}" Content="⤢" Click="ResizeMode_OnClick" MinWidth="40" Width="40" MinHeight="40"
-                            ToolTip="크기 조절 꺼짐: 켜면 렌즈 가장자리에 손잡이가 나타납니다" AutomationProperties.Name="렌즈 크기 조절 손잡이 꺼짐, 누르면 켬" />
-                    <Button x:Name="HideLensButton" Style="{StaticResource LensSoftAccentButtonStyle}" Content="렌즈 숨김" Click="HideLens_OnClick"
-                            ToolTip="렌즈를 접고 같은 자리에 나타나는 아이콘으로 다시 펼칩니다"
-                            AutomationProperties.Name="렌즈 숨김" />
+                            ToolTip="{loc:Tr Lens_ResizeMode_Off_Tooltip}" AutomationProperties.Name="{loc:Tr Lens_ResizeMode_Off_Automation}" />
+                    <Button x:Name="HideLensButton" Style="{StaticResource LensSoftAccentButtonStyle}" Content="{loc:Tr Lens_HideLens_Full}" Click="HideLens_OnClick"
+                            ToolTip="{loc:Tr Lens_HideLens_Tooltip}"
+                            AutomationProperties.Name="{loc:Tr Lens_HideLens_Full}" />
                     <Border Width="1" Height="24" Background="{DynamicResource AppBorderBrush}" Margin="4,0" VerticalAlignment="Center" />
-                    <Button x:Name="ReturnButton" Content="↩ 원래 화면" Style="{StaticResource LensSoftAccentButtonStyle}" Click="Return_OnClick"
-                            ToolTip="입력을 해제하고 원래 화면으로 복귀"
-                            AutomationProperties.Name="입력을 해제하고 원래 화면으로 복귀" />
+                    <Button x:Name="ReturnButton" Content="{loc:Tr Lens_Return_Full}" Style="{StaticResource LensSoftAccentButtonStyle}" Click="Return_OnClick"
+                            ToolTip="{loc:Tr Lens_Return_Tooltip}"
+                            AutomationProperties.Name="{loc:Tr Lens_Return_Tooltip}" />
                     <Border Width="1" Height="24" Background="{DynamicResource AppBorderBrush}" Margin="4,0" VerticalAlignment="Center" />
                     <Button x:Name="ZoomDecreaseButton" Style="{StaticResource IconButtonStyle}" Content="−" Click="ZoomDecrease_OnClick" MinWidth="40" Width="40" MinHeight="40"
-                            AutomationProperties.Name="배율 낮추기" />
+                            AutomationProperties.Name="{loc:Tr Lens_ZoomDecrease_Automation}" />
                     <TextBlock x:Name="ZoomText" MinWidth="54" VerticalAlignment="Center" TextAlignment="Center"
                                FontSize="14" FontWeight="SemiBold" Text="2×" />
                     <Button x:Name="ZoomIncreaseButton" Style="{StaticResource IconButtonStyle}" Content="+" Click="ZoomIncrease_OnClick" MinWidth="40" Width="40" MinHeight="40"
-                            AutomationProperties.Name="배율 높이기" />
+                            AutomationProperties.Name="{loc:Tr Lens_ZoomIncrease_Automation}" />
                     <Border Width="1" Height="24" Background="{DynamicResource AppBorderBrush}" Margin="4,0" VerticalAlignment="Center" />
                     <Slider x:Name="FineZoomSlider" Width="88" Minimum="0.25" Maximum="8" Value="2"
                             SmallChange="0.1" LargeChange="0.5" TickFrequency="0.1"
@@ -113,35 +114,35 @@
                             ValueChanged="FineZoomSlider_OnValueChanged"
                             PreviewMouseLeftButtonDown="FineZoomSlider_OnPreviewMouseLeftButtonDown"
                             PreviewMouseLeftButtonUp="FineZoomSlider_OnPreviewMouseLeftButtonUp"
-                            ToolTip="세밀 배율 조절 · 0.1× 단위" AutomationProperties.Name="세밀 배율 조절" />
+                            ToolTip="{loc:Tr Lens_FineZoomSlider_Tooltip}" AutomationProperties.Name="{loc:Tr Lens_FineZoomSlider_Automation}" />
                     <TextBox x:Name="FineZoomText" Width="48" Height="32" Margin="6,0,2,0" Padding="4,0"
                              VerticalContentAlignment="Center" TextAlignment="Center" Text="2"
                              PreviewKeyDown="FineZoomText_OnPreviewKeyDown" LostKeyboardFocus="FineZoomText_OnLostKeyboardFocus"
-                             ToolTip="배율 직접 입력 · 0.25부터 8까지" AutomationProperties.Name="배율 직접 입력" />
+                             ToolTip="{loc:Tr Lens_ZoomText_Tooltip}" AutomationProperties.Name="{loc:Tr Lens_ZoomText_Automation}" />
                     <TextBlock Text="×" Margin="0,0,3,0" VerticalAlignment="Center" FontWeight="SemiBold" />
                     <Border Width="1" Height="24" Background="{DynamicResource AppBorderBrush}" Margin="4,0" VerticalAlignment="Center" />
-                    <Button x:Name="PanModeButton" MinWidth="40" Content="✋ 손 도구" Style="{StaticResource LensSoftAccentButtonStyle}" Click="PanMode_OnClick"
-                            ToolTip="손 도구 꺼짐: 켜면 렌즈 안을 끌어 확대된 위치를 이동합니다" AutomationProperties.Name="손 도구 꺼짐, 누르면 켬" />
+                    <Button x:Name="PanModeButton" MinWidth="40" Content="{loc:Tr Lens_PanMode_Full}" Style="{StaticResource LensSoftAccentButtonStyle}" Click="PanMode_OnClick"
+                            ToolTip="{loc:Tr Lens_PanMode_Tooltip_Off}" AutomationProperties.Name="{loc:Tr Lens_PanMode_Automation_Off}" />
                 </WrapPanel>
                 <StackPanel x:Name="CompactToolbar" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
                     <Thumb x:Name="CompactMoveThumb" Width="38" Height="44" Cursor="SizeAll"
                            DragStarted="TitleThumb_OnDragStarted" DragDelta="TitleThumb_OnDragDelta"
                            DragCompleted="TitleThumb_OnDragCompleted" LostMouseCapture="TitleThumb_OnLostMouseCapture"
-                           ToolTip="렌즈 이동" AutomationProperties.Name="렌즈 이동">
+                           ToolTip="{loc:Tr Lens_MoveThumb_Tooltip}" AutomationProperties.Name="{loc:Tr Lens_MoveThumb_Tooltip}">
                         <Thumb.Template><ControlTemplate TargetType="Thumb"><Border Background="Transparent"><TextBlock Text="⠿" Margin="8,0,0,0" FontSize="16" Foreground="{DynamicResource AppTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border></ControlTemplate></Thumb.Template>
                     </Thumb>
-                    <Button x:Name="CompactSourceEditButton" Style="{StaticResource CompactButtonStyle}" Content="▣" Click="SourceEdit_OnClick" ToolTip="영역 편집" AutomationProperties.Name="원본 영역 편집" />
-                    <Button x:Name="CompactZoomDecreaseButton" Style="{StaticResource CompactButtonStyle}" Content="−" Click="ZoomDecrease_OnClick" ToolTip="배율 낮추기" AutomationProperties.Name="배율 낮추기" />
+                    <Button x:Name="CompactSourceEditButton" Style="{StaticResource CompactButtonStyle}" Content="▣" Click="SourceEdit_OnClick" ToolTip="{loc:Tr Lens_SourceEdit_Full}" AutomationProperties.Name="{loc:Tr Lens_SourceEdit_Automation}" />
+                    <Button x:Name="CompactZoomDecreaseButton" Style="{StaticResource CompactButtonStyle}" Content="−" Click="ZoomDecrease_OnClick" ToolTip="{loc:Tr Lens_ZoomDecrease_Automation}" AutomationProperties.Name="{loc:Tr Lens_ZoomDecrease_Automation}" />
                     <TextBox x:Name="CompactZoomText" Width="24" Height="28" Padding="0" VerticalContentAlignment="Center" TextAlignment="Center" Text="2" FontSize="11"
                              PreviewKeyDown="FineZoomText_OnPreviewKeyDown" LostKeyboardFocus="FineZoomText_OnLostKeyboardFocus"
-                             ToolTip="배율 직접 입력 · 0.25부터 8까지" AutomationProperties.Name="배율 직접 입력" />
-                    <Button x:Name="CompactZoomIncreaseButton" Style="{StaticResource CompactButtonStyle}" Content="+" Click="ZoomIncrease_OnClick" ToolTip="배율 높이기" AutomationProperties.Name="배율 높이기" />
-                    <Button x:Name="CompactPanModeButton" Style="{StaticResource CompactButtonStyle}" Content="✋○" Click="PanMode_OnClick" ToolTip="손 도구 꺼짐: 켜면 렌즈 안을 끌어 확대된 위치를 이동합니다" AutomationProperties.Name="손 도구 꺼짐, 누르면 켬" />
-                    <Button x:Name="CompactResizeModeButton" Style="{StaticResource CompactButtonStyle}" Content="⤢" Click="ResizeMode_OnClick" ToolTip="크기 조절 꺼짐: 켜면 렌즈 가장자리에 손잡이가 나타납니다" AutomationProperties.Name="렌즈 크기 조절 손잡이 꺼짐, 누르면 켬" />
-                    <Button x:Name="CompactAppSettingsButton" Style="{StaticResource CompactButtonStyle}" Content="⚙" Click="AppSettings_OnClick" ToolTip="앱 설정" AutomationProperties.Name="앱 설정" />
-                    <Button x:Name="CompactHideLensButton" Style="{StaticResource CompactButtonStyle}" Content="숨김" FontSize="12" Click="HideLens_OnClick" ToolTip="렌즈 숨김" AutomationProperties.Name="렌즈 숨김" />
-                    <Button x:Name="CompactReturnButton" Style="{StaticResource CompactButtonStyle}" Width="44" Content="복귀" FontSize="13" Click="Return_OnClick" ToolTip="입력을 해제하고 원래 화면으로 복귀" AutomationProperties.Name="입력을 해제하고 원래 화면으로 복귀" />
-                    <Button Style="{StaticResource CompactButtonStyle}" Content="×" Click="CloseLens_OnClick" ToolTip="렌즈 닫기" AutomationProperties.Name="렌즈 닫기" />
+                             ToolTip="{loc:Tr Lens_ZoomText_Tooltip}" AutomationProperties.Name="{loc:Tr Lens_ZoomText_Automation}" />
+                    <Button x:Name="CompactZoomIncreaseButton" Style="{StaticResource CompactButtonStyle}" Content="+" Click="ZoomIncrease_OnClick" ToolTip="{loc:Tr Lens_ZoomIncrease_Automation}" AutomationProperties.Name="{loc:Tr Lens_ZoomIncrease_Automation}" />
+                    <Button x:Name="CompactPanModeButton" Style="{StaticResource CompactButtonStyle}" Content="✋○" Click="PanMode_OnClick" ToolTip="{loc:Tr Lens_PanMode_Tooltip_Off}" AutomationProperties.Name="{loc:Tr Lens_PanMode_Automation_Off}" />
+                    <Button x:Name="CompactResizeModeButton" Style="{StaticResource CompactButtonStyle}" Content="⤢" Click="ResizeMode_OnClick" ToolTip="{loc:Tr Lens_ResizeMode_Off_Tooltip}" AutomationProperties.Name="{loc:Tr Lens_ResizeMode_Off_Automation}" />
+                    <Button x:Name="CompactAppSettingsButton" Style="{StaticResource CompactButtonStyle}" Content="⚙" Click="AppSettings_OnClick" ToolTip="{loc:Tr Lens_AppSettings_Tooltip}" AutomationProperties.Name="{loc:Tr Lens_AppSettings_Tooltip}" />
+                    <Button x:Name="CompactHideLensButton" Style="{StaticResource CompactButtonStyle}" Content="{loc:Tr Lens_HideLens_Short}" FontSize="12" Click="HideLens_OnClick" ToolTip="{loc:Tr Lens_HideLens_Full}" AutomationProperties.Name="{loc:Tr Lens_HideLens_Full}" />
+                    <Button x:Name="CompactReturnButton" Style="{StaticResource CompactButtonStyle}" Width="44" Content="{loc:Tr Lens_ReturnCompact_Short}" FontSize="13" Click="Return_OnClick" ToolTip="{loc:Tr Lens_Return_Tooltip}" AutomationProperties.Name="{loc:Tr Lens_Return_Tooltip}" />
+                    <Button Style="{StaticResource CompactButtonStyle}" Content="×" Click="CloseLens_OnClick" ToolTip="{loc:Tr Lens_CompactClose_Tooltip}" AutomationProperties.Name="{loc:Tr Lens_CompactClose_Tooltip}" />
                 </StackPanel>
                 </Grid>
             </Border>
@@ -171,7 +172,7 @@
                                        MouseLeftButtonDown="CapturedImage_OnMouseLeftButtonDown"
                                        SizeChanged="CapturedImage_OnSizeChanged" />
                                 <TextBlock x:Name="ImageDescription" Margin="14" HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="10" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource AppMutedTextBrush}" IsHitTestVisible="False" Text="실시간 확대 · 원본 좌표와 연결됨" />
+                                           Foreground="{DynamicResource AppMutedTextBrush}" IsHitTestVisible="False" Text="{loc:Tr Lens_ImageDescription}" />
                                 <Canvas x:Name="PointMarkerLayer" IsHitTestVisible="False" ClipToBounds="True">
                                     <Line x:Name="StraightStrokePreview" Stroke="#F0B429" StrokeThickness="3"
                                           StrokeDashArray="5,3" Visibility="Collapsed" />
@@ -191,14 +192,14 @@
                                     </Grid>
                                 </Canvas>
                                 <TextBlock x:Name="EmptyImageText" Margin="16" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                           TextWrapping="Wrap" Foreground="{DynamicResource AppMutedTextBrush}" Text="원본 화면을 기다리는 중입니다" IsHitTestVisible="False" />
+                                           TextWrapping="Wrap" Foreground="{DynamicResource AppMutedTextBrush}" Text="{loc:Tr Lens_WaitingForSource}" IsHitTestVisible="False" />
                             </Grid>
                         </ScrollViewer>
                     </Grid>
                     <ScrollBar x:Name="VerticalPanBar" Grid.Row="0" Grid.Column="1" Width="14" Minimum="0" Visibility="Collapsed"
-                               ValueChanged="VerticalPanBar_OnValueChanged" ToolTip="세로로 이동" />
+                               ValueChanged="VerticalPanBar_OnValueChanged" ToolTip="{loc:Tr Lens_PanVertical_Tooltip}" />
                     <ScrollBar x:Name="HorizontalPanBar" Grid.Row="1" Grid.Column="0" Height="14" Minimum="0" Orientation="Horizontal" Visibility="Collapsed"
-                               ValueChanged="HorizontalPanBar_OnValueChanged" ToolTip="가로로 이동" />
+                               ValueChanged="HorizontalPanBar_OnValueChanged" ToolTip="{loc:Tr Lens_PanHorizontal_Tooltip}" />
                     <Border x:Name="PanCorner" Grid.Row="1" Grid.Column="1" Width="14" Height="14" Background="{DynamicResource AppCanvasBrush}" />
                 </Grid>
             </Border>
@@ -206,9 +207,9 @@
             <StackPanel x:Name="StatusPanel" Grid.Row="3" Visibility="Collapsed">
                 <StackPanel>
                     <TextBlock x:Name="InputStatusText" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource AppTextBrush}"
-                               Text="화면 준비 후 바로 조작할 수 있습니다" TextTrimming="CharacterEllipsis" />
+                               Text="{loc:Tr Lens_InputStatus_Default}" TextTrimming="CharacterEllipsis" />
                     <TextBlock x:Name="CaptureStatusText" Margin="0,3,0,0" FontSize="11" Foreground="{DynamicResource AppMutedTextBrush}"
-                               Text="조작 중 가장자리를 벗어나면 입력을 해제합니다" TextTrimming="CharacterEllipsis" />
+                               Text="{loc:Tr Lens_CaptureStatus_Default}" TextTrimming="CharacterEllipsis" />
                     <TextBlock x:Name="SelectionBoundsText" Margin="0,2,0,0" FontSize="10" Foreground="{DynamicResource AppMutedTextBrush}" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
             </StackPanel>
@@ -216,21 +217,21 @@
                        Foreground="{DynamicResource AppTextBrush}" TextWrapping="Wrap" IsHitTestVisible="False" />
 
             <Expander x:Name="AuxiliaryTools" Grid.Row="5" Margin="12,3,12,10"
-                      Header="보조 도구 · A/B 직선" IsExpanded="False"
+                      Header="{loc:Tr Lens_Auxiliary_Header}" IsExpanded="False"
                       Expanded="AuxiliaryTools_OnExpanded" Collapsed="AuxiliaryTools_OnCollapsed">
                 <StackPanel Margin="0,5,0,0">
                     <WrapPanel x:Name="AuxiliaryControls">
                         <CheckBox x:Name="PreviewInputEnabledCheckBox" Margin="4" VerticalAlignment="Center"
                                   Checked="PreviewInputEnabledCheckBox_OnChanged" Unchecked="PreviewInputEnabledCheckBox_OnChanged"
-                                  Content="A/B 실제 입력 허용" />
-                        <Button Content="A 지정" Click="SelectPointA_OnClick" Margin="4" />
-                        <Button Content="B 지정" Click="SelectPointB_OnClick" Margin="4" />
-                        <Button Content="−" Click="CountdownDecrease_OnClick" AutomationProperties.Name="카운트다운 감소" Margin="4" />
+                                  Content="{loc:Tr Lens_Auxiliary_EnableCheckbox}" />
+                        <Button Content="{loc:Tr Lens_SelectPointA}" Click="SelectPointA_OnClick" Margin="4" />
+                        <Button Content="{loc:Tr Lens_SelectPointB}" Click="SelectPointB_OnClick" Margin="4" />
+                        <Button Content="−" Click="CountdownDecrease_OnClick" AutomationProperties.Name="{loc:Tr Lens_CountdownDecrease_Automation}" Margin="4" />
                         <TextBlock x:Name="CountdownText" Text="3초" VerticalAlignment="Center" Margin="4" />
-                        <Button Content="+" Click="CountdownIncrease_OnClick" AutomationProperties.Name="카운트다운 증가" Margin="4" />
-                        <Button x:Name="RunStraightStrokeButton" Style="{StaticResource SoftAccentButtonStyle}" Content="실제 A → B 실행" Click="RunStraightStroke_OnClick" Margin="4" />
+                        <Button Content="+" Click="CountdownIncrease_OnClick" AutomationProperties.Name="{loc:Tr Lens_CountdownIncrease_Automation}" Margin="4" />
+                        <Button x:Name="RunStraightStrokeButton" Style="{StaticResource SoftAccentButtonStyle}" Content="{loc:Tr Lens_RunStroke_Button}" Click="RunStraightStroke_OnClick" Margin="4" />
                     </WrapPanel>
-                    <TextBlock x:Name="PointStatusText" Margin="4" FontSize="12" Foreground="{DynamicResource AppMutedTextBrush}" Text="A와 B를 지정하세요" />
+                    <TextBlock x:Name="PointStatusText" Margin="4" FontSize="12" Foreground="{DynamicResource AppMutedTextBrush}" Text="{loc:Tr Lens_PointStatus_InitialPrompt}" />
                 </StackPanel>
             </Expander>
         </Grid>
@@ -238,6 +239,6 @@
         <Grid x:Name="ResizeLayer" />
         <Button x:Name="ResizeDoneButton" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                 Height="36" MinHeight="36" MinWidth="88" Margin="0,0,24,15" Visibility="Collapsed"
-                Content="크기 조절 완료" Click="ResizeDone_OnClick" AutomationProperties.Name="렌즈 크기 조절 완료" />
+                Content="{loc:Tr Lens_ResizeDone_Button}" Click="ResizeDone_OnClick" AutomationProperties.Name="{loc:Tr Lens_ResizeDone_Automation}" />
     </Grid>
 </Window>

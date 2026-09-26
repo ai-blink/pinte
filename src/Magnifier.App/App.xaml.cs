@@ -5,6 +5,7 @@ using System.Windows;
 using System.IO;
 using System.Text.Json;
 using System.Threading;
+using Magnifier.App.Localization;
 using Magnifier.Infrastructure;
 
 namespace Magnifier.App;
@@ -59,6 +60,7 @@ public partial class App : Application
             Shutdown(5);
             return;
         }
+        Loc.Instance.SetLanguage(MagnifierSettingsStore.Load().Language);
         StartupUri = new Uri("MainWindow.xaml", UriKind.Relative);
         base.OnStartup(e);
         _activationRegistration = ThreadPool.RegisterWaitForSingleObject(

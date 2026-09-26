@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using Magnifier.App.Localization;
 using Magnifier.Core;
 
 namespace Magnifier.App;
@@ -50,6 +51,18 @@ public partial class SelectionPreviewWindow : Window
         SizeChanged += (_, _) => QueueGeometryUpdate();
         InitializeResizeControls();
         UpdateControls();
+        CountdownText.Text = string.Format(Loc.Instance["Lens_Countdown_Format"], _countdownSeconds);
+        Loc.Instance.PropertyChanged += (_, _) => ApplyLanguageDependentDynamicContent();
+    }
+
+    // Loc-bound XAML bindings refresh on their own; these overwrite Content/ToolTip
+    // programmatically (narrow toolbar labels, on/off tooltips) and must be redriven by hand.
+    private void ApplyLanguageDependentDynamicContent()
+    {
+        if (!IsInitialized) return;
+        SetNormalToolbarNarrow(_normalToolbarNarrow, force: true);
+        ApplyResizeModeUi();
+        UpdateResizeThumbLocalization();
     }
 
     public event Action? ReturnRequested;
@@ -78,7 +91,7 @@ public partial class SelectionPreviewWindow : Window
         }
         catch (Exception exception)
         {
-            PublishInputStatus($"렌즈 캡처 숨김 설정 적용 실패: {exception.Message}");
+            PublishInputStatus(string.Format(Loc.Instance["Lens_CaptureExclusionFailed_Format"], exception.Message));
         }
     }
 
@@ -86,7 +99,7 @@ public partial class SelectionPreviewWindow : Window
     {
         if (_currentRegion == source && _frameHandle == frameHandle) return;
         var revision = ++_sourceRevision;
-        await PauseAsync("영역 변경 · 조작 자동 재개 대기");
+        await PauseAsync(Loc.Instance["Lens_Reason_SourceChanging"]);
         if (_closed || revision != _sourceRevision) return;
         _frameHandle = frameHandle;
         _currentRegion = source;
@@ -95,7 +108,7 @@ public partial class SelectionPreviewWindow : Window
         _bitmap = null;
         CapturedImage.Source = null;
         EmptyImageText.Visibility = Visibility.Visible;
-        EmptyImageText.Text = "원본 화면을 기다리는 중입니다";
+        EmptyImageText.Text = Loc.Instance["Lens_WaitingForSource"];
         UpdateBoundsText(source);
         RequestViewportCentering();
         ResizeLens();
@@ -135,8 +148,8 @@ public partial class SelectionPreviewWindow : Window
         EmptyImageText.Visibility = Visibility.Collapsed;
         if (!_geometryPending) _relay.RefreshFrame();
         CaptureStatusText.Text = isLivePreview
-            ? "실시간 화면 · 가장자리를 벗어나면 해제 · 대상 반응을 확인하세요"
-            : "화면 캡처 · 실제 입력 꺼짐";
+            ? Loc.Instance["Lens_CaptureStatus_Live"]
+            : Loc.Instance["Lens_CaptureStatus_Passive"];
         UpdateControls();
     }
 
@@ -147,10 +160,10 @@ public partial class SelectionPreviewWindow : Window
         CancelStraightStroke();
         Exception? auxiliaryFailure = null;
         try { _inputSession.SetInputEnabled(false); }
-        catch (Exception exception) { auxiliaryFailure = exception; reason += $" · A/B 해제 실패: {exception.Message}"; }
+        catch (Exception exception) { auxiliaryFailure = exception; reason += string.Format(Loc.Instance["Lens_Reason_AuxiliaryReleaseFailed_Format"], exception.Message); }
         SetPreviewInputToggle(false);
         try { await _relay.StopAsync(reason); }
-        catch (Exception exception) { PublishInputStatus($"입력 중지 실패: {exception.Message}"); throw; }
+        catch (Exception exception) { PublishInputStatus(string.Format(Loc.Instance["Lens_Reason_StopFailed_Format"], exception.Message)); throw; }
         _handToolEnabled = false;
         EndPan();
         _isMoving = _moveReady = _isResizing = _resizeReady = false;
@@ -166,7 +179,7 @@ public partial class SelectionPreviewWindow : Window
     public async Task PauseAsync(string reason)
     {
         try { await _relay.PauseAsync(reason); }
-        catch (Exception exception) { PublishInputStatus($"입력 일시 정지 실패: {exception.Message}"); throw; }
+        catch (Exception exception) { PublishInputStatus(string.Format(Loc.Instance["Lens_Reason_PauseFailed_Format"], exception.Message)); throw; }
     }
 
     public async Task SetInputSuspendedAsync(bool suspended, string reason)
@@ -210,13 +223,13 @@ public partial class SelectionPreviewWindow : Window
         _bitmap = null;
         CapturedImage.Source = null;
         ClearPoints();
-        EmptyImageText.Text = $"캡처 실패: {reason}";
+        EmptyImageText.Text = string.Format(Loc.Instance["Lens_CaptureFailed_Format"], reason);
         EmptyImageText.Visibility = Visibility.Visible;
         UpdateBoundsText(region);
-        CaptureStatusText.Text = "캡처를 자동 재시도합니다 · 새 화면을 받으면 조작을 자동 재개합니다";
+        CaptureStatusText.Text = Loc.Instance["Lens_CaptureStatus_Retrying"];
         UpdateControls();
         _captureStopPending = true;
-        try { await PauseAsync($"캡처 일시 실패 · 새 화면 대기: {reason}"); }
+        try { await PauseAsync(string.Format(Loc.Instance["Lens_Reason_CaptureFailurePause_Format"], reason)); }
         catch { /* A release failure cancels the pending request in the relay. */ }
         finally { _captureStopPending = false; }
     }
@@ -236,7 +249,7 @@ public partial class SelectionPreviewWindow : Window
     {
         try
         {
-            await StopAsync("원래 화면 · 입력 해제");
+            await StopAsync(Loc.Instance["Lens_Reason_ReturnRelease"]);
             ReturnRequested?.Invoke();
         }
         catch { }
@@ -311,14 +324,14 @@ public partial class SelectionPreviewWindow : Window
     }
 
     private void UpdateBoundsText(ScreenRegion region) => SelectionBoundsText.Text =
-        $"원본 물리 좌표 X {region.X} · Y {region.Y} · {region.Width} × {region.Height} · 렌즈 이동과 독립";
+        string.Format(Loc.Instance["Lens_BoundsText_Format"], region.X, region.Y, region.Width, region.Height);
 
     private void CapturedImage_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         e.Handled = true;
         if (_pendingPointTarget != PointTarget.None) SelectPointFromImage(e.GetPosition(CapturedImage));
-        else PublishInputStatus(AuxiliaryTools.IsExpanded ? "A 또는 B 지점 지정을 먼저 누르세요"
-            : _relayStatus is { InputRequested: true } ? "버튼 해제와 최신 화면을 기다린 뒤 자동 재개합니다" : "원래 화면으로 돌아간 뒤 다시 확대하세요");
+        else PublishInputStatus(AuxiliaryTools.IsExpanded ? Loc.Instance["Lens_Status_PickPointFirst"]
+            : _relayStatus is { InputRequested: true } ? Loc.Instance["Lens_Status_WaitingForRelease"] : Loc.Instance["Lens_Status_ReturnToZoomAgain"]);
     }
 
     private void RegionSettings_OnClick(object sender, RoutedEventArgs e)
@@ -363,7 +376,7 @@ public partial class SelectionPreviewWindow : Window
         _isMoving = _editingAllowed;
         if (!_isMoving) return;
         _moveReady = false;
-        try { await ApplyInputSuspensionAsync("렌즈 이동 · 버튼 해제 후 자동 재개"); _moveReady = _isMoving; }
+        try { await ApplyInputSuspensionAsync(Loc.Instance["Lens_Reason_Moving"]); _moveReady = _isMoving; }
         catch { _isMoving = false; ((Thumb)sender).CancelDrag(); }
     }
     private void TitleThumb_OnDragDelta(object sender, DragDeltaEventArgs e)

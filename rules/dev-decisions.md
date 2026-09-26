@@ -47,3 +47,7 @@
 ## Infrastructure
 
 - D-006: `C:\ai\projects\new-alt`의 원격 포인터·프레임 캡처 구조는 참고하되 코드를 그대로 복사하지 않는다.
+
+## Localization
+
+- D-033 (2026-09-27, 사용자 승인): README가 이미 약속한 EN/ZH/JA를 실제 UI에 반영하는 i18n 인프라를 신설한다. `.resx` 대신 자체 `Strings` 사전(`Magnifier.App.Localization`) + `{loc:Tr Key}` MarkupExtension(`Loc` 싱글턴, INotifyPropertyChanged 인덱서 바인딩)을 사용해 창 재생성 없이 즉시 언어 전환한다(`MagnifierTheme.Apply`가 브러시를 즉시 교체하는 것과 동일한 패턴). 기본 언어는 `AppLanguage.System`으로 `CultureInfo.CurrentUICulture` 자동감지(미지원 로케일은 En 폴백, README.md 루트 문서 언어와 일치) + `SettingsWindow` 콤보에서 수동 전환. `MagnifierSettings.Language`로 `settings.json`에 영속화. 첫 슬라이스는 `SettingsWindow`만(약 63개 키, ko/en/zh-Hans/ja 4개 언어 테이블 완비). 나머지 8개 창은 아직 한국어 하드코딩— 후속 슬라이스 대상. zh-Hans/ja 번역은 1차 기계 수준(네이티브 검수 전). `Loc.Instance`의 SetLanguage 전 기본값은 `AppLanguage.Ko`로 두어 `App.OnStartup`을 거치지 않는 기존 단위 테스트(`SettingsWindowTests`)의 한국어 문자열 기대치를 그대로 보존한다.
