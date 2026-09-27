@@ -1,5 +1,7 @@
 # 로드맵
 
+- [ ] i18n: README가 약속한 EN/ZH/JA를 실제 UI에 반영, App 담당. 자체 `Loc`/`{loc:Tr}` 인프라 신설(D-033), `SettingsWindow`·확대 렌즈·MainWindow 3/9 창 완료(설정 창은 사용자 확인, 나머지 2개는 build+테스트만), 부수적으로 발견된 WPF 레이아웃 버그 2건도 수정. 다음: 나머지 6개 창(QuickRegionSettingsWindow·SelectionOverlayWindow·PointerTimingWindow·LensCollapseOverlayWindow·SourceIndicatorWindow·App.xaml), zh-Hans/ja 네이티브 검수. (2026-09-27)
+
 - 2026-09-18 공개 기준: [Pinte v0.1.1 정식 릴리즈](https://github.com/ai-blink/pinte/releases/tag/v0.1.1)를 태그 `v0.1.1`과 Windows x64 자체 포함 ZIP으로 배포한다. 표준 build 0/0·자동 테스트 146개 통과는 릴리즈 기준이며, 실제 UI와 대상 앱 호환성은 `NEEDS_USER_UI_CHECK`다.
 
 - 2026-09-14 공개 기준: [Pinte v0.1.0 정식 릴리즈](https://github.com/ai-blink/pinte/releases/tag/v0.1.0)를 태그 `v0.1.0`과 Windows x64 자체 포함 ZIP으로 배포한다. 표준 build 0/0·자동 테스트 120개 통과는 릴리즈 기준이며, 실제 UI와 대상 앱 호환성은 `NEEDS_USER_UI_CHECK`다.

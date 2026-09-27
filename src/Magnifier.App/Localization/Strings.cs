@@ -2,7 +2,9 @@ using System.Collections.Generic;
 
 namespace Magnifier.App.Localization;
 
-// First slice covers SettingsWindow only; other 8 windows still hardcode Korean.
+// Slices so far: SettingsWindow, SelectionPreviewWindow, MainWindow. Remaining 6 windows
+// (QuickRegionSettingsWindow·SelectionOverlayWindow·PointerTimingWindow·LensCollapseOverlayWindow·
+// SourceIndicatorWindow·App.xaml) still hardcode Korean.
 // zh-Hans/ja entries are a first machine-quality pass, not yet native-reviewed.
 internal static class Strings
 {
@@ -197,7 +199,23 @@ internal static class Strings
             ["Lens_Status_LayoutFailed_Format"] = "렌즈 배치 설정 실패: {0}",
             ["Lens_Reason_CoordinateRefresh"] = "렌즈 좌표 갱신 · 최신 화면 확인 대기",
             ["Lens_Status_GeometryRetryFailed_Format"] = "렌즈 좌표 재시도 실패: {0}",
-            ["Lens_Reason_DpiChanged"] = "화면 DPI 변경 · 조작 자동 재개 대기"
+            ["Lens_Reason_DpiChanged"] = "화면 DPI 변경 · 조작 자동 재개 대기",
+            ["MainWindow_Tagline"] = "필요한 곳을 크게",
+            ["MainWindow_Description"] = "테두리로 원본 영역을 맞춘 뒤, 확대 렌즈 안에서 평소처럼 클릭하고 드래그하세요.",
+            ["MainWindow_SelectRegionButton"] = "화면 영역 지정",
+            ["MainWindow_Status_Idle"] = "원래 화면 · 입력 꺼짐",
+            ["MainWindow_Reason_SelectingRegion"] = "영역 지정 · 입력 꺼짐",
+            ["MainWindow_Status_AdjustBorder"] = "테두리를 옮기고 크기를 맞춘 뒤 ‘이 영역 확대’를 누르세요.",
+            ["MainWindow_Status_SelectFailed_Format"] = "영역 지정 실패: {0}",
+            ["MainWindow_Status_ZoomFailed_Format"] = "확대 시작 실패: {0}",
+            ["MainWindow_Reason_AdjustSource"] = "원본 영역 조절 · 버튼 해제 후 자동 재개",
+            ["MainWindow_Error_RegionOffscreen"] = "원본 테두리를 연결된 화면 안으로 옮기세요.",
+            ["MainWindow_Status_Returned"] = "원래 화면으로 돌아왔습니다. 화면 영역을 지정한 뒤 확대하세요.",
+            ["MainWindow_Status_ReturnFailed_Format"] = "복귀 중 오류: {0}",
+            ["MainWindow_Status_LayoutSessionOnlySuffix"] = " 배치는 이번 실행에서만 기억합니다.",
+            ["MainWindow_Status_ScreenChanged"] = "화면 구성이 바뀌어 조작을 중지했습니다. 확대를 다시 시작하세요.",
+            ["MainWindow_Status_CloseNeedsRelease_Format"] = "종료 전 입력 해제가 필요합니다: {0}",
+            ["MainWindow_Reason_NewRegionResumeHold"] = "새 영역 지정 · 이전 보류 해제"
         },
         [AppLanguage.En] = new()
         {
@@ -381,7 +399,23 @@ internal static class Strings
             ["Lens_Status_LayoutFailed_Format"] = "Failed to set lens layout: {0}",
             ["Lens_Reason_CoordinateRefresh"] = "Refreshing lens coordinates · waiting to check a fresh frame",
             ["Lens_Status_GeometryRetryFailed_Format"] = "Lens coordinate retry failed: {0}",
-            ["Lens_Reason_DpiChanged"] = "Screen DPI changed · waiting to auto-resume"
+            ["Lens_Reason_DpiChanged"] = "Screen DPI changed · waiting to auto-resume",
+            ["MainWindow_Tagline"] = "Zoom into what you need",
+            ["MainWindow_Description"] = "Fit the border to the source region, then click and drag as usual inside the zoom lens.",
+            ["MainWindow_SelectRegionButton"] = "Select screen region",
+            ["MainWindow_Status_Idle"] = "Original screen · input off",
+            ["MainWindow_Reason_SelectingRegion"] = "Selecting region · input off",
+            ["MainWindow_Status_AdjustBorder"] = "Move the border and resize it, then press ‘Zoom this region’.",
+            ["MainWindow_Status_SelectFailed_Format"] = "Failed to select region: {0}",
+            ["MainWindow_Status_ZoomFailed_Format"] = "Failed to start zooming: {0}",
+            ["MainWindow_Reason_AdjustSource"] = "Adjusting source region · auto-resumes after button release",
+            ["MainWindow_Error_RegionOffscreen"] = "Move the source border onto a connected screen.",
+            ["MainWindow_Status_Returned"] = "Back to the original screen. Select a region to zoom in.",
+            ["MainWindow_Status_ReturnFailed_Format"] = "Error while returning: {0}",
+            ["MainWindow_Status_LayoutSessionOnlySuffix"] = " Layout is remembered only for this run.",
+            ["MainWindow_Status_ScreenChanged"] = "Stopped operating because the screen layout changed. Start zooming again.",
+            ["MainWindow_Status_CloseNeedsRelease_Format"] = "Input must be released before closing: {0}",
+            ["MainWindow_Reason_NewRegionResumeHold"] = "New region selection · releasing previous hold"
         },
         [AppLanguage.ZhHans] = new()
         {
@@ -565,7 +599,23 @@ internal static class Strings
             ["Lens_Status_LayoutFailed_Format"] = "设置放大镜布局失败：{0}",
             ["Lens_Reason_CoordinateRefresh"] = "正在刷新放大镜坐标 · 等待确认新画面",
             ["Lens_Status_GeometryRetryFailed_Format"] = "放大镜坐标重试失败：{0}",
-            ["Lens_Reason_DpiChanged"] = "屏幕 DPI 已更改 · 等待自动恢复操作"
+            ["Lens_Reason_DpiChanged"] = "屏幕 DPI 已更改 · 等待自动恢复操作",
+            ["MainWindow_Tagline"] = "放大所需之处",
+            ["MainWindow_Description"] = "先用边框对齐原始区域，然后像平常一样在放大镜内点击和拖动。",
+            ["MainWindow_SelectRegionButton"] = "指定屏幕区域",
+            ["MainWindow_Status_Idle"] = "原始画面 · 输入已关闭",
+            ["MainWindow_Reason_SelectingRegion"] = "正在指定区域 · 输入已关闭",
+            ["MainWindow_Status_AdjustBorder"] = "移动边框并调整大小后，按下“放大此区域”。",
+            ["MainWindow_Status_SelectFailed_Format"] = "指定区域失败：{0}",
+            ["MainWindow_Status_ZoomFailed_Format"] = "开始放大失败：{0}",
+            ["MainWindow_Reason_AdjustSource"] = "调整原始区域中 · 按钮释放后自动恢复",
+            ["MainWindow_Error_RegionOffscreen"] = "请将原始边框移到已连接的屏幕内。",
+            ["MainWindow_Status_Returned"] = "已返回原始画面。请指定区域后再放大。",
+            ["MainWindow_Status_ReturnFailed_Format"] = "返回时出错：{0}",
+            ["MainWindow_Status_LayoutSessionOnlySuffix"] = " 布局仅在本次运行中记住。",
+            ["MainWindow_Status_ScreenChanged"] = "屏幕布局已更改，操作已停止。请重新开始放大。",
+            ["MainWindow_Status_CloseNeedsRelease_Format"] = "关闭前需要释放输入：{0}",
+            ["MainWindow_Reason_NewRegionResumeHold"] = "指定新区域 · 解除先前的保留"
         },
         [AppLanguage.Ja] = new()
         {
@@ -749,7 +799,23 @@ internal static class Strings
             ["Lens_Status_LayoutFailed_Format"] = "レンズ配置の設定に失敗しました: {0}",
             ["Lens_Reason_CoordinateRefresh"] = "レンズ座標を更新中 · 最新画面の確認を待機",
             ["Lens_Status_GeometryRetryFailed_Format"] = "レンズ座標の再試行に失敗しました: {0}",
-            ["Lens_Reason_DpiChanged"] = "画面のDPIが変更されました · 自動再開を待機"
+            ["Lens_Reason_DpiChanged"] = "画面のDPIが変更されました · 自動再開を待機",
+            ["MainWindow_Tagline"] = "見たい場所を大きく",
+            ["MainWindow_Description"] = "枠を元の領域に合わせてから、拡大レンズ内でいつも通りクリック・ドラッグしてください。",
+            ["MainWindow_SelectRegionButton"] = "画面領域を指定",
+            ["MainWindow_Status_Idle"] = "元の画面 · 入力オフ",
+            ["MainWindow_Reason_SelectingRegion"] = "領域指定中 · 入力オフ",
+            ["MainWindow_Status_AdjustBorder"] = "枠を移動してサイズを合わせてから「この領域を拡大」を押してください。",
+            ["MainWindow_Status_SelectFailed_Format"] = "領域指定に失敗しました: {0}",
+            ["MainWindow_Status_ZoomFailed_Format"] = "拡大の開始に失敗しました: {0}",
+            ["MainWindow_Reason_AdjustSource"] = "元の領域を調整中 · ボタン解除後に自動再開",
+            ["MainWindow_Error_RegionOffscreen"] = "元の枠を接続された画面内に移動してください。",
+            ["MainWindow_Status_Returned"] = "元の画面に戻りました。領域を指定してから拡大してください。",
+            ["MainWindow_Status_ReturnFailed_Format"] = "復帰中にエラーが発生しました: {0}",
+            ["MainWindow_Status_LayoutSessionOnlySuffix"] = " 配置は今回の実行中のみ記憶します。",
+            ["MainWindow_Status_ScreenChanged"] = "画面構成が変わったため操作を停止しました。もう一度拡大を開始してください。",
+            ["MainWindow_Status_CloseNeedsRelease_Format"] = "終了前に入力の解除が必要です: {0}",
+            ["MainWindow_Reason_NewRegionResumeHold"] = "新しい領域指定 · 以前の保留を解除"
         }
     };
 }

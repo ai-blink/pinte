@@ -64,13 +64,13 @@ public partial class MainWindow : Window
         {
             _timer.Stop();
             HideSourceIndicator();
-            if (_lens is not null) await _lens.StopAsync("영역 지정 · 입력 꺼짐");
-            else await _relay.StopAsync("영역 지정 · 입력 꺼짐");
+            if (_lens is not null) await _lens.StopAsync(Loc.Instance["MainWindow_Reason_SelectingRegion"]);
+            else await _relay.StopAsync(Loc.Instance["MainWindow_Reason_SelectingRegion"]);
             if (version != _sessionVersion || _returning || _shuttingDown) return;
             EnsureWindows();
             _editingSource = false;
             _lens!.SetSourceEditing(false);
-            await _lens.SetInputSuspendedAsync(false, "새 영역 지정 · 이전 보류 해제");
+            await _lens.SetInputSuspendedAsync(false, Loc.Instance["MainWindow_Reason_NewRegionResumeHold"]);
             if (version != _sessionVersion || _returning || _shuttingDown) return;
             _lens!.Hide();
             _frame!.SetEditingEnabled(true);
@@ -91,13 +91,13 @@ public partial class MainWindow : Window
             _region = _frame.Region;
             _captureVersion++;
             Hide();
-            SelectionStatusText.Text = "테두리를 옮기고 크기를 맞춘 뒤 ‘이 영역 확대’를 누르세요.";
+            SelectionStatusText.Text = Loc.Instance["MainWindow_Status_AdjustBorder"];
         }
         catch (Exception ex)
         {
             if (version != _sessionVersion) return;
             await ReturnToScreenAsync();
-            SelectionStatusText.Text = $"영역 지정 실패: {ex.Message}";
+            SelectionStatusText.Text = string.Format(Loc.Instance["MainWindow_Status_SelectFailed_Format"], ex.Message);
         }
         finally { SelectRegionButton.IsEnabled = true; }
     }
@@ -141,7 +141,7 @@ public partial class MainWindow : Window
         {
             if (version != _sessionVersion) return;
             await ReturnToScreenAsync();
-            SelectionStatusText.Text = $"확대 시작 실패: {ex.Message}";
+            SelectionStatusText.Text = string.Format(Loc.Instance["MainWindow_Status_ZoomFailed_Format"], ex.Message);
         }
         finally
         {
@@ -178,7 +178,7 @@ public partial class MainWindow : Window
         _frame.AdjustmentStarted += async () =>
         {
             if (_selecting || _returning || _shuttingDown) return;
-            try { await _lens.PauseAsync("원본 영역 조절 · 버튼 해제 후 자동 재개"); }
+            try { await _lens.PauseAsync(Loc.Instance["MainWindow_Reason_AdjustSource"]); }
             catch (Exception ex) { SelectionStatusText.Text = ex.Message; }
         };
         _frame.RegionConfirmed += async () =>
@@ -227,7 +227,7 @@ public partial class MainWindow : Window
         var finished = _captureFinished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         try
         {
-            if (!_windows.IsRegionVisible(region)) throw new InvalidOperationException("원본 테두리를 연결된 화면 안으로 옮기세요.");
+            if (!_windows.IsRegionVisible(region)) throw new InvalidOperationException(Loc.Instance["MainWindow_Error_RegionOffscreen"]);
             var frame = await Task.Run(() => _capture.Capture(region));
             if (version != _captureVersion || _returning || _lens?.IsVisible != true) return;
             _lens.UpdateCapture(frame, true);
@@ -258,8 +258,8 @@ public partial class MainWindow : Window
         try
         {
             // Release -> disable -> hide both -> restore entry. A new open requests input anew.
-            if (_lens is not null) await _lens.StopAsync("원래 화면 · 입력 꺼짐");
-            else await _relay.StopAsync("원래 화면 · 입력 꺼짐");
+            if (_lens is not null) await _lens.StopAsync(Loc.Instance["MainWindow_Status_Idle"]);
+            else await _relay.StopAsync(Loc.Instance["MainWindow_Status_Idle"]);
             RememberLayout();
             _selecting = false;
             _openingLens = false;
@@ -271,12 +271,12 @@ public partial class MainWindow : Window
             _collapsedLens?.Hide();
             Show();
             Activate();
-            SelectionStatusText.Text = "원래 화면으로 돌아왔습니다. 화면 영역을 지정한 뒤 확대하세요.";
+            SelectionStatusText.Text = Loc.Instance["MainWindow_Status_Returned"];
             if (_layout is not null && !LensLayoutStore.Save(_layout))
-                SelectionStatusText.Text += " 배치는 이번 실행에서만 기억합니다.";
+                SelectionStatusText.Text += Loc.Instance["MainWindow_Status_LayoutSessionOnlySuffix"];
             return true;
         }
-        catch (Exception ex) { Show(); SelectionStatusText.Text = $"복귀 중 오류: {ex.Message}"; return false; }
+        catch (Exception ex) { Show(); SelectionStatusText.Text = string.Format(Loc.Instance["MainWindow_Status_ReturnFailed_Format"], ex.Message); return false; }
         finally { _returning = false; }
     }
 
@@ -297,7 +297,7 @@ public partial class MainWindow : Window
             _windows.PlaceWindow(handle, new ScreenRegion(
                 Math.Clamp(bounds.X, work.X, work.X + work.Width - width),
                 Math.Clamp(bounds.Y, work.Y, work.Y + work.Height - height), width, height));
-            SelectionStatusText.Text = "화면 구성이 바뀌어 조작을 중지했습니다. 확대를 다시 시작하세요.";
+            SelectionStatusText.Text = Loc.Instance["MainWindow_Status_ScreenChanged"];
         });
         return 0;
     }
@@ -324,7 +324,7 @@ public partial class MainWindow : Window
         {
             _shuttingDown = false;
             Show();
-            SelectionStatusText.Text = $"종료 전 입력 해제가 필요합니다: {ex.Message}";
+            SelectionStatusText.Text = string.Format(Loc.Instance["MainWindow_Status_CloseNeedsRelease_Format"], ex.Message);
         }
     }
 }
