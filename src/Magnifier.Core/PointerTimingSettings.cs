@@ -16,13 +16,15 @@ public sealed record PointerTimingSettings(int ArrivalMs = 100, int MinimumHoldM
     public static PointerTimingSettings Default { get; } = new();
 
     // Starting points only; the right value depends on the machine and target app.
-    // "저지연" is the value one user confirmed in one game (2026-09-24), not a universal default.
+    // Name is a stable identifier for the App layer's localized preset labels (Timing_Preset_<Name>
+    // in Magnifier.App.Localization.Strings), not display text — Core stays free of UI strings.
+    // "LowLatency" is the value one user confirmed in one game (2026-09-24), not a universal default.
     public static IReadOnlyList<(string Name, PointerTimingSettings Value)> Presets { get; } =
     [
-        ("기본", Default),
-        ("빠름", new(50, 20, 30, 0)),
-        ("저지연", new(5, 1, 5, 0)),
-        ("즉시", new(0, 0, 0, 0))
+        ("Default", Default),
+        ("Fast", new(50, 20, 30, 0)),
+        ("LowLatency", new(5, 1, 5, 0)),
+        ("Instant", new(0, 0, 0, 0))
     ];
 
     // Fine 1ms steps below 10ms where small values matter; 5ms steps above.

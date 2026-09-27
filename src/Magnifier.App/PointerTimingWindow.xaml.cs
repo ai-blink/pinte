@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Magnifier.App.Localization;
 using Magnifier.Core;
 
 namespace Magnifier.App;
@@ -12,21 +13,24 @@ public partial class PointerTimingWindow : Window
     private sealed record Field(string Label, string Tip, int Max,
         Func<PointerTimingSettings, int> Get, Func<PointerTimingSettings, int, PointerTimingSettings> Set);
 
-    private static readonly Field[] Fields =
+    // Built per-instance (not static readonly) so the current language applies — a static
+    // array would freeze these labels to whatever language was current at type load.
+    private static Field[] BuildFields() =>
     [
-        new("도착 후 누르기 대기", "커서를 원본 위치로 옮긴 뒤 누름(Down)을 보내기까지 최소 대기",
+        new(Loc.Instance["Timing_Field_Arrival_Label"], Loc.Instance["Timing_Field_Arrival_Tip"],
             PointerTimingSettings.MaximumArrivalMs, s => s.ArrivalMs, (s, v) => s with { ArrivalMs = v }),
-        new("최소 누름 유지", "누름(Down) 뒤 해제(Up)를 보낼 수 있는 가장 이른 시점",
+        new(Loc.Instance["Timing_Field_Hold_Label"], Loc.Instance["Timing_Field_Hold_Tip"],
             PointerTimingSettings.MaximumHoldMs, s => s.MinimumHoldMs, (s, v) => s with { MinimumHoldMs = v }),
-        new("해제 후 체류", "해제(Up) 뒤 커서를 렌즈 위치로 되돌리기까지 원본 위치 유지",
+        new(Loc.Instance["Timing_Field_PostRelease_Label"], Loc.Instance["Timing_Field_PostRelease_Tip"],
             PointerTimingSettings.MaximumPostReleaseMs, s => s.PostReleaseMs, (s, v) => s with { PostReleaseMs = v }),
-        new("제스처 간격", "커서 복귀 뒤 줄 서 있던 다음 누름을 시작하기까지 대기",
+        new(Loc.Instance["Timing_Field_Gesture_Label"], Loc.Instance["Timing_Field_Gesture_Tip"],
             PointerTimingSettings.MaximumBetweenGesturesMs, s => s.BetweenGesturesMs, (s, v) => s with { BetweenGesturesMs = v })
     ];
 
     private readonly ILivePointerRelay _relay;
-    private readonly TextBox[] _inputs = new TextBox[Fields.Length];
-    private readonly TextBlock[] _appliedLabels = new TextBlock[Fields.Length];
+    private readonly Field[] _fields = BuildFields();
+    private readonly TextBox[] _inputs;
+    private readonly TextBlock[] _appliedLabels;
     private PointerTimingSettings _edit;
     private bool _applying;
 
@@ -34,29 +38,38 @@ public partial class PointerTimingWindow : Window
     {
         InitializeComponent();
         _relay = relay;
+        _inputs = new TextBox[_fields.Length];
+        _appliedLabels = new TextBlock[_fields.Length];
         Profile = profile;
         _edit = profile.Applied;
         BuildRows();
         foreach (var (name, value) in PointerTimingSettings.Presets)
         {
             var button = new Button { Style = (Style)FindResource("AppButtonStyle"), Height = 32, Margin = new(2, 0, 2, 0),
-                Content = name, ToolTip = value.ToString() };
+                Content = Loc.Instance[$"Timing_Preset_{name}"], ToolTip = value.ToString() };
             button.Click += (_, _) => SetEdit(value);
             PresetButtons.Children.Add(button);
         }
         _relay.TimingChanged += OnTimingChanged;
-        Closed += (_, _) => _relay.TimingChanged -= OnTimingChanged;
+        Loc.Instance.PropertyChanged += OnLanguageChanged;
+        Closed += (_, _) =>
+        {
+            _relay.TimingChanged -= OnTimingChanged;
+            Loc.Instance.PropertyChanged -= OnLanguageChanged;
+        };
         Render(loadError);
     }
+
+    private void OnLanguageChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) => Render();
 
     internal PointerTimingProfile Profile { get; private set; }
     internal event Action<PointerTimingProfile>? ProfileChanged;
 
     private void BuildRows()
     {
-        for (var i = 0; i < Fields.Length; i++)
+        for (var i = 0; i < _fields.Length; i++)
         {
-            var field = Fields[i];
+            var field = _fields[i];
             var row = new Grid { Margin = new(0, 3, 0, 3), ToolTip = field.Tip };
             foreach (var width in new[] { 128.0, 34, 58, 34, 1 })
                 row.ColumnDefinitions.Add(new() { Width = width == 1 ? new GridLength(1, GridUnitType.Star) : new GridLength(width) });
@@ -99,7 +112,7 @@ public partial class PointerTimingWindow : Window
     {
         if (int.TryParse(input.Text.Trim().TrimEnd('m', 's'), out var value))
             SetEdit(field.Set(_edit, Math.Clamp(value, 0, field.Max)));
-        else Render("숫자(ms)만 입력할 수 있습니다.");
+        else Render(Loc.Instance["Timing_Error_NotANumber"]);
     }
 
     private void SetEdit(PointerTimingSettings value)
@@ -113,31 +126,32 @@ public partial class PointerTimingWindow : Window
     private void Render(string? message = null)
     {
         var status = _relay.TimingStatus;
-        for (var i = 0; i < Fields.Length; i++)
+        for (var i = 0; i < _fields.Length; i++)
         {
-            if (!_inputs[i].IsKeyboardFocused) _inputs[i].Text = Fields[i].Get(_edit).ToString();
-            _appliedLabels[i].Text = $"({Fields[i].Get(status.Applied)}ms)";
+            if (!_inputs[i].IsKeyboardFocused) _inputs[i].Text = _fields[i].Get(_edit).ToString();
+            _appliedLabels[i].Text = $"({_fields[i].Get(status.Applied)}ms)";
         }
-        ApplyAButton.Content = "A 적용";
+        ApplyAButton.Content = Loc.Instance["Timing_ApplyA_Content"];
         ApplyAButton.ToolTip = Profile.SlotA.ToString();
-        ApplyBButton.Content = "B 적용";
+        ApplyBButton.Content = Loc.Instance["Timing_ApplyB_Content"];
         ApplyBButton.ToolTip = Profile.SlotB.ToString();
         PreviousButton.IsEnabled = Profile.Previous is not null && !_applying;
         ApplyButton.IsEnabled = !_applying;
         var dirty = _edit != status.Applied || status.Pending is not null;
         var state = status.Pending is { } pending
-            ? $"적용 대기 rev{status.PendingRevision} {pending} · 진행 중 입력이 끝나면 바뀝니다"
-            : $"적용됨 rev{status.AppliedRevision} {status.Applied}";
-        var slot = status.Applied == Profile.SlotA ? " · A" : status.Applied == Profile.SlotB ? " · B" : "";
+            ? string.Format(Loc.Instance["Timing_Status_Pending_Format"], status.PendingRevision, pending)
+            : string.Format(Loc.Instance["Timing_Status_Applied_Format"], status.AppliedRevision, status.Applied);
+        var slot = status.Applied == Profile.SlotA ? Loc.Instance["Timing_Status_SlotA_Suffix"]
+            : status.Applied == Profile.SlotB ? Loc.Instance["Timing_Status_SlotB_Suffix"] : "";
         StatusText.Text = (message is null ? "" : message + "\n") + state + slot
-            + (dirty && status.Pending is null ? "\n편집값이 아직 적용되지 않았습니다." : "")
-            + $"\nA {Profile.SlotA} · B {Profile.SlotB}";
+            + (dirty && status.Pending is null ? Loc.Instance["Timing_Status_DirtyNote"] : "")
+            + string.Format(Loc.Instance["Timing_Status_SlotsSummary_Format"], Profile.SlotA, Profile.SlotB);
     }
 
     private async Task ApplyAsync(PointerTimingSettings value)
     {
         if (_applying) return;
-        if (!value.IsValid()) { Render("허용 범위를 벗어난 값입니다."); return; }
+        if (!value.IsValid()) { Render(Loc.Instance["Timing_Error_OutOfRange"]); return; }
         _applying = true;
         var next = Profile with
         {
@@ -151,12 +165,12 @@ public partial class PointerTimingWindow : Window
             await _relay.ApplyTimingAsync(value, next.Revision);
             Profile = next;
             _edit = value;
-            if (!PointerTimingStore.Save(next)) message = "프로필 저장 실패 · 이번 실행에만 적용합니다.";
+            if (!PointerTimingStore.Save(next)) message = Loc.Instance["Timing_Error_SaveFailed_SessionOnly"];
             ProfileChanged?.Invoke(next);
         }
         catch (Exception exception)
         {
-            message = $"적용 실패 · 기존값 유지: {exception.Message}";
+            message = string.Format(Loc.Instance["Timing_Error_ApplyFailed_Format"], exception.Message);
         }
         finally
         {
@@ -168,7 +182,7 @@ public partial class PointerTimingWindow : Window
     private void UpdateSlots(PointerTimingProfile next, string message)
     {
         Profile = next;
-        Render(PointerTimingStore.Save(next) ? message : message + " · 프로필 저장 실패");
+        Render(PointerTimingStore.Save(next) ? message : message + Loc.Instance["Timing_Error_SaveFailed_Suffix"]);
         ProfileChanged?.Invoke(next);
     }
 
@@ -180,6 +194,8 @@ public partial class PointerTimingWindow : Window
     {
         if (Profile.Previous is { } previous) await ApplyAsync(previous);
     }
-    private void SaveA_OnClick(object sender, RoutedEventArgs e) => UpdateSlots(Profile with { SlotA = _edit }, $"A에 저장 {_edit}");
-    private void SaveB_OnClick(object sender, RoutedEventArgs e) => UpdateSlots(Profile with { SlotB = _edit }, $"B에 저장 {_edit}");
+    private void SaveA_OnClick(object sender, RoutedEventArgs e) =>
+        UpdateSlots(Profile with { SlotA = _edit }, string.Format(Loc.Instance["Timing_SaveA_Message_Format"], _edit));
+    private void SaveB_OnClick(object sender, RoutedEventArgs e) =>
+        UpdateSlots(Profile with { SlotB = _edit }, string.Format(Loc.Instance["Timing_SaveB_Message_Format"], _edit));
 }

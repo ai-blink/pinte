@@ -1,4 +1,5 @@
 using System.Windows;
+using Magnifier.App.Localization;
 using Magnifier.Core;
 
 namespace Magnifier.App;
@@ -17,7 +18,7 @@ public partial class MainWindow
         try { await _relay.ApplyTimingAsync(_timingProfile.Applied, _timingProfile.Revision); }
         catch (Exception exception)
         {
-            _timingLoadError = $"저장된 입력 타이밍 적용 실패 · 기본값 사용: {exception.Message}";
+            _timingLoadError = string.Format(Loc.Instance["Timing_Error_LoadApplyFailed_Format"], exception.Message);
             _timingProfile = PointerTimingProfile.Default;
         }
     }
@@ -25,7 +26,7 @@ public partial class MainWindow
     private string TimingSummary => _timingLoadError is not null
         ? $"{_timingProfile.Applied} · {_timingLoadError}"
         : _timingProfile.Applied == PointerTimingSettings.Default
-            ? $"{_timingProfile.Applied} (기본값)" : _timingProfile.Applied.ToString();
+            ? $"{_timingProfile.Applied}{Loc.Instance["Timing_Summary_DefaultSuffix"]}" : _timingProfile.Applied.ToString();
 
     // Opened from Settings > 고급. No owner: the anchor (lens/editor) can hide while
     // the user compares values in the target app, and the panel must stay available.
