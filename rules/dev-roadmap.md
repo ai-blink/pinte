@@ -1,6 +1,6 @@
 # 로드맵
 
-- [x] i18n: README가 약속한 EN/ZH/JA를 실제 UI에 반영, App 담당. 자체 `Loc`/`{loc:Tr}` 인프라 신설(D-033), 9개 창(SettingsWindow·SelectionPreviewWindow·MainWindow·QuickRegionSettingsWindow·SelectionOverlayWindow·PointerTimingWindow·LensCollapseOverlayWindow·SourceIndicatorWindow) 완료 + `App.xaml`은 확인 결과 번역할 사용자 노출 문자열이 없어 그대로 완료 처리. 4개 언어 총 280키. 부수적으로 발견된 WPF 레이아웃 버그 2건 수정 + Core `PointerTimingSettings.Presets`를 한국어 리터럴에서 영문 식별자로 바꿔 계층 경계를 지켰다. build 경고0/오류0, Core65·Infrastructure81 PASS 전 슬라이스 유지. 남은 것: zh-Hans/ja 네이티브 검수, SettingsWindow 외 8개 창의 실제 언어 전환 UI 확인(`NEEDS_USER_UI_CHECK`). (2026-09-28)
+- [x] i18n: README가 약속한 EN/ZH/JA를 실제 UI에 반영, App 담당. 자체 `Loc`/`{loc:Tr}` 인프라 신설(D-033), 9개 창(SettingsWindow·SelectionPreviewWindow·MainWindow·QuickRegionSettingsWindow·SelectionOverlayWindow·PointerTimingWindow·LensCollapseOverlayWindow·SourceIndicatorWindow) 완료 + `App.xaml`은 확인 결과 번역할 사용자 노출 문자열이 없어 그대로 완료 처리. 4개 언어 총 280키. 부수적으로 발견된 WPF 레이아웃 버그 2건 수정 + Core `PointerTimingSettings.Presets`를 한국어 리터럴에서 영문 식별자로 바꿔 계층 경계를 지켰다. zh-Hans/ja는 glm-5.2 위임 검수(46건 반영, 사용자 승인)로 1차 네이티브 품질 검수까지 마쳤다. build 경고0/오류0, Core65·Infrastructure81 PASS 전 슬라이스 유지. 남은 것: SettingsWindow 외 8개 창의 실제 언어 전환 UI 확인(`NEEDS_USER_UI_CHECK`) — glm-5.2 검수는 정적 텍스트 대조이지 화면 확인이 아니다. (2026-09-28)
 
 - 2026-09-18 공개 기준: [Pinte v0.1.1 정식 릴리즈](https://github.com/ai-blink/pinte/releases/tag/v0.1.1)를 태그 `v0.1.1`과 Windows x64 자체 포함 ZIP으로 배포한다. 표준 build 0/0·자동 테스트 146개 통과는 릴리즈 기준이며, 실제 UI와 대상 앱 호환성은 `NEEDS_USER_UI_CHECK`다.
 
