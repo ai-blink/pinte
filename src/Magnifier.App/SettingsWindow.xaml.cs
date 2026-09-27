@@ -17,6 +17,8 @@ public partial class SettingsWindow : Window
     private static readonly double[] Zooms = [1, 1.5, 2, 2.5, 3, 3.5, 4];
     private MagnifierSettings _settings;
     private readonly IScreenCapture _capture;
+    private readonly string _timingSummary;
+    private readonly string? _rawVersion;
     private bool _syncing = true;
     private nint _windowHandle;
     private bool _captureExcluded;
@@ -26,15 +28,29 @@ public partial class SettingsWindow : Window
     {
         _settings = settings;
         _capture = capture;
+        _timingSummary = timingSummary;
+        _rawVersion = GetRawVersion();
         InitializeComponent();
         ResizeLensButton.IsEnabled = canResizeLens;
-        TimingSummaryText.Text = string.Format(Loc.Instance["Timing_CurrentPrefix"], timingSummary);
         DefaultSizeBox.ItemsSource = Sizes;
         DefaultZoomBox.ItemsSource = Zooms;
-        VersionText.Text = string.Format(Loc.Instance["Version_Prefix"], GetDisplayVersion());
+        RefreshLanguageDependentText();
+        Loc.Instance.PropertyChanged += OnLanguageChanged;
+        Closed += (_, _) => Loc.Instance.PropertyChanged -= OnLanguageChanged;
         RefreshControls();
         // Checked 이벤트는 모든 페이지의 XAML 필드가 연결된 뒤에 발생해야 한다.
         AppearancePageButton.IsChecked = true;
+    }
+
+    // TimingSummaryText/VersionText are set from code, not {loc:Tr} bindings (the values they
+    // interpolate — timing values, version string — aren't themselves localized keys), so a
+    // language switch while this window stays open needs an explicit re-render.
+    private void OnLanguageChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) => RefreshLanguageDependentText();
+
+    private void RefreshLanguageDependentText()
+    {
+        TimingSummaryText.Text = string.Format(Loc.Instance["Timing_CurrentPrefix"], _timingSummary);
+        VersionText.Text = string.Format(Loc.Instance["Version_Prefix"], _rawVersion ?? Loc.Instance["Version_DevBuild"]);
     }
 
     public event Action<MagnifierSettings>? SettingsChanged;
@@ -74,14 +90,16 @@ public partial class SettingsWindow : Window
         finally { _syncing = false; }
     }
 
-    private static string GetDisplayVersion()
+    // Returns null (not a localized fallback) when no version is embedded, so the caller can
+    // resolve Version_DevBuild against the current language instead of freezing it at construction.
+    private static string? GetRawVersion()
     {
         var assembly = Assembly.GetExecutingAssembly();
         var informationalVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
         if (!string.IsNullOrWhiteSpace(informationalVersion))
             return informationalVersion.Split('+', 2)[0];
 
-        return assembly.GetName().Version?.ToString(3) ?? Loc.Instance["Version_DevBuild"];
+        return assembly.GetName().Version?.ToString(3);
     }
 
     private void ToolbarPlacement_OnChanged(object sender, RoutedEventArgs e)
