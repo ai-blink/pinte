@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Interop;
+using Magnifier.App.Localization;
 using Magnifier.Core;
 
 namespace Magnifier.App;
@@ -54,7 +55,7 @@ public partial class SourceIndicatorWindow : Window
         catch (Exception exception)
         {
             Hide();
-            FailureReason = $"원본 영역 윤곽선을 숨겼습니다: {exception.Message}";
+            FailureReason = string.Format(Loc.Instance["SourceIndicator_Error_HiddenFormat"], exception.Message);
             return false;
         }
     }
@@ -68,7 +69,7 @@ public partial class SourceIndicatorWindow : Window
         }
         catch (Exception exception)
         {
-            FailureReason ??= $"원본 윤곽선의 캡처 제외 해제에 실패했습니다: {exception.Message}";
+            FailureReason ??= string.Format(Loc.Instance["SourceIndicator_Error_ExclusionReleaseFailedFormat"], exception.Message);
         }
         finally
         {

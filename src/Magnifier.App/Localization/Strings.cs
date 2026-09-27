@@ -3,8 +3,8 @@ using System.Collections.Generic;
 namespace Magnifier.App.Localization;
 
 // Slices so far: SettingsWindow, SelectionPreviewWindow, MainWindow, QuickRegionSettingsWindow,
-// SelectionOverlayWindow, PointerTimingWindow, LensCollapseOverlayWindow. Remaining 2 windows
-// (SourceIndicatorWindow·App.xaml) still hardcode Korean.
+// SelectionOverlayWindow, PointerTimingWindow, LensCollapseOverlayWindow, SourceIndicatorWindow.
+// Remaining window: App.xaml.
 // zh-Hans/ja entries are a first machine-quality pass, not yet native-reviewed.
 internal static class Strings
 {
@@ -295,7 +295,10 @@ internal static class Strings
             ["Collapse_WindowTitle"] = "렌즈 펼치기",
             ["Collapse_Expand_Tooltip"] = "클릭하여 렌즈 다시 펼치기 · 드래그하여 아이콘 이동",
             ["Collapse_Expand_Automation"] = "렌즈 다시 펼치기 또는 아이콘 이동",
-            ["Collapse_Error_ShowFailed_Format"] = "렌즈 펼치기 아이콘을 준비하지 못했습니다: {0}"
+            ["Collapse_Error_ShowFailed_Format"] = "렌즈 펼치기 아이콘을 준비하지 못했습니다: {0}",
+            ["SourceIndicator_WindowTitle"] = "원본 영역 윤곽선",
+            ["SourceIndicator_Error_HiddenFormat"] = "원본 영역 윤곽선을 숨겼습니다: {0}",
+            ["SourceIndicator_Error_ExclusionReleaseFailedFormat"] = "원본 윤곽선의 캡처 제외 해제에 실패했습니다: {0}"
         },
         [AppLanguage.En] = new()
         {
@@ -575,7 +578,10 @@ internal static class Strings
             ["Collapse_WindowTitle"] = "Expand lens",
             ["Collapse_Expand_Tooltip"] = "Click to expand the lens again · drag to move the icon",
             ["Collapse_Expand_Automation"] = "Expand the lens again, or move the icon",
-            ["Collapse_Error_ShowFailed_Format"] = "Failed to prepare the expand-lens icon: {0}"
+            ["Collapse_Error_ShowFailed_Format"] = "Failed to prepare the expand-lens icon: {0}",
+            ["SourceIndicator_WindowTitle"] = "Source region outline",
+            ["SourceIndicator_Error_HiddenFormat"] = "Hid the source region outline: {0}",
+            ["SourceIndicator_Error_ExclusionReleaseFailedFormat"] = "Failed to release the source outline's capture exclusion: {0}"
         },
         [AppLanguage.ZhHans] = new()
         {
@@ -855,7 +861,10 @@ internal static class Strings
             ["Collapse_WindowTitle"] = "展开放大镜",
             ["Collapse_Expand_Tooltip"] = "点击重新展开放大镜 · 拖动可移动图标",
             ["Collapse_Expand_Automation"] = "重新展开放大镜或移动图标",
-            ["Collapse_Error_ShowFailed_Format"] = "无法准备展开放大镜图标：{0}"
+            ["Collapse_Error_ShowFailed_Format"] = "无法准备展开放大镜图标：{0}",
+            ["SourceIndicator_WindowTitle"] = "原始区域轮廓线",
+            ["SourceIndicator_Error_HiddenFormat"] = "已隐藏原始区域轮廓线：{0}",
+            ["SourceIndicator_Error_ExclusionReleaseFailedFormat"] = "解除原始轮廓线的捕获排除失败：{0}"
         },
         [AppLanguage.Ja] = new()
         {
@@ -1135,7 +1144,10 @@ internal static class Strings
             ["Collapse_WindowTitle"] = "レンズを展開",
             ["Collapse_Expand_Tooltip"] = "クリックしてレンズを再度展開 · ドラッグしてアイコンを移動",
             ["Collapse_Expand_Automation"] = "レンズを再度展開、またはアイコンを移動",
-            ["Collapse_Error_ShowFailed_Format"] = "レンズ展開アイコンの準備に失敗しました: {0}"
+            ["Collapse_Error_ShowFailed_Format"] = "レンズ展開アイコンの準備に失敗しました: {0}",
+            ["SourceIndicator_WindowTitle"] = "元の領域の輪郭線",
+            ["SourceIndicator_Error_HiddenFormat"] = "元の領域の輪郭線を非表示にしました: {0}",
+            ["SourceIndicator_Error_ExclusionReleaseFailedFormat"] = "元の輪郭線のキャプチャ除外の解除に失敗しました: {0}"
         }
     };
 }
