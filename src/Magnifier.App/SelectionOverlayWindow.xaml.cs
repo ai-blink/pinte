@@ -1,8 +1,10 @@
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using Magnifier.App.Localization;
 using Magnifier.Core;
 
 namespace Magnifier.App;
@@ -18,6 +20,8 @@ public partial class SelectionOverlayWindow : Window
     private bool _settingRegion;
     private bool _hideFromScreenCapture;
     private double? _lockedAspectRatio;
+    private bool _selecting;
+    private bool _editingSource;
 
     public SelectionOverlayWindow(IScreenCapture capture, IWindowEnvironment windows, bool hideFromScreenCapture = false)
     {
@@ -25,6 +29,7 @@ public partial class SelectionOverlayWindow : Window
         _capture = capture;
         _windows = windows;
         _hideFromScreenCapture = hideFromScreenCapture;
+        Loc.Instance.PropertyChanged += (_, _) => ApplyLocalizedToolbar();
         SourceInitialized += (_, _) =>
         {
             WindowHandle = new WindowInteropHelper(this).Handle;
@@ -81,20 +86,35 @@ public partial class SelectionOverlayWindow : Window
 
     public void SetSelectionMode(bool selecting)
     {
-        ConfirmRegionButton.Content = "확대";
-        ConfirmRegionButton.ToolTip = "지정한 영역을 확대";
-        ConfirmRegionButton.Visibility = selecting ? Visibility.Visible : Visibility.Collapsed;
-        ConfirmRegionButton.IsEnabled = selecting;
-        Title = selecting ? "화면 영역 지정 · 테두리를 맞춘 뒤 이 영역 확대" : "확대할 원본 영역";
+        _editingSource = false;
+        _selecting = selecting;
+        ApplyLocalizedToolbar();
     }
 
     public void SetSourceEditingMode()
     {
-        ConfirmRegionButton.Content = "완료";
-        ConfirmRegionButton.ToolTip = "원본 영역 편집 완료";
-        ConfirmRegionButton.Visibility = Visibility.Visible;
-        ConfirmRegionButton.IsEnabled = true;
-        Title = "원본 영역 편집 · 테두리를 맞춘 뒤 완료";
+        _editingSource = true;
+        ApplyLocalizedToolbar();
+    }
+
+    private void ApplyLocalizedToolbar()
+    {
+        if (_editingSource)
+        {
+            ConfirmRegionButton.Content = Loc.Instance["Overlay_Done_Content"];
+            ConfirmRegionButton.ToolTip = Loc.Instance["Overlay_Done_Tooltip"];
+            AutomationProperties.SetName(ConfirmRegionButton, Loc.Instance["Overlay_Done_Tooltip"]);
+            ConfirmRegionButton.Visibility = Visibility.Visible;
+            ConfirmRegionButton.IsEnabled = true;
+            Title = Loc.Instance["Overlay_Title_Editing"];
+            return;
+        }
+        ConfirmRegionButton.Content = Loc.Instance["Overlay_Confirm_Content"];
+        ConfirmRegionButton.ToolTip = Loc.Instance["Overlay_Confirm_Tooltip"];
+        AutomationProperties.SetName(ConfirmRegionButton, Loc.Instance["Overlay_Confirm_Automation"]);
+        ConfirmRegionButton.Visibility = _selecting ? Visibility.Visible : Visibility.Collapsed;
+        ConfirmRegionButton.IsEnabled = _selecting;
+        Title = _selecting ? Loc.Instance["Overlay_Title_Selecting"] : Loc.Instance["Overlay_Title_Default"];
     }
 
     public void SetRegion(ScreenRegion region) => ApplyRegion(region, force: false);

@@ -2,8 +2,8 @@ using System.Collections.Generic;
 
 namespace Magnifier.App.Localization;
 
-// Slices so far: SettingsWindow, SelectionPreviewWindow, MainWindow, QuickRegionSettingsWindow.
-// Remaining 5 windows (SelectionOverlayWindow·PointerTimingWindow·LensCollapseOverlayWindow·
+// Slices so far: SettingsWindow, SelectionPreviewWindow, MainWindow, QuickRegionSettingsWindow,
+// SelectionOverlayWindow. Remaining 4 windows (PointerTimingWindow·LensCollapseOverlayWindow·
 // SourceIndicatorWindow·App.xaml) still hardcode Korean.
 // zh-Hans/ja entries are a first machine-quality pass, not yet native-reviewed.
 internal static class Strings
@@ -233,7 +233,26 @@ internal static class Strings
             ["QuickRegion_Direction_Tooltip"] = "가로와 세로 바꾸기",
             ["QuickRegion_Direction_Automation"] = "가로와 세로 바꾸기",
             ["QuickRegion_Footnote"] = "프리셋은 현재 테두리에 즉시 적용됩니다. 고정 중에는 8개 손잡이에서도 같은 비율을 유지합니다.",
-            ["QuickRegion_Square"] = "정사각형"
+            ["QuickRegion_Square"] = "정사각형",
+            ["Overlay_MoveHandle_Title"] = "원본 영역",
+            ["Overlay_MoveHandle_Subtitle"] = "끌어서 이동",
+            ["Overlay_Confirm_Content"] = "확대",
+            ["Overlay_Confirm_Tooltip"] = "지정한 영역을 확대",
+            ["Overlay_Confirm_Automation"] = "지정한 영역 확대",
+            ["Overlay_RegionSettings_Tooltip"] = "원본 크기와 비율",
+            ["Overlay_RegionSettings_Automation"] = "원본 크기와 비율",
+            ["Overlay_RegionSettings_Content"] = "크기",
+            ["Overlay_AppSettings_Tooltip"] = "앱 설정",
+            ["Overlay_AppSettings_Automation"] = "앱 설정",
+            ["Overlay_Return_Tooltip"] = "원래 화면으로 돌아가기",
+            ["Overlay_Return_Automation"] = "원래 화면으로 돌아가기",
+            ["Overlay_Close_Tooltip"] = "확대를 끝내고 원래 화면으로",
+            ["Overlay_Close_Automation"] = "확대를 끝내고 원래 화면으로",
+            ["Overlay_Title_Default"] = "확대할 원본 영역",
+            ["Overlay_Title_Selecting"] = "화면 영역 지정 · 테두리를 맞춘 뒤 이 영역 확대",
+            ["Overlay_Done_Content"] = "완료",
+            ["Overlay_Done_Tooltip"] = "원본 영역 편집 완료",
+            ["Overlay_Title_Editing"] = "원본 영역 편집 · 테두리를 맞춘 뒤 완료"
         },
         [AppLanguage.En] = new()
         {
@@ -451,7 +470,26 @@ internal static class Strings
             ["QuickRegion_Direction_Tooltip"] = "Swap width and height",
             ["QuickRegion_Direction_Automation"] = "Swap width and height",
             ["QuickRegion_Footnote"] = "Presets apply to the current border immediately. While locked, all 8 handles keep the same ratio.",
-            ["QuickRegion_Square"] = "Square"
+            ["QuickRegion_Square"] = "Square",
+            ["Overlay_MoveHandle_Title"] = "Source region",
+            ["Overlay_MoveHandle_Subtitle"] = "Drag to move",
+            ["Overlay_Confirm_Content"] = "Zoom",
+            ["Overlay_Confirm_Tooltip"] = "Zoom into the selected region",
+            ["Overlay_Confirm_Automation"] = "Zoom into the selected region",
+            ["Overlay_RegionSettings_Tooltip"] = "Source size and aspect ratio",
+            ["Overlay_RegionSettings_Automation"] = "Source size and aspect ratio",
+            ["Overlay_RegionSettings_Content"] = "Size",
+            ["Overlay_AppSettings_Tooltip"] = "App settings",
+            ["Overlay_AppSettings_Automation"] = "App settings",
+            ["Overlay_Return_Tooltip"] = "Return to the original screen",
+            ["Overlay_Return_Automation"] = "Return to the original screen",
+            ["Overlay_Close_Tooltip"] = "Stop zooming and return to the original screen",
+            ["Overlay_Close_Automation"] = "Stop zooming and return to the original screen",
+            ["Overlay_Title_Default"] = "Source region to zoom",
+            ["Overlay_Title_Selecting"] = "Select screen region · fit the border, then zoom this region",
+            ["Overlay_Done_Content"] = "Done",
+            ["Overlay_Done_Tooltip"] = "Finish editing the source region",
+            ["Overlay_Title_Editing"] = "Edit source region · fit the border, then press Done"
         },
         [AppLanguage.ZhHans] = new()
         {
@@ -669,7 +707,26 @@ internal static class Strings
             ["QuickRegion_Direction_Tooltip"] = "交换宽度和高度",
             ["QuickRegion_Direction_Automation"] = "交换宽度和高度",
             ["QuickRegion_Footnote"] = "预设会立即应用到当前边框。锁定期间，8个手柄也会保持相同比例。",
-            ["QuickRegion_Square"] = "正方形"
+            ["QuickRegion_Square"] = "正方形",
+            ["Overlay_MoveHandle_Title"] = "原始区域",
+            ["Overlay_MoveHandle_Subtitle"] = "拖动以移动",
+            ["Overlay_Confirm_Content"] = "放大",
+            ["Overlay_Confirm_Tooltip"] = "放大所选区域",
+            ["Overlay_Confirm_Automation"] = "放大所选区域",
+            ["Overlay_RegionSettings_Tooltip"] = "原始大小与比例",
+            ["Overlay_RegionSettings_Automation"] = "原始大小与比例",
+            ["Overlay_RegionSettings_Content"] = "大小",
+            ["Overlay_AppSettings_Tooltip"] = "应用设置",
+            ["Overlay_AppSettings_Automation"] = "应用设置",
+            ["Overlay_Return_Tooltip"] = "返回原始画面",
+            ["Overlay_Return_Automation"] = "返回原始画面",
+            ["Overlay_Close_Tooltip"] = "结束放大并返回原始画面",
+            ["Overlay_Close_Automation"] = "结束放大并返回原始画面",
+            ["Overlay_Title_Default"] = "要放大的原始区域",
+            ["Overlay_Title_Selecting"] = "指定屏幕区域 · 对齐边框后放大此区域",
+            ["Overlay_Done_Content"] = "完成",
+            ["Overlay_Done_Tooltip"] = "完成编辑原始区域",
+            ["Overlay_Title_Editing"] = "编辑原始区域 · 对齐边框后按完成"
         },
         [AppLanguage.Ja] = new()
         {
@@ -887,7 +944,26 @@ internal static class Strings
             ["QuickRegion_Direction_Tooltip"] = "横と縦を入れ替え",
             ["QuickRegion_Direction_Automation"] = "横と縦を入れ替え",
             ["QuickRegion_Footnote"] = "プリセットは現在の枠に即座に適用されます。固定中は8個のハンドルでも同じ比率を保ちます。",
-            ["QuickRegion_Square"] = "正方形"
+            ["QuickRegion_Square"] = "正方形",
+            ["Overlay_MoveHandle_Title"] = "元の領域",
+            ["Overlay_MoveHandle_Subtitle"] = "ドラッグして移動",
+            ["Overlay_Confirm_Content"] = "拡大",
+            ["Overlay_Confirm_Tooltip"] = "指定した領域を拡大",
+            ["Overlay_Confirm_Automation"] = "指定した領域を拡大",
+            ["Overlay_RegionSettings_Tooltip"] = "元のサイズと比率",
+            ["Overlay_RegionSettings_Automation"] = "元のサイズと比率",
+            ["Overlay_RegionSettings_Content"] = "サイズ",
+            ["Overlay_AppSettings_Tooltip"] = "アプリ設定",
+            ["Overlay_AppSettings_Automation"] = "アプリ設定",
+            ["Overlay_Return_Tooltip"] = "元の画面に戻る",
+            ["Overlay_Return_Automation"] = "元の画面に戻る",
+            ["Overlay_Close_Tooltip"] = "拡大を終了して元の画面に戻る",
+            ["Overlay_Close_Automation"] = "拡大を終了して元の画面に戻る",
+            ["Overlay_Title_Default"] = "拡大する元の領域",
+            ["Overlay_Title_Selecting"] = "画面領域を指定 · 枠を合わせてこの領域を拡大",
+            ["Overlay_Done_Content"] = "完了",
+            ["Overlay_Done_Tooltip"] = "元の領域の編集を完了",
+            ["Overlay_Title_Editing"] = "元の領域を編集 · 枠を合わせて完了を押す"
         }
     };
 }
