@@ -1,7 +1,8 @@
 <Window x:Class="Magnifier.App.LensCollapseOverlayWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="렌즈 펼치기" Width="52" Height="52" MinWidth="52" MinHeight="52"
+        xmlns:loc="clr-namespace:Magnifier.App.Localization"
+        Title="{loc:Tr Collapse_WindowTitle}" Width="52" Height="52" MinWidth="52" MinHeight="52"
         AllowsTransparency="True" Background="Transparent"
         ShowInTaskbar="False" ShowActivated="False" Topmost="True"
         WindowStyle="None" ResizeMode="NoResize" WindowStartupLocation="Manual">
@@ -13,7 +14,7 @@
                 PreviewMouseMove="ExpandButton_OnPreviewMouseMove"
                 PreviewMouseLeftButtonUp="ExpandButton_OnPreviewMouseLeftButtonUp"
                 LostMouseCapture="ExpandButton_OnLostMouseCapture"
-                ToolTip="클릭하여 렌즈 다시 펼치기 · 드래그하여 아이콘 이동"
-                AutomationProperties.Name="렌즈 다시 펼치기 또는 아이콘 이동" />
+                ToolTip="{loc:Tr Collapse_Expand_Tooltip}"
+                AutomationProperties.Name="{loc:Tr Collapse_Expand_Automation}" />
     </Border>
 </Window>

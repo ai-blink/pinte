@@ -3,8 +3,8 @@ using System.Collections.Generic;
 namespace Magnifier.App.Localization;
 
 // Slices so far: SettingsWindow, SelectionPreviewWindow, MainWindow, QuickRegionSettingsWindow,
-// SelectionOverlayWindow, PointerTimingWindow. Remaining 3 windows (LensCollapseOverlayWindow·
-// SourceIndicatorWindow·App.xaml) still hardcode Korean.
+// SelectionOverlayWindow, PointerTimingWindow, LensCollapseOverlayWindow. Remaining 2 windows
+// (SourceIndicatorWindow·App.xaml) still hardcode Korean.
 // zh-Hans/ja entries are a first machine-quality pass, not yet native-reviewed.
 internal static class Strings
 {
@@ -291,7 +291,11 @@ internal static class Strings
             ["Timing_SaveA_Message_Format"] = "A에 저장 {0}",
             ["Timing_SaveB_Message_Format"] = "B에 저장 {0}",
             ["Timing_Error_LoadApplyFailed_Format"] = "저장된 입력 타이밍 적용 실패 · 기본값 사용: {0}",
-            ["Timing_Summary_DefaultSuffix"] = " (기본값)"
+            ["Timing_Summary_DefaultSuffix"] = " (기본값)",
+            ["Collapse_WindowTitle"] = "렌즈 펼치기",
+            ["Collapse_Expand_Tooltip"] = "클릭하여 렌즈 다시 펼치기 · 드래그하여 아이콘 이동",
+            ["Collapse_Expand_Automation"] = "렌즈 다시 펼치기 또는 아이콘 이동",
+            ["Collapse_Error_ShowFailed_Format"] = "렌즈 펼치기 아이콘을 준비하지 못했습니다: {0}"
         },
         [AppLanguage.En] = new()
         {
@@ -567,7 +571,11 @@ internal static class Strings
             ["Timing_SaveA_Message_Format"] = "Saved to A {0}",
             ["Timing_SaveB_Message_Format"] = "Saved to B {0}",
             ["Timing_Error_LoadApplyFailed_Format"] = "Failed to apply the saved input timing · using the default: {0}",
-            ["Timing_Summary_DefaultSuffix"] = " (default)"
+            ["Timing_Summary_DefaultSuffix"] = " (default)",
+            ["Collapse_WindowTitle"] = "Expand lens",
+            ["Collapse_Expand_Tooltip"] = "Click to expand the lens again · drag to move the icon",
+            ["Collapse_Expand_Automation"] = "Expand the lens again, or move the icon",
+            ["Collapse_Error_ShowFailed_Format"] = "Failed to prepare the expand-lens icon: {0}"
         },
         [AppLanguage.ZhHans] = new()
         {
@@ -843,7 +851,11 @@ internal static class Strings
             ["Timing_SaveA_Message_Format"] = "已保存到 A {0}",
             ["Timing_SaveB_Message_Format"] = "已保存到 B {0}",
             ["Timing_Error_LoadApplyFailed_Format"] = "应用已保存的输入时序失败 · 使用默认值：{0}",
-            ["Timing_Summary_DefaultSuffix"] = "（默认值）"
+            ["Timing_Summary_DefaultSuffix"] = "（默认值）",
+            ["Collapse_WindowTitle"] = "展开放大镜",
+            ["Collapse_Expand_Tooltip"] = "点击重新展开放大镜 · 拖动可移动图标",
+            ["Collapse_Expand_Automation"] = "重新展开放大镜或移动图标",
+            ["Collapse_Error_ShowFailed_Format"] = "无法准备展开放大镜图标：{0}"
         },
         [AppLanguage.Ja] = new()
         {
@@ -1119,7 +1131,11 @@ internal static class Strings
             ["Timing_SaveA_Message_Format"] = "A に保存 {0}",
             ["Timing_SaveB_Message_Format"] = "B に保存 {0}",
             ["Timing_Error_LoadApplyFailed_Format"] = "保存済みの入力タイミングの適用に失敗 · 既定値を使用: {0}",
-            ["Timing_Summary_DefaultSuffix"] = "（既定値）"
+            ["Timing_Summary_DefaultSuffix"] = "（既定値）",
+            ["Collapse_WindowTitle"] = "レンズを展開",
+            ["Collapse_Expand_Tooltip"] = "クリックしてレンズを再度展開 · ドラッグしてアイコンを移動",
+            ["Collapse_Expand_Automation"] = "レンズを再度展開、またはアイコンを移動",
+            ["Collapse_Error_ShowFailed_Format"] = "レンズ展開アイコンの準備に失敗しました: {0}"
         }
     };
 }

@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+using Magnifier.App.Localization;
 using Magnifier.Core;
 
 namespace Magnifier.App;
@@ -59,7 +60,7 @@ public partial class LensCollapseOverlayWindow : Window
         catch (Exception exception)
         {
             Hide();
-            FailureReason = $"렌즈 펼치기 아이콘을 준비하지 못했습니다: {exception.Message}";
+            FailureReason = string.Format(Loc.Instance["Collapse_Error_ShowFailed_Format"], exception.Message);
             return false;
         }
     }
