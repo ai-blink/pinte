@@ -2,20 +2,20 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using Magnifier.App.Localization;
 using Magnifier.Core;
 
 namespace Magnifier.App;
 
 public partial class QuickRegionSettingsWindow : Window
 {
-    private static readonly RegionPreset[] Presets =
+    // (Width, Height, ratio label or null for the localized "square" word) — labels are
+    // built per-instance so the current language applies (this array can't be static readonly).
+    private static readonly (int Width, int Height, string? RatioLabel)[] PresetDefs =
     [
-        new("320 × 180 · 16:9", 320, 180), new("640 × 360 · 16:9", 640, 360),
-        new("960 × 540 · 16:9", 960, 540), new("1280 × 720 · 16:9", 1280, 720),
-        new("1600 × 900 · 16:9", 1600, 900), new("1920 × 1080 · 16:9", 1920, 1080),
-        new("640 × 480 · 4:3", 640, 480), new("800 × 600 · 4:3", 800, 600),
-        new("1024 × 768 · 4:3", 1024, 768), new("480 × 480 · 정사각형", 480, 480),
-        new("720 × 720 · 정사각형", 720, 720), new("1080 × 1080 · 정사각형", 1080, 1080)
+        (320, 180, "16:9"), (640, 360, "16:9"), (960, 540, "16:9"), (1280, 720, "16:9"),
+        (1600, 900, "16:9"), (1920, 1080, "16:9"), (640, 480, "4:3"), (800, 600, "4:3"),
+        (1024, 768, "4:3"), (480, 480, null), (720, 720, null), (1080, 1080, null)
     ];
     private static readonly AspectOption[] Ratios =
     [new("16:9", 16d / 9d), new("9:16", 9d / 16d), new("4:3", 4d / 3d),
@@ -40,7 +40,10 @@ public partial class QuickRegionSettingsWindow : Window
         _region = region;
         _hideFromScreenCapture = hideFromScreenCapture;
         _aspectRatio = lockedAspectRatio is { } value && value > 0 ? value : 16d / 9d;
-        _presets = Presets.Select(x => x with { IsAvailable = x.Width <= availableBounds.Width && x.Height <= availableBounds.Height }).ToArray();
+        _presets = PresetDefs.Select(d => new RegionPreset(
+                $"{d.Width} × {d.Height} · {d.RatioLabel ?? Loc.Instance["QuickRegion_Square"]}", d.Width, d.Height,
+                d.Width <= availableBounds.Width && d.Height <= availableBounds.Height))
+            .ToArray();
         PresetBox.ItemsSource = _presets;
         RatioBox.ItemsSource = Ratios;
         LockBox.IsChecked = lockedAspectRatio is not null;
@@ -115,11 +118,11 @@ public partial class QuickRegionSettingsWindow : Window
         _syncing = true;
         try
         {
-            CurrentSizeText.Text = $"현재 원본 영역: {_region.Width} × {_region.Height} 물리 픽셀";
+            CurrentSizeText.Text = string.Format(Loc.Instance["QuickRegion_CurrentSize_Format"], _region.Width, _region.Height);
             PresetBox.SelectedItem = _presets.FirstOrDefault(x => x.Width == _region.Width && x.Height == _region.Height);
             RatioBox.SelectedItem = Ratios.OrderBy(x => Math.Abs(x.Value - _aspectRatio)).First();
             DirectionButton.IsEnabled = Math.Abs(_aspectRatio - 1) > 0.0001;
-            DirectionButton.Content = _aspectRatio >= 1 ? "가로" : "세로";
+            DirectionButton.Content = Loc.Instance[_aspectRatio >= 1 ? "QuickRegion_Direction_Horizontal" : "QuickRegion_Direction_Vertical"];
         }
         finally { _syncing = false; }
     }

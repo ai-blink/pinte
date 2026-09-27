@@ -2,8 +2,8 @@ using System.Collections.Generic;
 
 namespace Magnifier.App.Localization;
 
-// Slices so far: SettingsWindow, SelectionPreviewWindow, MainWindow. Remaining 6 windows
-// (QuickRegionSettingsWindow·SelectionOverlayWindow·PointerTimingWindow·LensCollapseOverlayWindow·
+// Slices so far: SettingsWindow, SelectionPreviewWindow, MainWindow, QuickRegionSettingsWindow.
+// Remaining 5 windows (SelectionOverlayWindow·PointerTimingWindow·LensCollapseOverlayWindow·
 // SourceIndicatorWindow·App.xaml) still hardcode Korean.
 // zh-Hans/ja entries are a first machine-quality pass, not yet native-reviewed.
 internal static class Strings
@@ -215,7 +215,25 @@ internal static class Strings
             ["MainWindow_Status_LayoutSessionOnlySuffix"] = " 배치는 이번 실행에서만 기억합니다.",
             ["MainWindow_Status_ScreenChanged"] = "화면 구성이 바뀌어 조작을 중지했습니다. 확대를 다시 시작하세요.",
             ["MainWindow_Status_CloseNeedsRelease_Format"] = "종료 전 입력 해제가 필요합니다: {0}",
-            ["MainWindow_Reason_NewRegionResumeHold"] = "새 영역 지정 · 이전 보류 해제"
+            ["MainWindow_Reason_NewRegionResumeHold"] = "새 영역 지정 · 이전 보류 해제",
+            ["QuickRegion_Title"] = "원본 크기와 비율",
+            ["QuickRegion_Close_Tooltip"] = "닫기",
+            ["QuickRegion_Close_Automation"] = "크기와 비율 패널 닫기",
+            ["QuickRegion_Subtitle"] = "렌즈 크기와 무관한 실제 캡처 영역입니다.",
+            ["QuickRegion_CurrentSize_Format"] = "현재 원본 영역: {0} × {1} 물리 픽셀",
+            ["QuickRegion_SizeLabel"] = "원본 영역 크기",
+            ["QuickRegion_PresetBox_Automation"] = "원본 영역 크기 프리셋",
+            ["QuickRegion_PresetUnavailable_Tooltip"] = "현재 가상 화면보다 커서 적용할 수 없습니다.",
+            ["QuickRegion_RatioLabel"] = "고정할 가로 세로 비율",
+            ["QuickRegion_RatioBox_Automation"] = "고정할 가로 세로 비율",
+            ["QuickRegion_LockRatio_Content"] = "비율 고정",
+            ["QuickRegion_LockRatio_Automation"] = "비율 고정 켜기 또는 끄기",
+            ["QuickRegion_Direction_Horizontal"] = "가로",
+            ["QuickRegion_Direction_Vertical"] = "세로",
+            ["QuickRegion_Direction_Tooltip"] = "가로와 세로 바꾸기",
+            ["QuickRegion_Direction_Automation"] = "가로와 세로 바꾸기",
+            ["QuickRegion_Footnote"] = "프리셋은 현재 테두리에 즉시 적용됩니다. 고정 중에는 8개 손잡이에서도 같은 비율을 유지합니다.",
+            ["QuickRegion_Square"] = "정사각형"
         },
         [AppLanguage.En] = new()
         {
@@ -415,7 +433,25 @@ internal static class Strings
             ["MainWindow_Status_LayoutSessionOnlySuffix"] = " Layout is remembered only for this run.",
             ["MainWindow_Status_ScreenChanged"] = "Stopped operating because the screen layout changed. Start zooming again.",
             ["MainWindow_Status_CloseNeedsRelease_Format"] = "Input must be released before closing: {0}",
-            ["MainWindow_Reason_NewRegionResumeHold"] = "New region selection · releasing previous hold"
+            ["MainWindow_Reason_NewRegionResumeHold"] = "New region selection · releasing previous hold",
+            ["QuickRegion_Title"] = "Source size and aspect ratio",
+            ["QuickRegion_Close_Tooltip"] = "Close",
+            ["QuickRegion_Close_Automation"] = "Close the size and ratio panel",
+            ["QuickRegion_Subtitle"] = "The actual capture area, independent of the lens size.",
+            ["QuickRegion_CurrentSize_Format"] = "Current source region: {0} × {1} physical pixels",
+            ["QuickRegion_SizeLabel"] = "Source region size",
+            ["QuickRegion_PresetBox_Automation"] = "Source region size preset",
+            ["QuickRegion_PresetUnavailable_Tooltip"] = "Larger than the current virtual screen, so it can't be applied.",
+            ["QuickRegion_RatioLabel"] = "Aspect ratio to lock",
+            ["QuickRegion_RatioBox_Automation"] = "Aspect ratio to lock",
+            ["QuickRegion_LockRatio_Content"] = "Lock ratio",
+            ["QuickRegion_LockRatio_Automation"] = "Turn aspect ratio lock on or off",
+            ["QuickRegion_Direction_Horizontal"] = "Landscape",
+            ["QuickRegion_Direction_Vertical"] = "Portrait",
+            ["QuickRegion_Direction_Tooltip"] = "Swap width and height",
+            ["QuickRegion_Direction_Automation"] = "Swap width and height",
+            ["QuickRegion_Footnote"] = "Presets apply to the current border immediately. While locked, all 8 handles keep the same ratio.",
+            ["QuickRegion_Square"] = "Square"
         },
         [AppLanguage.ZhHans] = new()
         {
@@ -615,7 +651,25 @@ internal static class Strings
             ["MainWindow_Status_LayoutSessionOnlySuffix"] = " 布局仅在本次运行中记住。",
             ["MainWindow_Status_ScreenChanged"] = "屏幕布局已更改，操作已停止。请重新开始放大。",
             ["MainWindow_Status_CloseNeedsRelease_Format"] = "关闭前需要释放输入：{0}",
-            ["MainWindow_Reason_NewRegionResumeHold"] = "指定新区域 · 解除先前的保留"
+            ["MainWindow_Reason_NewRegionResumeHold"] = "指定新区域 · 解除先前的保留",
+            ["QuickRegion_Title"] = "原始大小与比例",
+            ["QuickRegion_Close_Tooltip"] = "关闭",
+            ["QuickRegion_Close_Automation"] = "关闭大小与比例面板",
+            ["QuickRegion_Subtitle"] = "与放大镜大小无关的实际捕获区域。",
+            ["QuickRegion_CurrentSize_Format"] = "当前原始区域：{0} × {1} 物理像素",
+            ["QuickRegion_SizeLabel"] = "原始区域大小",
+            ["QuickRegion_PresetBox_Automation"] = "原始区域大小预设",
+            ["QuickRegion_PresetUnavailable_Tooltip"] = "大于当前虚拟屏幕，无法应用。",
+            ["QuickRegion_RatioLabel"] = "要锁定的宽高比",
+            ["QuickRegion_RatioBox_Automation"] = "要锁定的宽高比",
+            ["QuickRegion_LockRatio_Content"] = "锁定比例",
+            ["QuickRegion_LockRatio_Automation"] = "打开或关闭比例锁定",
+            ["QuickRegion_Direction_Horizontal"] = "横向",
+            ["QuickRegion_Direction_Vertical"] = "纵向",
+            ["QuickRegion_Direction_Tooltip"] = "交换宽度和高度",
+            ["QuickRegion_Direction_Automation"] = "交换宽度和高度",
+            ["QuickRegion_Footnote"] = "预设会立即应用到当前边框。锁定期间，8个手柄也会保持相同比例。",
+            ["QuickRegion_Square"] = "正方形"
         },
         [AppLanguage.Ja] = new()
         {
@@ -815,7 +869,25 @@ internal static class Strings
             ["MainWindow_Status_LayoutSessionOnlySuffix"] = " 配置は今回の実行中のみ記憶します。",
             ["MainWindow_Status_ScreenChanged"] = "画面構成が変わったため操作を停止しました。もう一度拡大を開始してください。",
             ["MainWindow_Status_CloseNeedsRelease_Format"] = "終了前に入力の解除が必要です: {0}",
-            ["MainWindow_Reason_NewRegionResumeHold"] = "新しい領域指定 · 以前の保留を解除"
+            ["MainWindow_Reason_NewRegionResumeHold"] = "新しい領域指定 · 以前の保留を解除",
+            ["QuickRegion_Title"] = "元のサイズと比率",
+            ["QuickRegion_Close_Tooltip"] = "閉じる",
+            ["QuickRegion_Close_Automation"] = "サイズと比率パネルを閉じる",
+            ["QuickRegion_Subtitle"] = "レンズのサイズとは無関係な実際のキャプチャ領域です。",
+            ["QuickRegion_CurrentSize_Format"] = "現在の元の領域: {0} × {1} 物理ピクセル",
+            ["QuickRegion_SizeLabel"] = "元の領域サイズ",
+            ["QuickRegion_PresetBox_Automation"] = "元の領域サイズのプリセット",
+            ["QuickRegion_PresetUnavailable_Tooltip"] = "現在の仮想画面より大きいため適用できません。",
+            ["QuickRegion_RatioLabel"] = "固定する縦横比",
+            ["QuickRegion_RatioBox_Automation"] = "固定する縦横比",
+            ["QuickRegion_LockRatio_Content"] = "比率を固定",
+            ["QuickRegion_LockRatio_Automation"] = "比率固定のオン・オフ",
+            ["QuickRegion_Direction_Horizontal"] = "横",
+            ["QuickRegion_Direction_Vertical"] = "縦",
+            ["QuickRegion_Direction_Tooltip"] = "横と縦を入れ替え",
+            ["QuickRegion_Direction_Automation"] = "横と縦を入れ替え",
+            ["QuickRegion_Footnote"] = "プリセットは現在の枠に即座に適用されます。固定中は8個のハンドルでも同じ比率を保ちます。",
+            ["QuickRegion_Square"] = "正方形"
         }
     };
 }
