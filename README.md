@@ -13,7 +13,7 @@
   <a href="README.ja.md">日本語</a>
 </p>
 
-> **Official release — v0.3.0.** Pinte is available for hands-on use, while compatibility with every Windows application still needs to be verified.
+> **Official release — v0.3.1.** Pinte is available for hands-on use, while compatibility with every Windows application still needs to be verified.
 
 Pinte helps people who work with a mouse to enlarge part of the Windows desktop, make a precise click or drag through an independent lens window, and return to the original screen without relying on a keyboard.
 
@@ -28,7 +28,7 @@ The source frame and the lens can be positioned and resized separately. The lens
 
 ## Download and run
 
-1. Download `Pinte-v0.3.0-win-x64.zip` from the [v0.3.0 release](https://github.com/ai-blink/pinte/releases/tag/v0.3.0).
+1. Download `Pinte-v0.3.1-win-x64.zip` from the [v0.3.1 release](https://github.com/ai-blink/pinte/releases/tag/v0.3.1).
 2. Extract the ZIP to a folder you can write to.
 3. Run `Magnifier.App.exe`.
 4. Select **Screen area**, adjust the source frame, then open the magnified lens.
@@ -55,7 +55,7 @@ For manual checks—including multi-monitor, DPI, compact lens, capture recovery
 
 ## Current status
 
-`v0.3.0` adds in-app UI localization: every window's Korean text can now be switched to English, 简体中文, or 日本語 from Settings (or follow the system language). Chinese and Japanese strings have had one automated review pass; they have not yet been checked by a native speaker or verified on screen in every window. The core click-and-drag flow has automated regression coverage, but live target-application behavior still needs validation across the Windows environments you use. Please report reproducible issues through [GitHub Issues](https://github.com/ai-blink/pinte/issues).
+`v0.3.0` adds in-app UI localization: every window's Korean text can now be switched to English, 简体中文, or 日本語 from Settings (or follow the system language). Chinese and Japanese strings have had one automated review pass; they have not yet been checked by a native speaker or verified on screen in every window. `v0.3.1` fixes a bug where the lens jumped to a different screen position after collapsing it to the hide icon and expanding it again. The core click-and-drag flow has automated regression coverage, but live target-application behavior still needs validation across the Windows environments you use. Please report reproducible issues through [GitHub Issues](https://github.com/ai-blink/pinte/issues).
 
 ## License
 

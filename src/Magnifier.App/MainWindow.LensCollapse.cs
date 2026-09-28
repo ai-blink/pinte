@@ -6,6 +6,7 @@ namespace Magnifier.App;
 public partial class MainWindow
 {
     private LensCollapseOverlayWindow? _collapsedLens;
+    private ScreenRegion? _preHideLensBounds;
 
     private void CreateCollapsedLensOverlay()
     {
@@ -27,6 +28,7 @@ public partial class MainWindow
             await _lens.StopAsync("렌즈 숨김 · 실제 입력 해제");
             if (_returning || _shuttingDown) return;
             RememberLayout();
+            _preHideLensBounds = _windows.GetWindowBounds(_lens.WindowHandle);
             if (!_collapsedLens.ShowAt(anchor))
                 throw new InvalidOperationException(_collapsedLens.FailureReason ?? "렌즈 펼치기 아이콘을 표시하지 못했습니다.");
             _lens.Hide();
@@ -64,6 +66,11 @@ public partial class MainWindow
         try
         {
             _lens.Show();
+            // WPF Hide()/Show() can recompute Left/Top from a stale DPI context while the
+            // window has no monitor association, drifting it away from where it was pinned
+            // before collapsing. Reassert the exact physical bounds the same way every other
+            // lens placement does (native SetWindowPos), instead of trusting WPF's own restore.
+            if (_preHideLensBounds is { } bounds) _windows.PlaceWindow(_lens.WindowHandle, bounds);
             _lens.Activate();
             await _lens.RefreshGeometryAsync();
             if (version != _sessionVersion || _returning || _shuttingDown) return;
@@ -75,6 +82,7 @@ public partial class MainWindow
             RememberLayout();
             _collapsedLens.Hide();
             _lensHidden = false;
+            _preHideLensBounds = null;
         }
         catch (Exception exception)
         {

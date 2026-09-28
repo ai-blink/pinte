@@ -13,7 +13,7 @@
   <a href="README.ja.md">日本語</a>
 </p>
 
-> **正式版 — v0.3.0。** 此版本适合日常实际使用，但仍需持续验证与各类 Windows 应用的兼容性。
+> **正式版 — v0.3.1。** 此版本适合日常实际使用，但仍需持续验证与各类 Windows 应用的兼容性。
 
 Pinte 帮助主要使用鼠标的用户放大 Windows 桌面的指定区域，通过独立的放大镜窗口进行精确点击或拖动，并且无需键盘即可返回原始屏幕。
 
@@ -28,7 +28,7 @@ Pinte 帮助主要使用鼠标的用户放大 Windows 桌面的指定区域，�
 
 ## 下载与运行
 
-1. 从 [v0.3.0 发布页](https://github.com/ai-blink/pinte/releases/tag/v0.3.0)下载 `Pinte-v0.3.0-win-x64.zip`。
+1. 从 [v0.3.1 发布页](https://github.com/ai-blink/pinte/releases/tag/v0.3.1)下载 `Pinte-v0.3.1-win-x64.zip`。
 2. 将 ZIP 解压到可写入的文件夹。
 3. 运行 `Magnifier.App.exe`。
 4. 选择 **Screen area**，调整源区域边框，然后打开放大镜。
@@ -55,7 +55,7 @@ dotnet test Magnifier.slnx --nologo
 
 ## 当前状态
 
-`v0.3.0` 增加了应用内界面多语言支持——所有窗口的韩语文本都可在设置中切换为 English、简体中文或日本語，也可跟随系统语言。中文与日文字符串目前只经过一轮自动检收，尚未经过母语者检收，也未逐窗口做过实际画面确认。核心点击与拖动流程已有自动回归测试，但真实目标应用中的行为仍需在您使用的 Windows 环境中持续验证。可复现的问题请提交至 [GitHub Issues](https://github.com/ai-blink/pinte/issues)。
+`v0.3.0` 增加了应用内界面多语言支持——所有窗口的韩语文本都可在设置中切换为 English、简体中文或日本語，也可跟随系统语言。中文与日文字符串目前只经过一轮自动检收，尚未经过母语者检收，也未逐窗口做过实际画面确认。`v0.3.1` 修复了将镜头收起为隐藏图标后再展开时位置会跳动的问题。核心点击与拖动流程已有自动回归测试，但真实目标应用中的行为仍需在您使用的 Windows 环境中持续验证。可复现的问题请提交至 [GitHub Issues](https://github.com/ai-blink/pinte/issues)。
 
 ## 许可证
 
