@@ -59,4 +59,8 @@ dotnet test Magnifier.slnx --nologo
 
 ## ライセンス
 
-Pinte は [MIT License](LICENSE) のもとで公開されています。
+**個人利用は無料です。** 個人が非商用目的で使用する場合は無料です。
+
+企業・団体・依頼業務での使用、商用利用、再配布・販売、改変物の作成・公開には作者の許可が必要です。[ikseon@blinklabs.co.kr](mailto:ikseon@blinklabs.co.kr) までメールでご相談ください。ソースコードは参考のために閲覧できます。
+
+Copyright © 2026 Ikseon Jang (BlinkLabs). All rights reserved. 詳細は [LICENSE](LICENSE)(英語の原文が優先)を参照してください。 2026-10-15 より前に MIT License で公開されたバージョンは、受け取った時点の条件のまま維持されます。

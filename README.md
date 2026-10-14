@@ -59,4 +59,8 @@ For manual checks—including multi-monitor, DPI, compact lens, capture recovery
 
 ## License
 
-Pinte is released under the [MIT License](LICENSE).
+**Free for personal use only.** Individuals may use this software free of charge for personal, non-commercial purposes.
+
+Use by or on behalf of a company, organization or client, any commercial use, redistribution or sale, and modifying or publishing derivative works require the author's permission. Please email [ikseon@blinklabs.co.kr](mailto:ikseon@blinklabs.co.kr) to discuss. The source code is viewable for reference only.
+
+Copyright © 2026 Ikseon Jang (BlinkLabs). All rights reserved. See [LICENSE](LICENSE). Versions released under the MIT License before 2026-10-15 remain available under the terms they were received under.
